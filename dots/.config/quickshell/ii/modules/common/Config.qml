@@ -458,6 +458,8 @@ Singleton {
                 property bool filterUnbinds: false
                 property bool enableGmail: false
                 property bool enableTimetable: true
+                property bool enablePeriodicTable: true
+                property bool enableCommands: true
                 property JsonObject fontSize: JsonObject {
                     property int key: Appearance.font.pixelSize.smaller
                     property int comment: Appearance.font.pixelSize.smaller

@@ -12,10 +12,10 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: Appearance.colors.colLayer0
-        topLeftRadius: Appearance.rounding.small
-        topRightRadius: Appearance.rounding.verylarge
-        bottomLeftRadius: Appearance.rounding.small
-        bottomRightRadius: Appearance.rounding.verylarge
+        topLeftRadius: Appearance.rounding.verysmall
+        topRightRadius: Appearance.rounding.windowRounding
+        bottomLeftRadius: Appearance.rounding.verysmall
+        bottomRightRadius: Appearance.rounding.windowRounding
     }
 
     // --- Ready / Connecting State ---

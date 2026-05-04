@@ -10,18 +10,39 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "commands"
 
 Scope {
     id: root
     property var tabButtonList: {
         let list = [];
         if (Config.options.cheatsheet.enableTimetable) {
-            list.push({ "icon": "calendar_month", "name": Translation.tr("Timetable") });
+            list.push({
+                "icon": "calendar_month",
+                "name": Translation.tr("Timetable")
+            });
         }
-        list.push({ "icon": "keyboard", "name": Translation.tr("Keybinds") });
-        list.push({ "icon": "experiment", "name": Translation.tr("Elements") });
+        list.push({
+            "icon": "keyboard",
+            "name": Translation.tr("Keybinds")
+        });
+        if (Config.options.cheatsheet.enablePeriodicTable) {
+            list.push({
+                "icon": "experiment",
+                "name": Translation.tr("Elements")
+            });
+        }
+        if (Config.options.cheatsheet.enableCommands) {
+            list.push({
+                "icon": "terminal",
+                "name": Translation.tr("Commands")
+            });
+        }
         if (Config.options.cheatsheet.enableGmail) {
-            list.push({ "icon": "mail", "name": Translation.tr("Email") });
+            list.push({
+                "icon": "mail",
+                "name": Translation.tr("Email")
+            });
         }
         return list;
     }
@@ -57,7 +78,13 @@ Scope {
             implicitWidth: cheatsheetBackground.width + Appearance.sizes.elevationMargin * 2
             implicitHeight: cheatsheetBackground.height + Appearance.sizes.elevationMargin * 2
             WlrLayershell.namespace: "quickshell:cheatsheet"
-            WlrLayershell.keyboardFocus: (timetableLoader.item && timetableLoader.item.eventPopupVisible) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: {
+                // currentItem is the Loader delegate; .item is the loaded CheatsheetTimetable
+                const cur = swipeView.currentItem;
+                if (cur && cur.item && cur.item.eventPopupVisible)
+                    return WlrKeyboardFocus.OnDemand;
+                return WlrKeyboardFocus.None;
+            }
             color: "transparent"
 
             mask: Region {
@@ -74,6 +101,8 @@ Scope {
                 }
             }
 
+
+
             StyledRectangularShadow {
                 target: cheatsheetBackground
             }
@@ -85,7 +114,7 @@ Scope {
                 border.color: Appearance.colors.colLayer0Border
                 radius: Appearance.rounding.windowRounding
                 property real padding: 20
-                
+
                 implicitWidth: cheatsheetColumnLayout.implicitWidth + padding * 2
                 implicitHeight: cheatsheetColumnLayout.implicitHeight + padding * 2
 
@@ -181,41 +210,39 @@ Scope {
                             }
                         }
 
+                        
+                        Repeater {
+                            model: root.tabButtonList
+                            delegate: Loader {
+                                id: tabDelegate
+                                required property var modelData
+                                required property int index
 
-                        Loader {
-                            id: timetableLoader
-                            property bool wasSeen: false
-                            active: Config.options.cheatsheet.enableTimetable && (swipeView.currentIndex === 0 || wasSeen)
-                            onActiveChanged: if (active) wasSeen = true
-                            visible: active
-                            asynchronous: true 
-                            source: "CheatsheetTimetable.qml"
-                            
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                visible: timetableLoader.status !== Loader.Ready
-                                MaterialLoadingIndicator { anchors.centerIn: parent }
-                            }
-                        }
+                                // Timetable & Email: lazy — load only when first visited
+                                property bool _lazy: modelData.icon === "calendar_month" || modelData.icon === "mail"
+                                property bool _wasSeen: false
+                                active: !_lazy || swipeView.currentIndex === index || _wasSeen
+                                onActiveChanged: if (active) _wasSeen = true
 
-                        CheatsheetKeybinds {}
-                        CheatsheetPeriodicTable {}
+                                asynchronous: _lazy
+                                source: {
+                                    switch (modelData.icon) {
+                                        case "calendar_month": return "CheatsheetTimetable.qml";
+                                        case "keyboard":       return "CheatsheetKeybinds.qml";
+                                        case "experiment":     return "CheatsheetPeriodicTable.qml";
+                                        case "terminal":       return "commands/CheatsheetCommands.qml";
+                                        case "mail":           return "CheatsheetEmail.qml";
+                                        default:               return "";
+                                    }
+                                }
 
-                        Loader {
-                            id: emailLoader
-                            property bool wasSeen: false
-                            active: Config.options.cheatsheet.enableGmail && (swipeView.currentIndex === (root.tabButtonList.length - 1) || wasSeen)
-                            onActiveChanged: if (active) wasSeen = true
-                            visible: active
-                            asynchronous: true 
-                            source: "CheatsheetEmail.qml"
-                            
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                visible: emailLoader.status !== Loader.Ready
-                                MaterialLoadingIndicator { anchors.centerIn: parent }
+                                // Loading indicator for async tabs
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: "transparent"
+                                    visible: tabDelegate._lazy && tabDelegate.status !== Loader.Ready
+                                    MaterialLoadingIndicator { anchors.centerIn: parent }
+                                }
                             }
                         }
                     }
@@ -226,26 +253,38 @@ Scope {
 
     IpcHandler {
         target: "cheatsheet"
-        function toggle(): void { cheatsheetLoader.active = !cheatsheetLoader.active; }
-        function close(): void { cheatsheetLoader.active = false; }
-        function open(): void { cheatsheetLoader.active = true; }
+        function toggle(): void {
+            cheatsheetLoader.active = !cheatsheetLoader.active;
+        }
+        function close(): void {
+            cheatsheetLoader.active = false;
+        }
+        function open(): void {
+            cheatsheetLoader.active = true;
+        }
     }
 
     GlobalShortcut {
         name: "cheatsheetToggle"
         description: "Toggles cheatsheet on press"
-        onPressed: { cheatsheetLoader.active = !cheatsheetLoader.active; }
+        onPressed: {
+            cheatsheetLoader.active = !cheatsheetLoader.active;
+        }
     }
 
     GlobalShortcut {
         name: "cheatsheetOpen"
         description: "Opens cheatsheet on press"
-        onPressed: { cheatsheetLoader.active = true; }
+        onPressed: {
+            cheatsheetLoader.active = true;
+        }
     }
 
     GlobalShortcut {
         name: "cheatsheetClose"
         description: "Closes cheatsheet on press"
-        onPressed: { cheatsheetLoader.active = false; }
+        onPressed: {
+            cheatsheetLoader.active = false;
+        }
     }
 }

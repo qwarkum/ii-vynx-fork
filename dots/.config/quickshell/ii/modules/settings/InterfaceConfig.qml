@@ -124,6 +124,25 @@ ContentPage {
                 }
             }
         }
+        ConfigRow {
+            uniform: true
+            ConfigSwitch {
+                buttonIcon: "experiment"
+                text: Translation.tr("Enable Elements")
+                checked: Config.options.cheatsheet.enablePeriodicTable
+                onCheckedChanged: {
+                    Config.options.cheatsheet.enablePeriodicTable = checked;
+                }
+            }
+            ConfigSwitch {
+                buttonIcon: "terminal"
+                text: Translation.tr("Enable Commands")
+                checked: Config.options.cheatsheet.enableCommands
+                onCheckedChanged: {
+                    Config.options.cheatsheet.enableCommands = checked;
+                }
+            }
+        }
     }
     
     ContentSection {

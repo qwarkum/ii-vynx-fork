@@ -17,9 +17,9 @@ Item {
         anchors.fill: parent
         color: Appearance.colors.colLayer0
         topLeftRadius: Appearance.rounding.windowRounding
-        topRightRadius: Appearance.rounding.small
+        topRightRadius: Appearance.rounding.verysmall
         bottomLeftRadius: Appearance.rounding.windowRounding
-        bottomRightRadius: Appearance.rounding.small
+        bottomRightRadius: Appearance.rounding.verysmall
     }
 
     // Build the nav button list dynamically

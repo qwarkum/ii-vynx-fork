@@ -115,42 +115,6 @@ Item {
             }
             spacing: 12
 
-            // === HEADER ROW ===
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                MaterialShape {
-                    shapeString: "Circle"
-                    implicitSize: 32
-                    color: Appearance.colors.colPrimaryContainer
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "bluetooth"
-                        iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colOnPrimaryContainer
-                    }
-                }
-
-                StyledText {
-                    Layout.fillWidth: true
-                    font.pixelSize: Appearance.font.pixelSize.large
-                    font.family: Appearance.font.family.expressive
-                    font.weight: Font.Bold
-                    text: Translation.tr("Bluetooth Devices")
-                    color: Appearance.colors.colOnSurface
-                }
-            }
-
-            // === DIVIDER LINE ===
-            Rectangle {
-                Layout.fillWidth: true
-                height: 2
-                color: Appearance.colors.colSurfaceContainerHighest
-                radius: 1
-            }
-
             // === DEVICE NAME ===
             StyledText {
                 Layout.fillWidth: true

@@ -87,9 +87,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: Appearance.colors.colLayer0
-        topLeftRadius: Appearance.rounding.small
+        topLeftRadius: Appearance.rounding.verysmall
         topRightRadius: Appearance.rounding.windowRounding
-        bottomLeftRadius: Appearance.rounding.small
+        bottomLeftRadius: Appearance.rounding.verysmall
         bottomRightRadius: Appearance.rounding.windowRounding
         antialiasing: true
     }
@@ -794,7 +794,7 @@ Item {
                                                     font.family: Appearance.font.family.main
                                                     font.pixelSize: Appearance.font.pixelSize.small
                                                     font.weight: model.unread ? Font.Bold : Font.Medium
-                                                    color: model.unread ? Appearance.colors.colPrimary : Appearance.colors.colOnTertiaryContainer
+                                                    color: Appearance.colors.colOnTertiaryContainer
                                                 }
                                             }
                                         }

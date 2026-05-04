@@ -440,10 +440,10 @@ Item {
         height: isAnimating ? undefined : root.height
 
         color: Appearance.colors.colLayer0
-        topLeftRadius: Appearance.rounding.small
-        topRightRadius: Appearance.rounding.verylarge
-        bottomLeftRadius: Appearance.rounding.small
-        bottomRightRadius: Appearance.rounding.large
+        topLeftRadius: Appearance.rounding.verysmall
+        topRightRadius: Appearance.rounding.windowRounding
+        bottomLeftRadius: Appearance.rounding.verysmall
+        bottomRightRadius: Appearance.rounding.windowRounding
         antialiasing: true
         clip: true
 
