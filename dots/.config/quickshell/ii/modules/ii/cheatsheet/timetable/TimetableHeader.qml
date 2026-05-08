@@ -10,7 +10,7 @@ Row {
     id: headerRow
     
     property real headerHeight
-    property real spacing
+    property real itemSpacing
     property int timeColumnWidth
     property real dayColumnWidth
     property var days
@@ -18,9 +18,8 @@ Row {
     property int allDayChipHeight
     property int allDayChipSpacing
 
-    width: parent.width
     height: headerHeight
-    spacing: spacing
+    spacing: itemSpacing
 
     Item {
         width: timeColumnWidth

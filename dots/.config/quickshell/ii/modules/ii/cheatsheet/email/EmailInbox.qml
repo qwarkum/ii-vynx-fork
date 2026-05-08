@@ -361,11 +361,10 @@ Item {
                             id: starIconSymbol
                             anchors.centerIn: parent
                             text: root.activeTab === "trash" ? "restore" : "star"
-                            fill: root.activeTab === "trash" ? 1 : (model.starred ? 1 : 0)
-                            iconSize: 32
+                            fill: root.activeTab === "trash" ? 1 : ((model.starred || cardRoot.swipeX >= cardRoot.starThreshold) ? 1 : 0)
+                            iconSize: cardRoot.swipeX >= cardRoot.starThreshold ? 42 : 32
                             color: Appearance.colors.colOnTertiary
-                            scale: cardRoot.swipeX >= cardRoot.starThreshold ? 1.3 : 1.0
-                            Behavior on scale {
+                            Behavior on iconSize {
                                 NumberAnimation {
                                     duration: 200
                                     easing.type: Easing.OutBack
@@ -389,11 +388,10 @@ Item {
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: cardRoot.confirmDeleteMode ? "check" : (root.activeTab === "trash" ? "delete_forever" : "delete")
-                            fill: (cardRoot.confirmDeleteMode || root.activeTab === "trash") ? 1 : 0
-                            iconSize: 32
+                            fill: (cardRoot.confirmDeleteMode || root.activeTab === "trash" || cardRoot.swipeX <= cardRoot.deleteThreshold) ? 1 : 0
+                            iconSize: (cardRoot.swipeX <= cardRoot.deleteThreshold || cardRoot.confirmDeleteMode) ? 42 : 32
                             color: Appearance.colors.colOnError
-                            scale: (cardRoot.swipeX <= cardRoot.deleteThreshold || cardRoot.confirmDeleteMode) ? 1.3 : 1.0
-                            Behavior on scale {
+                            Behavior on iconSize {
                                 NumberAnimation {
                                     duration: 200
                                     easing.type: Easing.OutBack

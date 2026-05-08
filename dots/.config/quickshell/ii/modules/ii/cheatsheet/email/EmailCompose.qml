@@ -241,7 +241,7 @@ Item {
                 toastIcon.text = "check_circle";
                 toastIcon.color = Appearance.m3colors.m3success;
                 toastAnim.restart();
-                root.startClose();
+                closeDelayTimer.start();
             } else {
                 root.lastError = errorMsg;
                 toastText.text = errorMsg;
@@ -250,6 +250,12 @@ Item {
                 toastAnim.restart();
             }
         }
+    }
+
+    Timer {
+        id: closeDelayTimer
+        interval: 1500
+        onTriggered: root.startClose()
     }
 
     // ── Internal QML File Picker Logic ──────────────────────────────────────
@@ -262,7 +268,7 @@ Item {
     Rectangle {
         id: background
         anchors.fill: parent
-        color: Appearance.m3colors.m3surfaceContainerLow // Solid surface color
+        color: Config.options.appearance.transparency.enable ? Appearance.colors.colLayer0 : Appearance.m3colors.m3surfaceContainerLow
         visible: root.isOpen || root.isAnimating
         opacity: root.isOpen ? 1 : 0
         Behavior on opacity {

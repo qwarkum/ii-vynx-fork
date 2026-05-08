@@ -7,6 +7,8 @@ import qs.modules.common.functions
 Image {
     asynchronous: true
     retainWhileLoading: true
+    mipmap: true
+    smooth: true
     visible: opacity > 0
     opacity: (status === Image.Ready) ? 1 : 0
     Behavior on opacity {

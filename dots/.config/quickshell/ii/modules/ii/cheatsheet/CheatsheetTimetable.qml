@@ -31,10 +31,13 @@ Item {
     property real headerHeight: 64 + (hasAllDayEvents ? maxAllDayEventCount * (allDayChipHeight + allDayChipSpacing) + 8 : 0)
     property real currentTimeY: -1
     property bool initialScrollApplied: false
-    readonly property real dayColumnWidth: Math.min(180, (maxContentWidth - timeColumnWidth - (days.length + 1) * spacing) / days.length)
+    readonly property real dayColumnWidth: {
+        let availableWidth = root.width > 0 ? root.width : maxContentWidth;
+        return Math.max(80, (availableWidth - timeColumnWidth - days.length * spacing) / Math.max(1, days.length));
+    }
     readonly property int currentDayIndex: (DateTime.clock.date.getDay() - Config.options.time.firstDayOfWeek + 6) % 7
 
-    implicitWidth: Math.min(maxContentWidth, timeColumnWidth + (dayColumnWidth * days.length) + ((days.length + 1) * spacing))
+    implicitWidth: maxContentWidth
     implicitHeight: Math.min(headerHeight + contentHeight, maxHeight)
     property var days: CalendarService.eventsInWeek
     readonly property int allDayChipHeight: 36
@@ -229,7 +232,7 @@ Item {
             id: headerRow
             Layout.fillWidth: true
             headerHeight: root.headerHeight
-            spacing: root.spacing
+            itemSpacing: root.spacing
             timeColumnWidth: root.timeColumnWidth
             dayColumnWidth: root.dayColumnWidth
             days: root.days
