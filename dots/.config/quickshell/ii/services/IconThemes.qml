@@ -20,7 +20,7 @@ Singleton {
         stdout: StdioCollector {
             id: themeCollector
             onStreamFinished: {
-                let themes = themeCollector.text.split("\n").map(t => t.trim()).filter(t => t && t !== "hicolor" && t !== "default" && t !== "TemaDinamico");
+                let themes = themeCollector.text.split("\n").map(t => t.trim()).filter(t => t && t !== "hicolor" && t !== "default" && t !== "DynamicTheme");
 
                 // Remove duplicates
                 root.availableThemes = [...new Set(themes)];
@@ -52,7 +52,7 @@ Singleton {
     }
 
     FileView {
-        path: Directories.home + "/.local/share/icons/TemaDinamico.colhash"
+        path: Directories.home + "/.local/share/icons/DynamicTheme.colhash"
         watchChanges: true
         onFileChanged: {
             // Background generation finished and written out new colors hash.

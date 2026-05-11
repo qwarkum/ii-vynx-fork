@@ -415,7 +415,7 @@ ContentPage {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
                 StyledText {
-                    text: Translation.tr("TemaDinamico will be generated from the selected base theme.")
+                    text: Translation.tr("DynamicTheme will be generated from the selected base theme.")
                     color: Appearance.colors.colSubtext
                     font.pixelSize: Appearance.font.pixelSize.smallie
                 }

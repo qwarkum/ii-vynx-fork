@@ -144,7 +144,10 @@ Item {
                                     IconImage {
                                         id: icon
                                         anchors.fill: parent
-                                        source: Quickshell.iconPath(AppSearch.guessIcon(modelData?.class), "image-missing")
+                                        source: {
+                                            const _ = TaskbarApps.iconThemeRevision;
+                                            return Quickshell.iconPath(AppSearch.guessIcon(modelData?.class), "image-missing");
+                                        }
                                         layer.enabled: Config.options.appearance.icons.enableShapeMask
                                         layer.effect: MultiEffect {
                                             maskEnabled: Config.options.appearance.icons.enableShapeMask

@@ -24,6 +24,19 @@ MouseArea {
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
     cursorShape: Qt.PointingHandCursor
 
+    Connections {
+        target: BluetoothStatus
+        function onConnectedDevicesChanged() {
+            if (typeof rootItem !== "undefined")
+                rootItem.toggleVisible(BluetoothStatus.connectedDevices.length > 0)
+        }
+    }
+
+    Component.onCompleted: {
+        if (typeof rootItem !== "undefined")
+            rootItem.toggleVisible(hasDevices)
+    }
+
     onClicked: {
         if (activeDevices.length > 1) {
             deviceIndex = (deviceIndex + 1) % activeDevices.length

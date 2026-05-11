@@ -201,9 +201,12 @@ Singleton {
     rounding: QtObject {
         property real scale: {
             let mode = Config.options.appearance.globalRounding;
-            if (mode === "sharp" || Config.options.appearance.sharpMode) return 0.0;
-            if (mode === "normal") return 17.0 / 24.0;
-            if (mode === "verylarge") return 32.0 / 24.0;
+            if (mode === "sharp" || Config.options.appearance.sharpMode)
+                return 0.0;
+            if (mode === "normal")
+                return 17.0 / 24.0;
+            if (mode === "verylarge")
+                return 32.0 / 24.0;
             return 1.0; // "large" is 24 (default)
         }
 

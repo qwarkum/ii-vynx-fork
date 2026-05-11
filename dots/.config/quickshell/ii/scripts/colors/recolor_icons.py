@@ -6,7 +6,7 @@ Pipeline:
   1. Recolor SVGs from base icon theme (brightness-based color mapping)
   2. Scavenge missing icons from .desktop files (abs paths + system lookup)
   3. Use gowall to recolor raster icons (PNG/JPG) with Material You palette
-  4. Inject everything into TemaDinamico so the system treats them as native
+  4. Inject everything into DynamicTheme so the system treats them as native
 
 This extends icon pack coverage to 100% — apps without themed icons
 (e.g. Zen Browser, AppImages) get gowall-recolored versions automatically.
@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 # ── Paths ────────────────────────────────────────────────────────────────────
 CONFIG_JSON = os.path.expanduser("~/.config/illogical-impulse/config.json")
 COLORS_JSON = os.path.expanduser("~/.local/state/quickshell/user/generated/colors.json")
-TARGET_THEME_PATH = os.path.expanduser("~/.local/share/icons/TemaDinamico")
+TARGET_THEME_PATH = os.path.expanduser("~/.local/share/icons/DynamicTheme")
 
 ICON_SEARCH_DIRS = [
     os.path.expanduser("~/.icons"),
@@ -97,19 +97,30 @@ def get_brightness(hex_color):
 
 
 def recolor_svg(content, colors):
-    primary = colors.get('primary', '#ffffff')
-    primary_container = colors.get('primary_container', '#444444')
-    on_primary_container = colors.get('on_primary_container', '#ffffff')
+    # Sort theme colors by brightness to ensure consistent mapping
+    # that preserves the original icon's luminosity order.
+    # This prevents "inverted" looks in light mode.
+    palette = [
+        colors.get('primary', '#ffffff'),
+        colors.get('primary_container', '#444444'),
+        colors.get('on_primary_container', '#ffffff')
+    ]
+    palette.sort(key=get_brightness)
+    
+    # Map: darkest theme color to original darks, lightest to original lights
+    c_dark = palette[0]
+    c_mid = palette[1]
+    c_light = palette[2]
 
     def color_replacer(match):
         hex_color = match.group(0)
         brightness = get_brightness(hex_color)
         if brightness < 60:
-            return primary
+            return c_dark
         elif brightness < 180:
-            return primary_container
+            return c_mid
         else:
-            return on_primary_container
+            return c_light
 
     hex_pattern = re.compile(r'#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}')
     new_content = hex_pattern.sub(color_replacer, content)
@@ -143,7 +154,7 @@ def find_icon_in_themes(icon_name, theme_dirs):
             continue
         for theme in os.listdir(theme_dir):
             theme_path = os.path.join(theme_dir, theme)
-            if theme == "TemaDinamico" or not os.path.isdir(theme_path):
+            if theme == "DynamicTheme" or not os.path.isdir(theme_path):
                 continue
             for size_dir in ICON_SIZE_DIRS:
                 apps_dir = os.path.join(theme_path, size_dir)
@@ -174,7 +185,7 @@ def find_icon_in_themes(icon_name, theme_dirs):
 
 
 def get_existing_tema_icons():
-    """Get set of icon names (lowercase, no ext) already in TemaDinamico."""
+    """Get set of icon names (lowercase, no ext) already in DynamicTheme."""
     icons = set()
     for root, dirs, files in os.walk(TARGET_THEME_PATH):
         for f in files:
@@ -195,7 +206,7 @@ def strip_image_ext(name):
 
 def scavenge_missing_icons(existing_icons):
     """
-    Parse .desktop files, find icons not in TemaDinamico.
+    Parse .desktop files, find icons not in DynamicTheme.
     Returns list of (icon_name, source_path) tuples for raster icons to recolor.
     SVG icons are processed inline (recolored directly).
     """
@@ -369,7 +380,7 @@ def recolor_raster_icons(raster_icons, colors, target_apps_dir):
 
 
 def inject_scavenged_svgs(svg_icons, colors, target_apps_dir):
-    """Recolor scavenged SVG icons and inject into TemaDinamico."""
+    """Recolor scavenged SVG icons and inject into DynamicTheme."""
     count = 0
     for icon_name, source_path in svg_icons:
         try:
@@ -427,7 +438,7 @@ def generate():
         print("No suitable base theme found.")
         return
 
-    print(f"Generating TemaDinamico using {icon_theme_name} as base from {base_theme_path}...")
+    print(f"Generating DynamicTheme using {icon_theme_name} as base from {base_theme_path}...")
 
     # ── Skip if colors haven't changed ───────────────────────────────────
     colors_hash = hashlib.md5(json.dumps(colors, sort_keys=True).encode()).hexdigest()
@@ -466,7 +477,7 @@ def generate():
         with open(dst_index, 'w') as f:
             for line in lines:
                 if line.startswith("Name="):
-                    f.write("Name=TemaDinamico\n")
+                    f.write("Name=DynamicTheme\n")
                 elif line.startswith("Inherits="):
                     f.write(f"Inherits={icon_theme_name},hicolor\n")
                 elif line.startswith("Comment="):
@@ -475,7 +486,7 @@ def generate():
                     f.write(line)
     else:
         with open(dst_index, "w") as f:
-            f.write(f"[Icon Theme]\nName=TemaDinamico\nInherits={icon_theme_name},hicolor\n"
+            f.write(f"[Icon Theme]\nName=DynamicTheme\nInherits={icon_theme_name},hicolor\n"
                     f"Directories=scalable/apps,symbolic/apps,256x256/apps,128x128/apps,48x48/apps\n\n"
                     f"[scalable/apps]\nSize=256\nMinSize=16\nMaxSize=1024\nType=Scalable\nContext=Applications\n\n"
                     f"[symbolic/apps]\nSize=16\nMinSize=8\nMaxSize=512\nType=Scalable\nContext=Applications\n\n"
@@ -529,7 +540,7 @@ def generate():
     print("[Phase 3] Updating icon cache...")
     subprocess.run(["gtk-update-icon-cache", "-f", TARGET_THEME_PATH], capture_output=True)
 
-    # ── Atomic swap: replace old TemaDinamico with new one ───────────────
+    # ── Atomic swap: replace old DynamicTheme with new one ───────────────
     # Restores TARGET_THEME_PATH global to original value before swapping
     TARGET_THEME_PATH = OLD_TARGET
     OLD_PATH = TARGET_THEME_PATH + ".old"
@@ -552,10 +563,10 @@ def generate():
         pass
 
     # Notify system
-    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "TemaDinamico"], capture_output=True)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "DynamicTheme"], capture_output=True)
 
     total = base_count + len(missing_svg) + len(missing_raster)
-    print(f"Generation complete. {total} total icons in TemaDinamico.")
+    print(f"Generation complete. {total} total icons in DynamicTheme.")
 
 
 def _ensure_directories_in_index(index_path):

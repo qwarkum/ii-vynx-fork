@@ -43,6 +43,7 @@ Item {
                 sourceSize.width: parent.size
                 sourceSize.height: parent.size
                 source: {
+                    const _ = TaskbarApps.iconThemeRevision;
                     let icon;
                     icon = AppSearch.guessIcon(root.node?.properties["application.icon-name"] ?? "");
                     if (AppSearch.iconExists(icon))

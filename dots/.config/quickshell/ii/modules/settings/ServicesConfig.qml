@@ -194,6 +194,17 @@ ContentPage {
         icon: "search"
         title: Translation.tr("Search")
 
+        ConfigSwitch {
+            text: Translation.tr("Enable frecency ranking")
+            checked: Config.options.search.frecency
+            onCheckedChanged: {
+                Config.options.search.frecency = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Rank results by usage frequency.\nFrequently launched apps appear higher.\nShort queries favor usage, long queries favor match quality.")
+            }
+        }
+
         ContentSubsection {
             title: Translation.tr("Prefixes")
             ConfigRow {

@@ -11,6 +11,7 @@ import Quickshell
 Singleton {
     id: root
     property bool sloppySearch: Config.options?.search.sloppy ?? false
+    property bool frecencySearch: Config.options?.search.frecency ?? false
     property real scoreThreshold: 0.2
     property var substitutions: ({
         "code-url-handler": "visual-studio-code",
@@ -20,8 +21,8 @@ Singleton {
         "wps": "wps-office2019-kprometheus",
         "wpsoffice": "wps-office2019-kprometheus",
         "footclient": "foot",
-        "org.prismlauncher.PrismLauncher": "prism_launcher",
-        "org.prismlauncher.prismlauncher": "prism_launcher",
+        "jetbrains-studio": "android-studio",
+        "zen": "zen",
     })
     property var regexSubstitutions: [
         {
@@ -60,7 +61,53 @@ Singleton {
         entry: a
     }))
 
+    /**
+     * Frecency search: combines fuzzy matching with app launch frequency
+     */
+    function frecencyQuery(search: string): var {
+        if (search === "") {
+            // When empty, show most frequently used apps
+            return list.map(obj => ({
+                entry: obj,
+                score: AppUsage.getScore(obj.id)
+            })).filter(item => item.score > 0)
+              .sort((a, b) => b.score - a.score)
+              .map(item => item.entry);
+        }
+
+        // Combine fuzzy score with usage frequency
+        const results = list.map(obj => {
+            const fuzzyResult = Fuzzy.single(search, obj.name);
+            const fuzzyScore = fuzzyResult?.score ?? -1000;
+            const usageScore = AppUsage.getScore(obj.id);
+            return {
+                entry: obj,
+                fuzzyScore: fuzzyScore,
+                usageScore: usageScore,
+                // Normalize fuzzy score to 0-1 range and combine with usage
+                combinedScore: (fuzzyScore > -1000 ? 1 : 0) * 0.7 + usageScore * 0.3
+            };
+        }).filter(item => item.fuzzyScore > -1000 || item.usageScore > 0)
+          .sort((a, b) => {
+              // First sort by whether there's a fuzzy match
+              if ((a.fuzzyScore > -1000) !== (b.fuzzyScore > -1000)) {
+                  return (b.fuzzyScore > -1000 ? 1 : 0) - (a.fuzzyScore > -1000 ? 1 : 0);
+              }
+              // Then by combined score
+              return b.combinedScore - a.combinedScore;
+          })
+          .map(item => item.entry);
+
+        return results;
+    }
+
     function fuzzyQuery(search: string): var { // Idk why list<DesktopEntry> doesn't work
+        // Frecency mode: combine fuzzy with usage frequency
+        if (root.frecencySearch) {
+            return frecencyQuery(search);
+        }
+
+        // Sloppy mode: levenshtein distance
         if (root.sloppySearch) {
             const results = list.map(obj => ({
                 entry: obj,
@@ -71,6 +118,7 @@ Singleton {
                 .map(item => item.entry)
         }
 
+        // Default: fuzzy sort
         return Fuzzy.go(search, preppedNames, {
             all: true,
             key: "name"
@@ -100,47 +148,26 @@ Singleton {
     function guessIcon(str) {
         if (!str || str.length == 0) return "image-missing";
 
-        // If the string is already an absolute path, try its base name first
-        if (str.startsWith("/")) {
-            const base = str.split('/').pop().split('.')[0];
-            const lowerBase = base.toLowerCase();
-            if (iconExists(base)) return base;
-            if (iconExists(lowerBase)) return lowerBase;
-            // Also try substitutions
-            if (substitutions[base]) return substitutions[base];
-            if (substitutions[lowerBase]) return substitutions[lowerBase];
-        }
+        // Try common substitutions first
+        if (substitutions[str]) return substitutions[str];
+        if (substitutions[str.toLowerCase()]) return substitutions[str.toLowerCase()];
+
+        // Try to see if there's a themed icon matching the name (for absolute path icons)
+        // This is important for apps like Zen Browser where the .desktop has an absolute path
+        // but the theme script generates a themed icon with the desktop entry's ID
+        let nameWithoutExt = str;
+        if (str.endsWith(".desktop")) nameWithoutExt = str.slice(0, -8);
+        if (iconExists(nameWithoutExt)) return nameWithoutExt;
 
         // Quickshell's desktop entry lookup
         const entry = DesktopEntries.byId(str);
         if (entry) {
-            let icon = entry.icon;
-            // If it's an absolute path, try to find a named version in our theme first
-            if (icon.startsWith("/")) {
-                // Try the app ID/class name
-                if (iconExists(str)) return str;
-                
-                // Try lowercased
-                const lower = str.toLowerCase();
-                if (iconExists(lower)) return lower;
-
-                // Try stripping .desktop suffix
-                const strippedDesktop = str.replace(/\.desktop$/i, "");
-                if (iconExists(strippedDesktop)) return strippedDesktop;
-                
-                const strippedLower = strippedDesktop.toLowerCase();
-                if (iconExists(strippedLower)) return strippedLower;
-
-                // Try stripping path and extension from the absolute path
-                const base = icon.split('/').pop().split('.')[0];
-                if (iconExists(base)) return base;
-            }
-            return icon;
+            // Even if we have an entry, check if its ID (basename) has a themed version
+            // because the entry.icon might be an absolute path
+            const entryId = entry.id.endsWith(".desktop") ? entry.id.slice(0, -8) : entry.id;
+            if (iconExists(entryId)) return entryId;
+            return entry.icon;
         }
-
-        // Normal substitutions
-        if (substitutions[str]) return substitutions[str];
-        if (substitutions[str.toLowerCase()]) return substitutions[str.toLowerCase()];
 
         // Regex substitutions
         for (let i = 0; i < regexSubstitutions.length; i++) {
@@ -188,13 +215,6 @@ Singleton {
         if (nameSearchResults.length > 0) {
             const guess = nameSearchResults[0].icon
             if (iconExists(guess)) return guess;
-
-            // Try the ID of the matched entry since absolute paths fail
-            const matchedId = nameSearchResults[0].id;
-            if (matchedId) {
-                const strippedMatchedId = matchedId.replace(/\.desktop$/i, "");
-                if (iconExists(strippedMatchedId)) return strippedMatchedId;
-            }
         }
 
         // Quickshell's desktop entry lookup

@@ -106,16 +106,27 @@ Item {
         return HyprlandData.windowList.filter(w => w.workspace.id === workspaceId && !w.floating).length;
     }
 
+    function updateMonitorWindows() {
+        const windowsOnMonitor = HyprlandData.windowList.filter(win => win.monitor === root.monitorIndex && !win.floating);
+        windowsOnMonitor.sort((a, b) => a.at[0] - b.at[0]);
+        root.monitorWindows = windowsOnMonitor.map(win => ({
+                    icon: Quickshell.iconPath(AppSearch.guessIcon(win?.class), "image-missing"),
+                    workspace: win.workspace?.id
+                }));
+    }
+
     // Window list updates
     Connections {
         target: HyprlandData
         function onWindowListChanged() {
-            const windowsOnMonitor = HyprlandData.windowList.filter(win => win.monitor === root.monitorIndex && !win.floating);
-            windowsOnMonitor.sort((a, b) => a.at[0] - b.at[0]);
-            root.monitorWindows = windowsOnMonitor.map(win => ({
-                        icon: Quickshell.iconPath(AppSearch.guessIcon(win?.class), "image-missing"),
-                        workspace: win.workspace?.id
-                    }));
+            root.updateMonitorWindows();
+        }
+    }
+
+    Connections {
+        target: TaskbarApps
+        function onIconThemeRevisionChanged() {
+            root.updateMonitorWindows();
         }
     }
 

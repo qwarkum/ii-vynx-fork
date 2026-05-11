@@ -68,7 +68,10 @@ Rectangle {
                     visible: active
                     sourceComponent: IconImage {
                         implicitSize: Appearance.font.pixelSize.larger
-                        source: Quickshell.iconPath(AppSearch.guessIcon(root.text), "image-missing")
+                        source: {
+                            const _ = TaskbarApps.iconThemeRevision;
+                            return Quickshell.iconPath(AppSearch.guessIcon(root.text), "image-missing");
+                        }
                     }
                 }
 
