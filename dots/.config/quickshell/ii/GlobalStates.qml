@@ -33,6 +33,9 @@ Singleton {
     property bool wallpaperSelectorOpen: false
     property bool workspaceShowNumbers: false
     property bool filePickerOpen: false
+    property bool videoEditorPopupOpen: false
+    property bool videoEditorOpen: false
+    property string videoEditorPath: ""
 
     // Bluetooth connection popup
     property bool bluetoothConnectionPopupOpen: false
@@ -62,6 +65,18 @@ Singleton {
         target: "pickColor"
         function handle(hex: string): void {
             root.pickColor(hex);
+        }
+    }
+
+    function launchVideoEditor(path) {
+        root.videoEditorPath = path;
+        root.videoEditorPopupOpen = true;
+    }
+
+    IpcHandler {
+        target: "launchVideoEditor"
+        function handle(path: string): void {
+            root.launchVideoEditor(path);
         }
     }
 

@@ -200,6 +200,11 @@ if [[ -n "$OBS_CMD" ]]; then
         fi
     fi
 
+    LATEST_FILE=$(ls -1t | grep -E '\.(mp4|mkv|flv|mov)$' | head -1)
+    if [[ -n "$LATEST_FILE" ]]; then
+        qs -c ii ipc call launchVideoEditor handle "$PWD/$LATEST_FILE"
+    fi
+
     updatestate false
     exit 0
 else
@@ -225,5 +230,6 @@ else
     
     REC_PID=$!
     wait $REC_PID
+    qs -c ii ipc call launchVideoEditor handle "$PWD/$FILENAME"
     updatestate false
 fi

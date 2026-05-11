@@ -25,6 +25,7 @@ import qs.modules.ii.verticalBar
 import qs.modules.ii.wallpaperSelector
 import qs.modules.ii.wrappedFrame
 import qs.modules.ii.colorPickerPopup
+import qs.modules.ii.videoEditor
 
 Scope {
     property bool barExtraCondition: true
@@ -67,4 +68,6 @@ Scope {
     PanelLoader { extraCondition: Config.options.bar.vertical && barExtraCondition; component: VerticalBar {} }
     PanelLoader { component: WallpaperSelector {} }
     PanelLoader { component: WrappedFrame {} }
+    PanelLoader { component: VideoEditorPopup {} }
+    PanelLoader { component: VideoEditor {} }
 }
