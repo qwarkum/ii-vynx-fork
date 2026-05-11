@@ -10,6 +10,7 @@ Item {
     property bool borderless: Config.options.bar.borderless
     property bool showDate: Config.options.bar.verbose
     property bool isMaterial: true
+    readonly property bool is12h: /a/i.test(Config.options.time.format)
 
     implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : (rowLoader.item?.implicitWidth ?? 0) + 8
     implicitHeight: vertical ? (colLoader.item?.implicitHeight ?? 0) + 8 : Appearance.sizes.barHeight
@@ -24,23 +25,28 @@ Item {
         visible: active
         anchors.centerIn: parent
         sourceComponent: ColumnLayout {
-            spacing: 4
-            property var timeParts: DateTime.time.split(/[: ]/)
-            property string hours: timeParts[0] ?? "00"
-            property string minutes: timeParts[1] ?? "00"
-            property string ampm: timeParts[2] ?? ""
+            id: layoutVert
+            spacing: 2
+            
+            // Helper properties for direct formatting
+            readonly property bool is12h: root.is12h
+            readonly property string hours: Qt.formatDateTime(DateTime.clock.date, is12h ? "hh" : "HH")
+            readonly property string minutes: Qt.formatDateTime(DateTime.clock.date, "mm")
+            readonly property string ampm: is12h ? Qt.formatDateTime(DateTime.clock.date, Config.options.time.format.includes("AP") ? "AP" : "ap").trim() : ""
+
+            readonly property bool showAMPM: is12h && ampm.length > 0
 
             MaterialShape {
                 Layout.alignment: Qt.AlignHCenter
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colPrimary
-                implicitSize: 28
+                implicitSize: 34
                 StyledText {
                     anchors.centerIn: parent
-                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.pixelSize: Appearance.font.pixelSize.normal
                     font.weight: Font.Black
                     color: Appearance.colors.colOnPrimary
-                    text: parent.parent.hours.padStart(2, "0")
+                    text: layoutVert.hours
                     font.features: { "tnum": 1 }
                 }
             }
@@ -49,29 +55,46 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colSecondaryContainer
-                implicitSize: 28
+                implicitSize: 34
                 StyledText {
                     anchors.centerIn: parent
-                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.pixelSize: Appearance.font.pixelSize.normal
                     font.weight: Font.Black
                     color: Appearance.colors.colPrimary
-                    text: parent.parent.minutes.padStart(2, "0")
+                    text: layoutVert.minutes
                     font.features: { "tnum": 1 }
                 }
             }
 
+            Rectangle {
+                visible: root.showDate && DateTime.dayNameShort !== ""
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 2
+                implicitWidth: 34
+                implicitHeight: 20
+                color: Appearance.colors.colTertiaryContainer
+                radius: Appearance.rounding.small
+                StyledText {
+                    anchors.centerIn: parent
+                    text: DateTime.dayNameShort.toUpperCase()
+                    font.pixelSize: 9
+                    font.weight: Font.Black
+                    color: Appearance.colors.colOnTertiaryContainer
+                }
+            }
+
             MaterialShape {
-                visible: parent.ampm !== ""
+                visible: layoutVert.showAMPM && !root.showDate
                 Layout.alignment: Qt.AlignHCenter
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colTertiaryContainer
-                implicitSize: 24
+                implicitSize: 28
                 StyledText {
                     anchors.centerIn: parent
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: Appearance.font.pixelSize.smallest
                     font.weight: Font.Black
                     color: Appearance.colors.colPrimary
-                    text: parent.parent.ampm
+                    text: layoutVert.ampm
                 }
             }
         }
@@ -84,11 +107,15 @@ Item {
         visible: active
         anchors.centerIn: parent
         sourceComponent: RowLayout {
+            id: layoutHoriz
             spacing: 4
-            property var timeParts: DateTime.time.split(/[: ]/)
-            property string hours: timeParts[0] ?? "00"
-            property string minutes: timeParts[1] ?? "00"
-            property string ampm: timeParts[2] ?? ""
+            
+            readonly property bool is12h: root.is12h
+            readonly property string hours: Qt.formatDateTime(DateTime.clock.date, is12h ? "hh" : "HH")
+            readonly property string minutes: Qt.formatDateTime(DateTime.clock.date, "mm")
+            readonly property string ampm: is12h ? Qt.formatDateTime(DateTime.clock.date, Config.options.time.format.includes("AP") ? "AP" : "ap").trim() : ""
+
+            readonly property bool showAMPM: is12h && ampm.length > 0
 
             MaterialShape {
                 shapeString: "Cookie12Sided"
@@ -99,7 +126,7 @@ Item {
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.Black
                     color: Appearance.colors.colOnPrimary
-                    text: parent.parent.hours.padStart(2, "0")
+                    text: layoutHoriz.hours
                     font.features: { "tnum": 1 }
                 }
             }
@@ -121,22 +148,22 @@ Item {
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.Black
                     color: Appearance.colors.colPrimary
-                    text: parent.parent.minutes.padStart(2, "0")
+                    text: layoutHoriz.minutes
                     font.features: { "tnum": 1 }
                 }
             }
 
             MaterialShape {
-                visible: parent.ampm !== ""
+                visible: layoutHoriz.showAMPM
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colTertiaryContainer
                 implicitSize: 24
                 StyledText {
                     anchors.centerIn: parent
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    font.weight: Font.Black
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    font.weight: Font.light
                     color: Appearance.colors.colPrimary
-                    text: parent.parent.ampm
+                    text: layoutHoriz.ampm
                 }
             }
         }

@@ -70,9 +70,13 @@ Item {
 
     Layout.fillHeight: true
     implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : (useFixedSize ? customSize : (isMaterial ? materialRow.implicitWidth : Math.min(rowLayout.implicitWidth + 8, 280)))
-    implicitHeight: vertical ? (isMaterial ? 26 : mediaCircProg.implicitHeight + 6) : Appearance.sizes.barHeight
+    implicitHeight: vertical ? (isMaterial ? materialCol.implicitHeight : mediaCircProg.implicitHeight + 6) : Appearance.sizes.barHeight
 
     Behavior on implicitWidth {
+        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(root)
+    }
+
+    Behavior on implicitHeight {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(root)
     }
 
@@ -97,8 +101,11 @@ Item {
                 activePlayer.previous();
             else if (event.button === Qt.ForwardButton || event.button === Qt.RightButton)
                 activePlayer.next();
-            else if (event.button === Qt.LeftButton)
+            else if (event.button === Qt.LeftButton) {
+                var globalPos = root.mapToItem(null, 0, 0);
+                Persistent.states.media.popupRect = Qt.rect(globalPos.x, globalPos.y, root.width, root.height);
                 GlobalStates.mediaControlsOpen = !GlobalStates.mediaControlsOpen;
+            }
         }
     }
 
@@ -130,20 +137,101 @@ Item {
     }
 
     // Vertical Material
-    Rectangle {
-        visible: root.vertical && root.isMaterial
+    Loader {
+        id: materialCol
+        active: root.vertical && root.isMaterial
+        visible: active
         anchors.centerIn: parent
-        color: Appearance.colors.colSecondaryContainer
-        radius: Appearance.rounding.full
-        implicitWidth: 32
-        implicitHeight: 32
+        sourceComponent: Rectangle {
+            id: cardVert
+            color: Appearance.colors.colSecondaryContainer
+            radius: Appearance.rounding.full
+            implicitWidth: 34
+            implicitHeight: 120 // Increased to fit all elements properly
+            
+            ColumnLayout {
+                id: innerCol
+                anchors.fill: parent
+                anchors.topMargin: 8
+                anchors.bottomMargin: 8
+                spacing: 4
 
-        MaterialSymbol {
-            anchors.centerIn: parent
-            fill: 1
-            text: root.activePlayer?.isPlaying ? "pause" : "music_note"
-            iconSize: Appearance.font.pixelSize.normal
-            color: Appearance.colors.colOnSecondaryContainer
+                // Art
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: Appearance.rounding.full
+                    color: Appearance.colors.colSecondaryContainer
+                    clip: true
+
+                    StyledImage {
+                        anchors.fill: parent
+                        source: root.displayedArtFilePath
+                        fillMode: Image.PreserveAspectCrop
+                        cache: false
+                        antialiasing: true
+                        sourceSize.width: 28
+                        sourceSize.height: 28
+                        visible: root.displayedArtFilePath !== ""
+                    }
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        fill: 1
+                        text: "music_note"
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.colors.colOnSecondaryContainer
+                        visible: root.displayedArtFilePath === ""
+                    }
+                }
+
+                Item { Layout.fillHeight: true } // Spacer
+
+                // Play/Pause
+                RippleButton {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: 28
+                    implicitHeight: 32
+                    buttonRadius: root.isPlaying ? Appearance.rounding.normal : 14
+                    colBackground: root.isPlaying ? Appearance.colors.colPrimary : Appearance.colors.colTertiary
+                    colBackgroundHover: root.isPlaying ? Appearance.colors.colPrimaryHover : Appearance.colors.colTertiaryContainerHover
+                    colRipple: root.isPlaying ? Appearance.colors.colPrimaryActive : Appearance.colors.colTertiaryContainerActive
+                    downAction: () => root.activePlayer?.togglePlaying()
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: root.isPlaying ? "pause" : "play_arrow"
+                        iconSize: 20
+                        fill: 1
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: root.isPlaying ? Appearance.colors.colOnPrimary : Appearance.colors.colOnTertiary
+                    }
+                }
+
+                Item { Layout.fillHeight: true } // Spacer
+
+                // Next
+                RippleButton {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    buttonRadius: 14
+                    colBackground: Appearance.colors.colTertiaryContainer
+                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    downAction: () => root.activePlayer?.next()
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "skip_next"
+                        iconSize: 18
+                        fill: 1
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: Appearance.colors.colOnTertiaryContainer
+                    }
+                }
+            }
         }
     }
 

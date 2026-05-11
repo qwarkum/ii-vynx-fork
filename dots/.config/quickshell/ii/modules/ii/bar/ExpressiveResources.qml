@@ -9,9 +9,13 @@ MouseArea {
     property bool alwaysShowAllResources: false
     property bool isMaterial: true // Forced expressive
 
-    implicitWidth: vertical ? (colLoader.item?.implicitWidth - 12 ?? 0) : (rowLoader.item?.implicitWidth ?? 0) + 10
-    implicitHeight: vertical ? (colLoader.item?.implicitHeight ?? 0) + (isMaterial ? 15 : 10) : Appearance.sizes.barHeight - 10
+    implicitWidth: vertical ? 34 : (rowLoader.item?.implicitWidth ?? 0) + 10
+    implicitHeight: vertical ? (colLoader.item?.implicitHeight ?? 0) + 12 : Appearance.sizes.barHeight - 6
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
+
+    Behavior on implicitHeight {
+        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(root)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -68,39 +72,45 @@ MouseArea {
             visible: active
             anchors.centerIn: parent
             sourceComponent: ColumnLayout {
-                spacing: 7
+                spacing: 6
+                Layout.margins: 4
                 Resource {
                     Layout.alignment: Qt.AlignHCenter
                     iconName: "memory"
-                    visible: Config.options.bar.resources.alwaysShowRam
+                    shown: Config.options.bar.resources.alwaysShowRam
                     percentage: ResourceUsage.memoryUsedPercentage
                     warningThreshold: Config.options.bar.resources.memoryWarningThreshold
+                    implicitHeight: 24
                 }
                 Resource {
                     Layout.alignment: Qt.AlignHCenter
                     iconName: "planner_review"
-                    visible: Config.options.bar.resources.alwaysShowCpu
+                    shown: Config.options.bar.resources.alwaysShowCpu
                     percentage: ResourceUsage.cpuUsage
                     warningThreshold: Config.options.bar.resources.cpuWarningThreshold
+                    implicitHeight: 24
                 }
                 Resource {
                     Layout.alignment: Qt.AlignHCenter
                     iconName: "thermostat"
-                    visible: Config.options.bar.resources.alwaysShowCpuTemp
+                    shown: Config.options.bar.resources.alwaysShowCpuTemp
                     percentage: ResourceUsage.cpuTemp / 100
+                    implicitHeight: 24
                 }
                 Resource {
                     Layout.alignment: Qt.AlignHCenter
                     iconName: "hard_drive"
-                    visible: Config.options.bar.resources.alwaysShowDisk
+                    shown: Config.options.bar.resources.alwaysShowDisk
                     percentage: ResourceUsage.diskUsedPercentage
+                    implicitHeight: 24
                 }
                 Resource {
                     Layout.alignment: Qt.AlignHCenter
                     iconName: "swap_horiz"
-                    visible: Config.options.bar.resources.alwaysShowSwap
+                    shown: Config.options.bar.resources.alwaysShowSwap
                     percentage: ResourceUsage.swapUsedPercentage
                     warningThreshold: Config.options.bar.resources.swapWarningThreshold
+                    implicitHeight: 24
                 }
             }
         }

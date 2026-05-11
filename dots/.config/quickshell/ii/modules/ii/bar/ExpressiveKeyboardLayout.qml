@@ -10,22 +10,19 @@ import Quickshell.Io
 MouseArea {
     id: root
     property bool vertical: false
-    property bool isMaterial: true // Forced expressive
-
+    
     readonly property bool hasMultipleLayouts: HyprlandXkb.layoutCodes.length > 1
     visible: HyprlandXkb.layoutCodes.length >= 1
 
-    implicitWidth: vertical ? 40 : pill.implicitWidth
-    implicitHeight: vertical ? pillVert.implicitHeight : Appearance.sizes.barHeight
+    implicitWidth: vertical ? 34 : (rowLoader.item?.implicitWidth ?? 0) + 12
+    implicitHeight: vertical ? (colLoader.item?.implicitHeight ?? 0) + 12 : 30
+    
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
-    cursorShape: Qt.PointingHandCursor
 
     function abbreviateLayoutCode(fullCode) {
         if (!fullCode) return "";
-        return fullCode.split(':').map(layout => {
-            const baseLayout = layout.split('-')[0];
-            return baseLayout.slice(0, 2);
-        }).join('\n').toUpperCase();
+        const firstLayout = fullCode.split(':')[0].split('-')[0];
+        return firstLayout.slice(0, 2).toUpperCase();
     }
 
     Process {
@@ -41,79 +38,57 @@ MouseArea {
     }
 
     Rectangle {
-        id: pill
-        visible: !root.vertical
-        anchors.centerIn: parent
-        color: Appearance.colors.colSecondaryContainer
+        anchors.fill: parent
         radius: Appearance.rounding.full
-        implicitWidth: layout.implicitWidth + 8
-        implicitHeight: 30
+        color: Appearance.colors.colSecondaryContainer
 
-        RowLayout {
-            id: layout
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: 2
-            spacing: 6
-
-            MaterialShape {
-                shapeString: "Cookie12Sided"
-                color: Appearance.colors.colPrimary
-                implicitSize: 26
+        Loader {
+            id: rowLoader
+            active: !root.vertical
+            visible: active
+            anchors.centerIn: parent
+            sourceComponent: RowLayout {
+                spacing: 6
                 MaterialSymbol {
-                    anchors.centerIn: parent
-                    iconSize: 14
                     text: "keyboard"
-                    color: Appearance.colors.colOnPrimary
+                    iconSize: 18
+                    color: Appearance.colors.colPrimary
                 }
-            }
-
-            StyledText {
-                id: layoutText
-                text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode).replace(/\n/g, ' ')
-                font.pixelSize: 10
-                font.weight: Font.Black
-                color: Appearance.colors.colPrimary
-                animateChange: true
+                StyledText {
+                    text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode)
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.Black
+                    color: Appearance.colors.colOnSecondaryContainer
+                }
             }
         }
-    }
 
-    Rectangle {
-        id: pillVert
-        visible: root.vertical
-        anchors.centerIn: parent
-        color: Appearance.colors.colSecondaryContainer
-        radius: Appearance.rounding.small
-        implicitWidth: 32
-        implicitHeight: layoutVert.implicitHeight + 8
-
-        ColumnLayout {
-            id: layoutVert
+        Loader {
+            id: colLoader
+            active: root.vertical
+            visible: active
             anchors.centerIn: parent
-            spacing: 4
-
-            MaterialShape {
-                Layout.alignment: Qt.AlignHCenter
-                shapeString: "Cookie12Sided"
-                color: Appearance.colors.colPrimary
-                implicitSize: 26
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    iconSize: 14
-                    text: "keyboard"
-                    color: Appearance.colors.colOnPrimary
+            sourceComponent: ColumnLayout {
+                spacing: 2
+                MaterialShape {
+                    Layout.alignment: Qt.AlignHCenter
+                    shapeString: "Cookie12Sided"
+                    color: Appearance.colors.colPrimary
+                    implicitSize: 28
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "keyboard"
+                        iconSize: 16
+                        color: Appearance.colors.colOnPrimary
+                    }
                 }
-            }
-
-            StyledText {
-                id: layoutTextVert
-                Layout.alignment: Qt.AlignHCenter
-                text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode).replace(/\n/g, ' ')
-                font.pixelSize: 9
-                font.weight: Font.Black
-                color: Appearance.colors.colPrimary
-                animateChange: true
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode)
+                    font.pixelSize: 10
+                    font.weight: Font.Black
+                    color: Appearance.colors.colOnSecondaryContainer
+                }
             }
         }
     }

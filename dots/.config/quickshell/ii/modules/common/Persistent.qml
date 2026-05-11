@@ -16,8 +16,8 @@ Singleton {
     property bool isNewHyprlandInstance: previousHyprlandInstanceSignature !== states.hyprlandInstanceSignature
 
     onReadyChanged: {
-        root.previousHyprlandInstanceSignature = root.states.hyprlandInstanceSignature
-        root.states.hyprlandInstanceSignature = Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || ""
+        root.previousHyprlandInstanceSignature = root.states.hyprlandInstanceSignature;
+        root.states.hyprlandInstanceSignature = Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "";
     }
 
     Timer {
@@ -25,7 +25,7 @@ Singleton {
         interval: 100
         repeat: false
         onTriggered: {
-            persistentStatesFileView.reload()
+            persistentStatesFileView.reload();
         }
     }
 
@@ -34,7 +34,7 @@ Singleton {
         interval: 100
         repeat: false
         onTriggered: {
-            persistentStatesFileView.writeAdapter()
+            persistentStatesFileView.writeAdapter();
         }
     }
 
@@ -182,7 +182,7 @@ Singleton {
                     property string iconNerd: "JetBrains Mono NF"
                     property string monospace: "JetBrains Mono NF"
                     property string reading: "Readex Pro"
-                    property string expressive: "Space Grotesk" 
+                    property string expressive: "Space Grotesk"
                 }
             }
 

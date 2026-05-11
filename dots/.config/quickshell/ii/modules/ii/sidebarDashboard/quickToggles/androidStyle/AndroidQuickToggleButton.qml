@@ -8,8 +8,8 @@ import qs.modules.common.widgets
 
 GroupButton {
     id: root
-    
-    // Info to be passed to by repeater
+
+    // Info to be passed to by repeaterestou
     required property int buttonIndex
     required property var buttonData
     required property bool expandedSize
@@ -19,7 +19,7 @@ GroupButton {
     required property int cellSize
 
     // Signals
-    signal openMenu()
+    signal openMenu
 
     // Declared in specific toggles
     property QuickToggleModel toggleModel
@@ -48,7 +48,7 @@ GroupButton {
     }
     opacity: 0
     Component.onCompleted: {
-        opacity = 1
+        opacity = 1;
     }
     Behavior on opacity {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
@@ -70,8 +70,10 @@ GroupButton {
     property color colIcon: expandedSize ? ((root.toggled) ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer3) : colText
 
     onClicked: {
-        if (root.expandedSize && root.altAction) root.altAction();
-        else root.mainAction();
+        if (root.expandedSize && root.altAction)
+            root.altAction();
+        else
+            root.mainAction();
     }
 
     contentItem: RowLayout {
@@ -105,9 +107,9 @@ GroupButton {
                 implicitWidth: height
                 radius: root.radius - root.verticalPadding
                 color: {
-                    const baseColor = root.toggled ? Appearance.colors.colPrimary : Appearance.colors.colLayer3
-                    const transparentizeAmount = (root.altAction && root.expandedSize) ? 0 : 1
-                    return ColorUtils.transparentize(baseColor, transparentizeAmount)
+                    const baseColor = root.toggled ? Appearance.colors.colPrimary : Appearance.colors.colLayer3;
+                    const transparentizeAmount = (root.altAction && root.expandedSize) ? 0 : 1;
+                    return ColorUtils.transparentize(baseColor, transparentizeAmount);
                 }
 
                 Behavior on radius {
@@ -192,7 +194,10 @@ GroupButton {
             const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
             if (!toggleList.find(toggle => toggle.type === buttonType)) {
-                toggleList.push({ type: buttonType, size: 1 });
+                toggleList.push({
+                    type: buttonType,
+                    size: 1
+                });
             } else {
                 toggleList.splice(index, 1);
             }
@@ -202,7 +207,8 @@ GroupButton {
             const index = root.buttonIndex;
             const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
-            if (!toggleList.find(toggle => toggle.type === buttonType)) return;
+            if (!toggleList.find(toggle => toggle.type === buttonType))
+                return;
             toggleList[index].size = 3 - toggleList[index].size; // Alternate between 1 and 2
         }
 
@@ -211,24 +217,27 @@ GroupButton {
             const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
             const targetIndex = index + offset;
-            if (!toggleList.find(toggle => toggle.type === buttonType)) return;
-            if (targetIndex < 0 || targetIndex >= toggleList.length) return;
+            if (!toggleList.find(toggle => toggle.type === buttonType))
+                return;
+            if (targetIndex < 0 || targetIndex >= toggleList.length)
+                return;
             const temp = toggleList[index];
             toggleList[index] = toggleList[targetIndex];
             toggleList[targetIndex] = temp;
         }
 
-        onReleased: (event) => {
+        onReleased: event => {
             if (event.button === Qt.LeftButton)
                 toggleEnabled();
         }
-        onPressed: (event) => {
-            if (event.button === Qt.RightButton) toggleSize();
+        onPressed: event => {
+            if (event.button === Qt.RightButton)
+                toggleSize();
         }
-        onPressAndHold: (event) => { // Also toggle size
+        onPressAndHold: event => { // Also toggle size
             toggleSize();
         }
-        onWheel: (event) => {
+        onWheel: event => {
             const index = root.buttonIndex;
             const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;

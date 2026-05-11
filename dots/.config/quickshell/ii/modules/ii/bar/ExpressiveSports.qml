@@ -9,32 +9,85 @@ MouseArea {
     id: root
     property bool vertical: false
 
-    readonly property bool shouldBeVisible: Config.options.bar.sports.enable && SportsService.currentGame !== null
+    readonly property bool shouldBeVisible: Config.options.bar.sports.enable && SportsService.allGames.length > 0
+    
+    // Stable game for animations - prevents instant data swap during transitions
     property var displayGame: SportsService.currentGame
-    visible: shouldBeVisible || opacity > 0
+    
+    // Keeps the widget "alive" during exit animation
+    property bool internalVisible: shouldBeVisible
+    visible: internalVisible || opacity > 0
+    
+    implicitWidth: shouldBeVisible ? (vertical ? 40 : layout.implicitWidth + 8) : 0
+    implicitHeight: shouldBeVisible ? (vertical ? layoutVert.implicitHeight + 8 : Appearance.sizes.barHeight) : 0
+    hoverEnabled: true
 
     // Animation offsets
     property real verticalOffset: 0
     property real horizontalOffset: 0
 
-    implicitWidth: vertical ? 40 : layout.implicitWidth + 8
-    implicitHeight: vertical ? layout.implicitHeight + 8 : Appearance.sizes.barHeight
-    width: implicitWidth
-    height: implicitHeight
-    hoverEnabled: true
+    // Synchronize visibility with the bar system but wait for animations
+    onShouldBeVisibleChanged: {
+        if (typeof rootItem !== "undefined") rootItem.toggleVisible(shouldBeVisible);
+        if (shouldBeVisible) {
+            internalVisible = true;
+            displayGame = SportsService.currentGame;
+            entranceAnim.restart();
+        } else {
+            exitAnim.restart();
+        }
+    }
 
-    onClicked: SportsService.nextGame()
+    Component.onCompleted: {
+        if (typeof rootItem !== "undefined") rootItem.toggleVisible(shouldBeVisible);
+        if (shouldBeVisible) {
+            opacity = 1;
+            verticalOffset = 0;
+            horizontalOffset = 0;
+        } else {
+            opacity = 0;
+            verticalOffset = vertical ? 0 : 10;
+            horizontalOffset = vertical ? 10 : 0;
+        }
+    }
 
     // Connections for switch animation
     Connections {
         target: SportsService
         function onCurrentGameChanged() {
+            if (typeof rootItem !== "undefined") rootItem.toggleVisible(root.shouldBeVisible);
             if (shouldBeVisible && displayGame !== SportsService.currentGame) {
                 if (displayGame && SportsService.currentGame && displayGame.id === SportsService.currentGame.id) {
                     displayGame = SportsService.currentGame;
                 } else {
                     switchAnim.restart();
                 }
+            }
+        }
+    }
+
+    // Animations
+    SequentialAnimation {
+        id: entranceAnim
+        PropertyAction { target: root; property: "verticalOffset"; value: vertical ? 0 : -10 }
+        PropertyAction { target: root; property: "horizontalOffset"; value: vertical ? -10 : 0 }
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "opacity"; to: 1; duration: 250; easing.type: Easing.OutCubic }
+            NumberAnimation { target: root; property: "verticalOffset"; to: 0; duration: 250; easing.type: Easing.OutCubic }
+            NumberAnimation { target: root; property: "horizontalOffset"; to: 0; duration: 250; easing.type: Easing.OutCubic }
+        }
+    }
+
+    SequentialAnimation {
+        id: exitAnim
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "opacity"; to: 0; duration: 200; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "verticalOffset"; to: vertical ? 0 : 10; duration: 200; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "horizontalOffset"; to: vertical ? 10 : 0; duration: 200; easing.type: Easing.InCubic }
+        }
+        ScriptAction {
+            script: {
+                internalVisible = false;
             }
         }
     }
@@ -57,6 +110,22 @@ MouseArea {
             NumberAnimation { target: root; property: "opacity"; to: 1; duration: 150; easing.type: Easing.OutSine }
             NumberAnimation { target: root; property: "verticalOffset"; to: 0; duration: 150; easing.type: Easing.OutSine }
             NumberAnimation { target: root; property: "horizontalOffset"; to: 0; duration: 150; easing.type: Easing.OutSine }
+        }
+    }
+
+    onClicked: SportsService.nextGame()
+
+    Behavior on implicitWidth {
+        NumberAnimation {
+            duration: Appearance.animation.elementMoveFast.duration
+            easing.type: Appearance.animation.elementMoveFast.type
+        }
+    }
+
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: Appearance.animation.elementMoveFast.duration
+            easing.type: Appearance.animation.elementMoveFast.type
         }
     }
 
@@ -111,55 +180,82 @@ MouseArea {
         }
     }
 
+    // Vertical Material
     ColumnLayout {
         id: layoutVert
         visible: root.vertical
         anchors.centerIn: parent
-        spacing: 4
+        spacing: 6
         transform: Translate { x: root.horizontalOffset; y: root.verticalOffset }
 
-        MaterialShape {
+        // Home Team
+        ColumnLayout {
+            spacing: 2
             Layout.alignment: Qt.AlignHCenter
-            shapeString: "Cookie7Sided"
-            color: Appearance.colors.colSecondaryContainer
-            implicitSize: 30
-            StyledImage {
-                anchors.centerIn: parent
-                width: 18
-                height: 18
-                source: root.displayGame ? root.displayGame.home.logo : ""
+            MaterialShape {
+                Layout.alignment: Qt.AlignHCenter
+                shapeString: "Cookie7Sided"
+                color: Appearance.colors.colSecondaryContainer
+                implicitSize: 32
+                StyledImage {
+                    anchors.centerIn: parent
+                    width: 20
+                    height: 20
+                    source: root.displayGame ? root.displayGame.home.logo : ""
+                }
             }
-        }
-
-        Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 30
-            Layout.preferredHeight: statusTextVert.implicitHeight + 8
-            radius: Appearance.rounding.small
-            color: Appearance.colors.colPrimary
-            
             StyledText {
-                id: statusTextVert
-                anchors.centerIn: parent
-                text: root.displayGame ? (root.displayGame.state === "in" ? `${root.displayGame.home.score}\n${root.displayGame.away.score}` : root.displayGame.status) : ""
-                font.pixelSize: 9
+                Layout.alignment: Qt.AlignHCenter
+                text: root.displayGame ? root.displayGame.home.score : ""
+                font.pixelSize: 12
                 font.weight: Font.Black
-                color: Appearance.colors.colOnPrimary
-                horizontalAlignment: Text.AlignHCenter
+                color: Appearance.colors.colOnSurface
+                visible: root.displayGame ? root.displayGame.state !== "pre" : false
                 animateChange: true
             }
         }
 
-        MaterialShape {
+        // Status
+        Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            shapeString: "Cookie7Sided"
-            color: Appearance.colors.colSecondaryContainer
-            implicitSize: 30
-            StyledImage {
+            implicitWidth: 32
+            implicitHeight: 20
+            radius: Appearance.rounding.full
+            color: Appearance.colors.colPrimary
+            StyledText {
                 anchors.centerIn: parent
-                width: 18
-                height: 18
-                source: root.displayGame ? root.displayGame.away.logo : ""
+                text: root.displayGame ? (root.displayGame.state === "in" ? root.displayGame.status : root.displayGame.status.split(" ")[0]) : ""
+                font.pixelSize: 8
+                font.weight: Font.Black
+                color: Appearance.colors.colOnPrimary
+                animateChange: true
+            }
+        }
+
+        // Away Team
+        ColumnLayout {
+            spacing: 2
+            Layout.alignment: Qt.AlignHCenter
+            MaterialShape {
+                Layout.alignment: Qt.AlignHCenter
+                shapeString: "Cookie7Sided"
+                color: Appearance.colors.colSecondaryContainer
+                implicitSize: 32
+                StyledImage {
+                    anchors.centerIn: parent
+                    width: 20
+                    height: 20
+                    source: root.displayGame ? root.displayGame.away.logo : ""
+                }
+            }
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: root.displayGame ? root.displayGame.away.score : ""
+                font.pixelSize: 12
+                font.weight: Font.Black
+                color: Appearance.colors.colOnSurface
+                visible: root.displayGame ? root.displayGame.state !== "pre" : false
+                animateChange: true
             }
         }
     }

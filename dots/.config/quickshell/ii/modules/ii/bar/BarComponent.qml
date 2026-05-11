@@ -33,9 +33,9 @@ Item {
 
     property var compMap: ({ // [horizontal, vertical, expressiveHorizontal, expressiveVertical]
             "workspaces": [workspaceComp, workspaceComp, workspaceCompExpressive, workspaceCompExpressive],
-            "music_player": [musicPlayerComp, musicPlayerCompVert, musicPlayerCompExpressive, musicPlayerCompVert],
-            "system_monitor": [systemMonitorComp, systemMonitorCompVert, systemMonitorCompExpressive, systemMonitorCompVert],
-            "clock": [clockComp, clockCompVert, clockCompExpressive, clockCompVert],
+            "music_player": [musicPlayerComp, musicPlayerCompVert, musicPlayerCompExpressive, musicPlayerCompExpressive],
+            "system_monitor": [systemMonitorComp, systemMonitorCompVert, systemMonitorCompExpressive, systemMonitorCompExpressive],
+            "clock": [clockComp, clockCompVert, clockCompExpressive, clockCompExpressive],
             "battery": [batteryComp, batteryCompVert, batteryCompExpressive, batteryCompExpressive],
             "utility_buttons": [utilityButtonsComp, utilityButtonsComp, utilityButtonsCompExpressive, utilityButtonsCompExpressive],
             "system_tray": [systemTrayComp, systemTrayComp, systemTrayComp, systemTrayComp],

@@ -77,9 +77,11 @@ Item {
                 Layout.fillWidth: true
                 visible: active
                 active: {
-                    const configQuickSliders = Config.options.sidebar.quickSliders
-                    if (!configQuickSliders.enable) return false
-                    if (!configQuickSliders.showMic && !configQuickSliders.showVolume && !configQuickSliders.showBrightness) return false;
+                    const configQuickSliders = Config.options.sidebar.quickSliders;
+                    if (!configQuickSliders.enable)
+                        return false;
+                    if (!configQuickSliders.showMic && !configQuickSliders.showVolume && !configQuickSliders.showBrightness)
+                        return false;
                     return true;
                 }
                 sourceComponent: QuickSliders {}
@@ -148,7 +150,8 @@ Item {
         shownPropertyString: "showWifiDialog"
         dialog: WifiDialog {}
         onShownChanged: {
-            if (!shown) return;
+            if (!shown)
+                return;
             Network.enableWifi();
             Network.rescanWifi();
         }
@@ -161,7 +164,8 @@ Item {
         readonly property bool shown: root[shownPropertyString]
         anchors.fill: parent
 
-        onShownChanged: if (shown) toggleDialogLoader.active = true;
+        onShownChanged: if (shown)
+            toggleDialogLoader.active = true
         active: shown
         onActiveChanged: {
             if (active) {
@@ -172,11 +176,12 @@ Item {
         Connections {
             target: toggleDialogLoader.item
             function onDismiss() {
-                toggleDialogLoader.item.show = false
+                toggleDialogLoader.item.show = false;
                 root[toggleDialogLoader.shownPropertyString] = false;
             }
             function onVisibleChanged() {
-                if (!toggleDialogLoader.item.visible && !root[toggleDialogLoader.shownPropertyString]) toggleDialogLoader.active = false;
+                if (!toggleDialogLoader.item.visible && !root[toggleDialogLoader.shownPropertyString])
+                    toggleDialogLoader.active = false;
             }
         }
     }
@@ -228,7 +233,7 @@ Item {
 
             implicitWidth: uptimeRow.implicitWidth + rowLeftMargin + 14
             implicitHeight: Math.max(32, uptimeRow.implicitHeight + (Config.options.sidebar.dashboardHeader.profileImageType === "custom" ? 4 : 12))
-            
+
             Row {
                 id: uptimeRow
                 anchors {
@@ -241,7 +246,7 @@ Item {
                 // PROFILE PICTURE
                 Item {
                     id: profilePicContainer
-                    
+
                     anchors.verticalCenter: parent.verticalCenter
                     width: Config.options.sidebar.dashboardHeader.profileImageType === "distro" ? 24 : 40
                     height: Config.options.sidebar.dashboardHeader.profileImageType === "distro" ? 24 : 40
@@ -291,15 +296,17 @@ Item {
                     color: Appearance.colors.colOnLayer0
                     text: {
                         const mode = Config.options.sidebar.dashboardHeader.textMode;
-                        if (mode === "username") return "Hello, " + SystemInfo.username;
-                        if (mode === "uptime") return Translation.tr("Uptime") + ": " + DateTime.uptime;
-                        if (mode === "custom") return Config.options.sidebar.dashboardHeader.customText;
+                        if (mode === "username")
+                            return "Hello, " + SystemInfo.username;
+                        if (mode === "uptime")
+                            return Translation.tr("Uptime") + ": " + DateTime.uptime;
+                        if (mode === "custom")
+                            return Config.options.sidebar.dashboardHeader.customText;
                         return "";
                     }
                     font.bold: true
                     visible: Config.options.sidebar.dashboardHeader.textMode !== "none"
                 }
-                
             }
         }
 
@@ -355,7 +362,7 @@ Item {
                     interval: 2000
                     onTriggered: {
                         confirmTimer.stop();
-                        updateButton.confirm = false
+                        updateButton.confirm = false;
                     }
                 }
                 onClicked: {
@@ -363,21 +370,13 @@ Item {
                         GlobalStates.sidebarRightOpen = false;
                         // Wrapper: roda dry-run primeiro, se exit 0 aplica de verdade
                         const script = updateScript;
-                        const wrapperCmd = [
-                            `echo '━━━ ii-vynx: Verificando conflitos (dry-run)... ━━━'`,
-                            `bash '${script}' --dry-run -v`,
-                            `echo ''`,
-                            `echo '━━━ Sem conflitos! Aplicando update... ━━━'`,
-                            `echo ''`,
-                            `bash '${script}' -v`,
-                        ].join(" && ");
+                        const wrapperCmd = [`echo '━━━ ii-vynx: Verificando conflitos (dry-run)... ━━━'`, `bash '${script}' --dry-run -v`, `echo ''`, `echo '━━━ Sem conflitos! Aplicando update... ━━━'`, `echo ''`, `bash '${script}' -v`,].join(" && ");
                         const fullCmd = `${wrapperCmd} || echo -e '\\n⚠ Conflitos ou erro detectado. Update NÃO aplicado.'`;
                         Quickshell.execDetached([Config.options.apps.terminal, "-e", "bash", "-c", fullCmd + "; echo ''; echo 'Pressione Enter para fechar...'; read"]);
                     } else {
-                        confirm = true
-                        confirmTimer.start()
+                        confirm = true;
+                        confirmTimer.start();
                     }
-                    
                 }
                 StyledToolTip {
                     text: Translation.tr("Update ii-vynx (preserving your customizations)")
