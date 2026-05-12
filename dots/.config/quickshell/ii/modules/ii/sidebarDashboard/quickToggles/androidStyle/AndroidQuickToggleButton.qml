@@ -181,6 +181,9 @@ GroupButton {
         }
     }
 
+    // Page awareness for edit operations
+    property int pageIndex: 0
+
     MouseArea { // Blocking MouseArea for edit interactions
         id: editModeInteraction
         visible: root.editMode
@@ -189,41 +192,68 @@ GroupButton {
         hoverEnabled: true
         acceptedButtons: Qt.AllButtons
 
+        // list<var> returns a copy — MUST deep-clone, mutate, reassign
+        function mutatePages(mutatorFn) {
+            var cloned = JSON.parse(JSON.stringify(Config.options.sidebar.quickToggles.android.pages));
+            mutatorFn(cloned);
+            Config.options.sidebar.quickToggles.android.pages = cloned;
+        }
+
         function toggleEnabled() {
-            const index = root.buttonIndex;
-            const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
-            if (!toggleList.find(toggle => toggle.type === buttonType)) {
-                toggleList.push({
-                    type: buttonType,
-                    size: 1
-                });
-            } else {
-                toggleList.splice(index, 1);
-            }
+            const pi = root.pageIndex;
+
+            mutatePages(function(pages) {
+                if (pi < 0 || pi >= pages.length) return;
+                var page = pages[pi];
+                var existingIdx = -1;
+                for (var i = 0; i < page.length; i++) {
+                    if (page[i].type === buttonType) { existingIdx = i; break; }
+                }
+                if (existingIdx === -1) {
+                    // Not in this page — add it
+                    page.push({ type: buttonType, size: 1 });
+                } else {
+                    // Already in this page — remove it
+                    page.splice(existingIdx, 1);
+                }
+            });
         }
 
         function toggleSize() {
-            const index = root.buttonIndex;
-            const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
-            if (!toggleList.find(toggle => toggle.type === buttonType))
-                return;
-            toggleList[index].size = 3 - toggleList[index].size; // Alternate between 1 and 2
+            const pi = root.pageIndex;
+
+            mutatePages(function(pages) {
+                if (pi < 0 || pi >= pages.length) return;
+                var page = pages[pi];
+                for (var i = 0; i < page.length; i++) {
+                    if (page[i].type === buttonType) {
+                        page[i].size = 3 - page[i].size; // Alternate 1 ↔ 2
+                        return;
+                    }
+                }
+            });
         }
 
         function movePositionBy(offset) {
-            const index = root.buttonIndex;
-            const toggleList = Config.options.sidebar.quickToggles.android.toggles;
             const buttonType = root.buttonData.type;
-            const targetIndex = index + offset;
-            if (!toggleList.find(toggle => toggle.type === buttonType))
-                return;
-            if (targetIndex < 0 || targetIndex >= toggleList.length)
-                return;
-            const temp = toggleList[index];
-            toggleList[index] = toggleList[targetIndex];
-            toggleList[targetIndex] = temp;
+            const pi = root.pageIndex;
+
+            mutatePages(function(pages) {
+                if (pi < 0 || pi >= pages.length) return;
+                var page = pages[pi];
+                var idx = -1;
+                for (var i = 0; i < page.length; i++) {
+                    if (page[i].type === buttonType) { idx = i; break; }
+                }
+                if (idx === -1) return;
+                var targetIdx = idx + offset;
+                if (targetIdx < 0 || targetIdx >= page.length) return;
+                var temp = page[idx];
+                page[idx] = page[targetIdx];
+                page[targetIdx] = temp;
+            });
         }
 
         onReleased: event => {
@@ -234,16 +264,13 @@ GroupButton {
             if (event.button === Qt.RightButton)
                 toggleSize();
         }
-        onPressAndHold: event => { // Also toggle size
+        onPressAndHold: event => {
             toggleSize();
         }
         onWheel: event => {
-            const index = root.buttonIndex;
-            const toggleList = Config.options.sidebar.quickToggles.android.toggles;
-            const buttonType = root.buttonData.type;
-            if (event.angleDelta.y < 0) { // Move to right
+            if (event.angleDelta.y < 0) {
                 movePositionBy(1);
-            } else if (event.angleDelta.y > 0) { // Move to left
+            } else if (event.angleDelta.y > 0) {
                 movePositionBy(-1);
             }
             event.accepted = true;

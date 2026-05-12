@@ -808,35 +808,37 @@ Singleton {
                     property string style: "android" // Options: classic, android
                     property JsonObject android: JsonObject {
                         property int columns: 5
-                        property list<var> toggles: [
-                            {
-                                "size": 2,
-                                "type": "network"
-                            },
-                            {
-                                "size": 1,
-                                "type": "idleInhibitor"
-                            },
-                            {
-                                "size": 2,
-                                "type": "darkMode"
-                            },
-                            {
-                                "size": 1,
-                                "type": "mic"
-                            },
-                            {
-                                "size": 2,
-                                "type": "audio"
-                            },
-                            {
-                                "size": 2,
-                                "type": "nightLight"
-                            },
-                            {
-                                "size": 1,
-                                "type": "soundcoreAnc"
-                            }
+                        property list<var> pages: [
+                            [
+                                {
+                                    "size": 2,
+                                    "type": "network"
+                                },
+                                {
+                                    "size": 1,
+                                    "type": "idleInhibitor"
+                                },
+                                {
+                                    "size": 2,
+                                    "type": "darkMode"
+                                },
+                                {
+                                    "size": 1,
+                                    "type": "mic"
+                                },
+                                {
+                                    "size": 2,
+                                    "type": "audio"
+                                },
+                                {
+                                    "size": 2,
+                                    "type": "nightLight"
+                                },
+                                {
+                                    "size": 1,
+                                    "type": "soundcoreAnc"
+                                }
+                            ]
                         ]
                     }
                 }

@@ -110,6 +110,7 @@ Item {
                 Layout.fillHeight: false
                 Layout.fillWidth: true
                 Layout.preferredHeight: implicitHeight
+                forceCollapsed: root.editMode
             }
         }
     }

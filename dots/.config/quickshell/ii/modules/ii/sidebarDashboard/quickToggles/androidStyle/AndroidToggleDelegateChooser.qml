@@ -14,6 +14,7 @@ DelegateChooser {
     required property real baseCellHeight
     required property real spacing
     required property int startingIndex
+    property int pageIndex: 0
     signal openAudioOutputDialog
     signal openAudioInputDialog
     signal openBluetoothDialog
@@ -35,6 +36,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openNightLightDialog();
             }
@@ -54,6 +56,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openAudioOutputDialog();
             }
@@ -73,6 +76,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openBluetoothDialog();
             }
@@ -92,6 +96,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -108,6 +113,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -124,6 +130,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -140,6 +147,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -156,6 +164,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -172,6 +181,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -188,6 +198,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openAudioInputDialog();
             }
@@ -207,6 +218,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -223,6 +235,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openWifiDialog();
             }
@@ -242,6 +255,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
             onOpenMenu: {
                 root.openNightLightDialog();
             }
@@ -261,6 +275,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -277,6 +292,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -293,6 +309,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -309,6 +326,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 
@@ -325,6 +343,7 @@ DelegateChooser {
             baseCellHeight: root.baseCellHeight
             cellSpacing: root.spacing
             cellSize: modelData.size
+            pageIndex: root.pageIndex
         }
     }
 }
