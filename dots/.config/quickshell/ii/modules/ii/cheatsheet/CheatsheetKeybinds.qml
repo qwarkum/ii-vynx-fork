@@ -6,6 +6,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 
 Item {
     id: root
@@ -27,8 +28,10 @@ Item {
     property var filter: ''
     property var localWidth: 0
     property var localHeight: 0
-    implicitWidth: root.filter !== '' ? root.localWidth : row.implicitWidth + padding * 2
-    implicitHeight: root.filter !== '' ? root.localHeight : row.implicitHeight + padding * 2
+    readonly property real _maxWidth: QsWindow?.window?.screen.width * 0.85 ?? 1400
+    readonly property real _maxHeight: QsWindow?.window?.screen.height * 0.7 ?? 800
+    implicitWidth: Math.min(flickable.implicitWidth, _maxWidth)
+    implicitHeight: Math.min(flickable.implicitHeight, _maxHeight)
     // Excellent symbol explaination and source :
     // http://xahlee.info/comp/unicode_computing_symbols.html
     // https://www.nerdfonts.com/cheat-sheet
@@ -184,8 +187,8 @@ Item {
 
     onFocusChanged: focus => {
         if (focus) {
-            root.localWidth = Math.max(root.localWidth, root.implicitWidth);
-            root.localHeight = Math.max(root.localHeight, root.implicitHeight);
+            root.localWidth = Math.max(root.localWidth, root._maxWidth);
+            root.localHeight = Math.max(root.localHeight, root._maxHeight);
             filterField.forceActiveFocus();
         }
     }
@@ -241,104 +244,107 @@ Item {
         shape: MaterialShape.Shape.Ghostish
         descriptionHorizontalAlignment: Text.AlignHCenter
     }
-    Row { // Keybind columns
-        id: row
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: root.spacing
+    Flickable {
+        id: flickable
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: extraOptions.top
+            bottomMargin: 4
+        }
+        contentWidth: Math.max(row.implicitWidth, width)
+        contentHeight: Math.max(row.implicitHeight, height)
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        flickDeceleration: 3000
 
-        Repeater {
-            model: keybinds.children
-            visible: !!keybinds.children.length
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            onWheel: wheelEvent => {
+                const delta = -wheelEvent.angleDelta.y;
+                if (delta !== 0) {
+                    flickable.cancelFlick();
+                    flickable.flick(delta * 15, 0);
+                }
+                wheelEvent.accepted = true;
+            }
+        }
 
-            delegate: Column { // Keybind sections
-                spacing: root.spacing
-                required property var modelData
-                anchors.top: row.top
+        Flow { // Keybind columns
+            id: row
+            flow: Flow.TopToBottom
+            height: flickable.height
+            spacing: root.spacing
+            anchors.horizontalCenter: parent.horizontalCenter
 
-                Repeater {
-                    model: modelData.children
-                    visible: !!modelData.children.length
-                    delegate: Item { // Section with real keybinds
-                        id: keybindSection
-                        required property var modelData
-                        implicitWidth: sectionColumn.implicitWidth
-                        implicitHeight: sectionColumn.implicitHeight
+            Repeater {
+                model: keybinds.children
+                visible: !!keybinds.children.length
 
-                        Column {
-                            id: sectionColumn
-                            anchors.centerIn: parent
-                            spacing: root.titleSpacing
-                            visible: !!keybindSection.modelData.keybinds.length
+                delegate: Column { // Keybind sections
+                    spacing: root.spacing
+                    required property var modelData
 
-                            StyledText {
-                                id: sectionTitle
-                                font {
-                                    family: Appearance.font.family.title
-                                    pixelSize: Appearance.font.pixelSize.title
-                                    variableAxes: Appearance.font.variableAxes.title
+                    Repeater {
+                        model: modelData.children
+                        visible: !!modelData.children.length
+                        delegate: Item { // Section with real keybinds
+                            id: keybindSection
+                            required property var modelData
+                            implicitWidth: sectionColumn.implicitWidth
+                            implicitHeight: sectionColumn.implicitHeight
+
+                            Column {
+                                id: sectionColumn
+                                anchors.centerIn: parent
+                                spacing: root.titleSpacing
+                                visible: !!keybindSection.modelData.keybinds.length
+
+                                StyledText {
+                                    id: sectionTitle
+                                    font {
+                                        family: Appearance.font.family.title
+                                        pixelSize: Appearance.font.pixelSize.title
+                                        variableAxes: Appearance.font.variableAxes.title
+                                    }
+                                    color: Appearance.colors.colOnLayer0
+                                    text: keybindSection.modelData.name
                                 }
-                                color: Appearance.colors.colOnLayer0
-                                text: keybindSection.modelData.name
-                            }
 
-                            GridLayout {
-                                id: keybindGrid
-                                columns: 2
-                                columnSpacing: 4
-                                rowSpacing: 4
-
-                                Repeater {
-                                    model: keybindSection.modelData.result
-                                    delegate: Item {
-                                        required property var modelData
-                                        implicitWidth: keybindLoader.implicitWidth
-                                        implicitHeight: keybindLoader.implicitHeight
-
-                                        Loader {
-                                            id: keybindLoader
-                                            sourceComponent: (modelData.type === "keys") ? keysComponent : commentComponent
-                                        }
-
-                                        Component {
-                                            id: keysComponent
+                                Column {
+                                    spacing: 4
+                                    Repeater {
+                                        model: keybindSection.modelData.keybinds
+                                        delegate: Row {
+                                            required property var modelData
+                                            spacing: 16
                                             Row {
                                                 spacing: 4
                                                 Repeater {
                                                     model: modelData.mods
                                                     delegate: KeyboardKey {
                                                         required property var modelData
-                                                        key: keySubstitutions[modelData] || modelData
+                                                        key: root.keySubstitutions[modelData] || modelData
                                                         pixelSize: Config.options.cheatsheet.fontSize.key
                                                     }
                                                 }
                                                 StyledText {
-                                                    id: keybindPlus
-                                                    visible: Config.options.cheatsheet.splitButtons && !keyBlacklist.includes(modelData.key) && modelData.mods.length > 0
+                                                    visible: Config.options.cheatsheet.splitButtons && !root.keyBlacklist.includes(modelData.key) && modelData.mods.length > 0
                                                     text: "+"
                                                 }
                                                 KeyboardKey {
-                                                    id: keybindKey
-                                                    visible: Config.options.cheatsheet.splitButtons && !keyBlacklist.includes(modelData.key)
-                                                    key: keySubstitutions[modelData.key] || modelData.key
+                                                    visible: Config.options.cheatsheet.splitButtons && !root.keyBlacklist.includes(modelData.key)
+                                                    key: root.keySubstitutions[modelData.key] || modelData.key
                                                     pixelSize: Config.options.cheatsheet.fontSize.key
                                                     color: Appearance.colors.colOnLayer0
                                                 }
                                             }
-                                        }
-
-                                        Component {
-                                            id: commentComponent
-                                            Item {
-                                                id: commentItem
-                                                implicitWidth: commentText.implicitWidth + 8 * 2
-                                                implicitHeight: commentText.implicitHeight
-
-                                                StyledText {
-                                                    id: commentText
-                                                    anchors.centerIn: parent
-                                                    font.pixelSize: Config.options.cheatsheet.fontSize.comment || Appearance.font.pixelSize.smaller
-                                                    text: modelData.comment
-                                                }
+                                            StyledText {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                font.pixelSize: Config.options.cheatsheet.fontSize.comment || Appearance.font.pixelSize.smaller
+                                                text: modelData.comment
                                             }
                                         }
                                     }
@@ -349,5 +355,14 @@ Item {
                 }
             }
         }
+    }
+
+    PagePlaceholder {
+        shown: keybinds.children.length === 0 && root.filter !== ''
+        icon: "search_off"
+        description: Translation.tr("No results")
+        shape: MaterialShape.Shape.Ghostish
+        descriptionHorizontalAlignment: Text.AlignHCenter
+        anchors.centerIn: parent
     }
 }
