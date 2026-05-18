@@ -66,18 +66,31 @@ Item {
         error = "";
 
         let leaguesToFetch = [];
-        if (Config.options.bar.sports.showBRA) leaguesToFetch.push("bra.1");
-        if (Config.options.bar.sports.showBUND) leaguesToFetch.push("ger.1");
-        if (Config.options.bar.sports.showCL) leaguesToFetch.push("uefa.champions");
-        if (Config.options.bar.sports.showUEL) leaguesToFetch.push("uefa.europa");
-        if (Config.options.bar.sports.showUECL) leaguesToFetch.push("uefa.europa.conf");
-        if (Config.options.bar.sports.showCLA) leaguesToFetch.push("conmebol.libertadores");
-        if (Config.options.bar.sports.showEPL) leaguesToFetch.push("eng.1");
-        if (Config.options.bar.sports.showLIGA) leaguesToFetch.push("esp.1");
-        if (Config.options.bar.sports.showLIG1) leaguesToFetch.push("fra.1");
-        if (Config.options.bar.sports.showSERA) leaguesToFetch.push("ita.1");
-        if (Config.options.bar.sports.showWC) leaguesToFetch.push("fifa.world");
-        if (Config.options.bar.sports.showWWC) leaguesToFetch.push("fifa.wwc");
+        let monitored = Config.options.bar.sports.monitoredLeagues;
+        if (monitored && monitored.length > 0) {
+            for (let i = 0; i < monitored.length; i++) {
+                if (monitored[i].enabled) {
+                    leaguesToFetch.push({
+                        sport: monitored[i].sport,
+                        league: monitored[i].league,
+                        name: monitored[i].name
+                    });
+                }
+            }
+        } else {
+            if (Config.options.bar.sports.showBRA) leaguesToFetch.push({ sport: "soccer", league: "bra.1", name: "Brasileirão" });
+            if (Config.options.bar.sports.showBUND) leaguesToFetch.push({ sport: "soccer", league: "ger.1", name: "Bundesliga" });
+            if (Config.options.bar.sports.showCL) leaguesToFetch.push({ sport: "soccer", league: "uefa.champions", name: "Champions League" });
+            if (Config.options.bar.sports.showUEL) leaguesToFetch.push({ sport: "soccer", league: "uefa.europa", name: "Europa League" });
+            if (Config.options.bar.sports.showUECL) leaguesToFetch.push({ sport: "soccer", league: "uefa.europa.conf", name: "Conference League" });
+            if (Config.options.bar.sports.showCLA) leaguesToFetch.push({ sport: "soccer", league: "conmebol.libertadores", name: "Libertadores" });
+            if (Config.options.bar.sports.showEPL) leaguesToFetch.push({ sport: "soccer", league: "eng.1", name: "Premier League" });
+            if (Config.options.bar.sports.showLIGA) leaguesToFetch.push({ sport: "soccer", league: "esp.1", name: "LaLiga" });
+            if (Config.options.bar.sports.showLIG1) leaguesToFetch.push({ sport: "soccer", league: "fra.1", name: "Ligue 1" });
+            if (Config.options.bar.sports.showSERA) leaguesToFetch.push({ sport: "soccer", league: "ita.1", name: "Serie A" });
+            if (Config.options.bar.sports.showWC) leaguesToFetch.push({ sport: "soccer", league: "fifa.world", name: "World Cup" });
+            if (Config.options.bar.sports.showWWC) leaguesToFetch.push({ sport: "soccer", league: "fifa.wwc", name: "Women's World Cup" });
+        }
 
         if (leaguesToFetch.length === 0) {
             allGames = [];
@@ -89,8 +102,8 @@ Item {
         let collectedEvents = [];
 
         for (let i = 0; i < leaguesToFetch.length; i++) {
-            const leagueId = leaguesToFetch[i];
-            const url = `http://site.api.espn.com/apis/site/v2/sports/soccer/${leagueId}/scoreboard`;
+            const entry = leaguesToFetch[i];
+            const url = `https://site.api.espn.com/apis/site/v2/sports/${entry.sport}/${entry.league}/scoreboard`;
             const xhr = new XMLHttpRequest();
             xhr.open("GET", url);
             xhr.onreadystatechange = function () {
@@ -99,8 +112,14 @@ Item {
                     if (xhr.status === 200) {
                         try {
                             const response = JSON.parse(xhr.responseText);
+                            let leagueLogo = "";
+                            if (response.leagues && response.leagues[0] && response.leagues[0].logos && response.leagues[0].logos[0]) {
+                                leagueLogo = response.leagues[0].logos[0].href;
+                            }
                             const events = (response.events || []).map(e => {
-                                e.leagueName = leagueNames[leagueId] || "";
+                                e.leagueName = entry.name;
+                                e.sportCategory = entry.sport;
+                                e.leagueLogo = leagueLogo;
                                 return e;
                             });
                             collectedEvents = collectedEvents.concat(events);
@@ -144,18 +163,52 @@ Item {
             if (state === "post" && minsSinceStart > Config.options.bar.sports.showAfterMinutes)
                 continue;
 
-            const comp = event.competitions[0];
-            const homeTeam = (comp.competitors[0].team.shortDisplayName || comp.competitors[0].team.name || "").toLowerCase();
-            const awayTeam = (comp.competitors[1].team.shortDisplayName || comp.competitors[1].team.name || "").toLowerCase();
+            let comp = event.competitions[0];
+            const isRacing = (event.sportCategory === "racing" || event.sportCategory === "motorsports" || event.leagueName.toLowerCase().includes("f1") || event.leagueName.toLowerCase().includes("formula"));
+
+            if (isRacing && event.competitions.length > 1) {
+                let activeComp = event.competitions.find(c => c.status.type.state === "in");
+                if (activeComp) {
+                    comp = activeComp;
+                } else {
+                    let preComp = event.competitions.find(c => c.status.type.state === "pre");
+                    if (preComp) {
+                        comp = preComp;
+                    } else {
+                        comp = event.competitions[event.competitions.length - 1];
+                    }
+                }
+            }
+
+            if (!comp.competitors) {
+                comp.competitors = [];
+            }
 
             let matchesFilter = false;
-
             if (teamsToMatch.length > 0) {
-                for (let j = 0; j < teamsToMatch.length; j++) {
-                    const t = teamsToMatch[j];
-                    if (homeTeam.includes(t) || awayTeam.includes(t)) {
-                        matchesFilter = true;
-                        break;
+                if (isRacing) {
+                    for (let k = 0; k < comp.competitors.length; k++) {
+                        const competitor = comp.competitors[k];
+                        const athleteName = competitor.athlete ? (competitor.athlete.displayName || "").toLowerCase() : "";
+                        const teamName = competitor.team ? (competitor.team.displayName || competitor.team.name || "").toLowerCase() : "";
+                        for (let j = 0; j < teamsToMatch.length; j++) {
+                            const t = teamsToMatch[j];
+                            if (athleteName.includes(t) || teamName.includes(t)) {
+                                matchesFilter = true;
+                                break;
+                            }
+                        }
+                        if (matchesFilter) break;
+                    }
+                } else {
+                    const homeTeamName = (comp.competitors[0] && comp.competitors[0].team ? (comp.competitors[0].team.shortDisplayName || comp.competitors[0].team.name || "") : "").toLowerCase();
+                    const awayTeamName = (comp.competitors[1] && comp.competitors[1].team ? (comp.competitors[1].team.shortDisplayName || comp.competitors[1].team.name || "") : "").toLowerCase();
+                    for (let j = 0; j < teamsToMatch.length; j++) {
+                        const t = teamsToMatch[j];
+                        if (homeTeamName.includes(t) || awayTeamName.includes(t)) {
+                            matchesFilter = true;
+                            break;
+                        }
                     }
                 }
             } else {
@@ -164,7 +217,8 @@ Item {
 
             if (matchesFilter) {
                 let lastPlayText = "";
-                if (state === "in") {
+                const compState = comp.status ? comp.status.type.state : state;
+                if (compState === "in") {
                     const situation = comp.situation || null;
                     lastPlayText = situation && situation.lastPlay && situation.lastPlay.text ? situation.lastPlay.text : "";
 
@@ -180,25 +234,71 @@ Item {
                     }
                 }
 
+                let home = { name: "TBD", score: "0", logo: event.leagueLogo || "", winner: false };
+                let away = { name: "TBD", score: "0", logo: event.leagueLogo || "", winner: false };
+
+                if (isRacing) {
+                    if (comp.competitors.length > 0) {
+                        const first = comp.competitors[0];
+                        home = {
+                            name: first.athlete ? (first.athlete.shortName || first.athlete.displayName) : (first.team ? first.team.shortDisplayName : "P1"),
+                            score: first.displayValue || (first.score ? "P1 (" + first.score + ")" : "P1"),
+                            logo: first.team ? first.team.logo : (first.athlete ? first.athlete.headshot : (event.leagueLogo || "")),
+                            winner: first.winner || false
+                        };
+                    }
+                    if (comp.competitors.length > 1) {
+                        const second = comp.competitors[1];
+                        away = {
+                            name: second.athlete ? (second.athlete.shortName || second.athlete.displayName) : (second.team ? second.team.shortDisplayName : "P2"),
+                            score: second.displayValue || (second.score ? "P2 (" + second.score + ")" : "P2"),
+                            logo: second.team ? second.team.logo : (second.athlete ? second.athlete.headshot : (event.leagueLogo || "")),
+                            winner: second.winner || false
+                        };
+                    }
+                } else {
+                    if (comp.competitors.length >= 2) {
+                        let first = comp.competitors[0];
+                        let second = comp.competitors[1];
+                        if (first.homeAway === "away" || second.homeAway === "home") {
+                            first = comp.competitors[1];
+                            second = comp.competitors[0];
+                        }
+                        home = {
+                            name: first.team ? (first.team.shortDisplayName || first.team.name) : "Home",
+                            score: first.score || "0",
+                            logo: first.team ? first.team.logo : "",
+                            winner: first.winner || false
+                        };
+                        away = {
+                            name: second.team ? (second.team.shortDisplayName || second.team.name) : "Away",
+                            score: second.score || "0",
+                            logo: second.team ? second.team.logo : "",
+                            winner: second.winner || false
+                        };
+                    } else if (comp.competitors.length === 1) {
+                        let first = comp.competitors[0];
+                        home = {
+                            name: first.team ? (first.team.shortDisplayName || first.team.name) : "Home",
+                            score: first.score || "0",
+                            logo: first.team ? first.team.logo : "",
+                            winner: first.winner || false
+                        };
+                    }
+                }
+
+                if (!home.logo || home.logo === "") home.logo = event.leagueLogo || "";
+                if (!away.logo || away.logo === "") away.logo = event.leagueLogo || "";
+
                 validGames.push({
                     id: event.id,
                     name: event.name,
                     league: event.leagueName,
-                    status: state === "pre" ? formatMatchTime(event.date) : event.status.type.detail,
-                    state: state,
+                    status: (comp.status && comp.status.type && comp.status.type.state === "pre") ? formatMatchTime(event.date) : (comp.status ? comp.status.type.detail : (event.status ? event.status.type.detail : "")),
+                    state: comp.status ? comp.status.type.state : state,
                     lastPlay: lastPlayText,
-                    home: {
-                        name: comp.competitors[0].team.shortDisplayName,
-                        score: comp.competitors[0].score || "0",
-                        logo: comp.competitors[0].team.logo,
-                        winner: comp.competitors[0].winner
-                    },
-                    away: {
-                        name: comp.competitors[1].team.shortDisplayName,
-                        score: comp.competitors[1].score || "0",
-                        logo: comp.competitors[1].team.logo,
-                        winner: comp.competitors[1].winner
-                    }
+                    home: home,
+                    away: away
                 });
             }
         }
@@ -210,7 +310,7 @@ Item {
 
         let nextIndex = 0;
         let currentId = currentGame ? currentGame.id : null;
-        
+
         if (currentId) {
             let foundIndex = -1;
             for (let i = 0; i < validGames.length; i++) {
@@ -257,51 +357,7 @@ Item {
 
     Connections {
         target: Config.options.bar.sports
-        function onShowBRAChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowBUNDChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowCLChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowUELChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowUECLChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowCLAChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowEPLChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowLIGAChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowLIG1Changed() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowSERAChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowWCChanged() {
-            if (enabled)
-                fetchGames();
-        }
-        function onShowWWCChanged() {
+        function onMonitoredLeaguesChanged() {
             if (enabled)
                 fetchGames();
         }

@@ -192,16 +192,16 @@ StyledPopup {
                                     font.pixelSize: Appearance.font.pixelSize.normal
                                     color: vIndex === 0 ? Appearance.colors.colOnPrimaryContainer : root.colText
                                     elide: Text.ElideRight
-                                    width: 100
+                                    width: 130
                                     horizontalAlignment: Text.AlignHCenter
                                 }
 
                                 StyledText {
                                     anchors.left: homeLogoCont.right
-                                    anchors.leftMargin: 12
+                                    anchors.leftMargin: (text.length > 3) ? 4 : 12
                                     anchors.verticalCenter: homeLogoCont.verticalCenter
                                     text: modelData?.home?.score ?? "0"
-                                    font.pixelSize: 32
+                                    font.pixelSize: (text.length > 3) ? 16 : 32
                                     font.weight: Font.DemiBold
                                     color: vIndex === 0 ? Appearance.colors.colOnPrimaryContainer : root.colText
                                     visible: modelData?.state !== "pre"
@@ -282,16 +282,16 @@ StyledPopup {
                                     font.pixelSize: Appearance.font.pixelSize.normal
                                     color: vIndex === 0 ? Appearance.colors.colOnPrimaryContainer : root.colText
                                     elide: Text.ElideRight
-                                    width: 100
+                                    width: 130
                                     horizontalAlignment: Text.AlignHCenter
                                 }
 
                                 StyledText {
                                     anchors.right: awayLogoCont.left
-                                    anchors.rightMargin: 12
+                                    anchors.rightMargin: (text.length > 3) ? 4 : 12
                                     anchors.verticalCenter: awayLogoCont.verticalCenter
                                     text: modelData?.away?.score ?? "0"
-                                    font.pixelSize: 32
+                                    font.pixelSize: (text.length > 3) ? 16 : 32
                                     font.weight: Font.DemiBold
                                     color: vIndex === 0 ? Appearance.colors.colOnPrimaryContainer : root.colText
                                     visible: modelData?.state !== "pre"

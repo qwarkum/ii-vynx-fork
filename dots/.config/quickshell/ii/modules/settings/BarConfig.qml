@@ -1285,77 +1285,223 @@ ContentPage {
             }
         }
 
+        function isSportFollowed(sportName) {
+            let list = Config.options.bar.sports.monitoredLeagues || [];
+            return list.some(l => l.sport === sportName && l.enabled);
+        }
+
+        function toggleSport(sportName, enable) {
+            let list = JSON.parse(JSON.stringify(Config.options.bar.sports.monitoredLeagues || []));
+            let hasMatch = false;
+            list.forEach(l => {
+                if (l.sport === sportName) {
+                    l.enabled = enable;
+                    hasMatch = true;
+                }
+            });
+            if (enable && !hasMatch) {
+                let presets = [
+                    { sport: "soccer", league: "bra.1", name: "Brasileirão", enabled: true },
+                    { sport: "basketball", league: "nba", name: "NBA", enabled: true },
+                    { sport: "football", league: "nfl", name: "NFL", enabled: true },
+                    { sport: "racing", league: "f1", name: "Formula 1", enabled: true },
+                    { sport: "hockey", league: "nhl", name: "NHL", enabled: true },
+                    { sport: "baseball", league: "mlb", name: "MLB", enabled: true }
+                ];
+                let defaultPreset = presets.find(p => p.sport === sportName);
+                if (defaultPreset) {
+                    list.push(defaultPreset);
+                }
+            }
+            Config.options.bar.sports.monitoredLeagues = list;
+        }
+
+        function getUniqueSports() {
+            let list = Config.options.bar.sports.monitoredLeagues || [];
+            let sports = [];
+            list.forEach(l => {
+                if (sports.indexOf(l.sport) === -1) {
+                    sports.push(l.sport);
+                }
+            });
+            let defaults = ["soccer", "basketball", "football", "racing", "hockey", "baseball"];
+            defaults.forEach(d => {
+                if (sports.indexOf(d) === -1) {
+                    sports.push(d);
+                }
+            });
+            return sports;
+        }
+
+        function getLeaguesForSport(sportName) {
+            let list = Config.options.bar.sports.monitoredLeagues || [];
+            return list.filter(l => l.sport === sportName);
+        }
+
         ContentSubsection {
-            title: Translation.tr("Supported Leagues")
+            title: Translation.tr("Monitored Sports")
             Layout.fillWidth: true
 
             Flow {
                 Layout.fillWidth: true
                 spacing: 8
-
-                // Allow vertical spacing when items wrap
                 topPadding: 4
                 bottomPadding: 4
 
-                LeagueChip {
-                    text: "Brasileirão"
-                    checked: Config.options.bar.sports.showBRA
-                    onToggled: c => Config.options.bar.sports.showBRA = c
+                Repeater {
+                    model: sportsConfig.getUniqueSports()
+                    delegate: LeagueChip {
+                        text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
+                        checked: sportsConfig.isSportFollowed(modelData)
+                        onToggled: c => sportsConfig.toggleSport(modelData, c)
+                    }
                 }
-                LeagueChip {
-                    text: "Bundesliga"
-                    checked: Config.options.bar.sports.showBUND
-                    onToggled: c => Config.options.bar.sports.showBUND = c
+            }
+        }
+
+        Repeater {
+            model: sportsConfig.getUniqueSports()
+            delegate: ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                
+                visible: {
+                    let sportKey = modelData;
+                    let followed = sportsConfig.isSportFollowed(sportKey);
+                    let leagues = sportsConfig.getLeaguesForSport(sportKey);
+                    return followed && leagues.length > 1;
                 }
-                LeagueChip {
-                    text: "Champions L."
-                    checked: Config.options.bar.sports.showCL
-                    onToggled: c => Config.options.bar.sports.showCL = c
+
+                ContentSubsection {
+                    title: {
+                        let displayName = modelData.charAt(0).toUpperCase() + modelData.slice(1);
+                        return displayName + " " + Translation.tr("Leagues");
+                    }
+                    Layout.fillWidth: true
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        topPadding: 4
+                        bottomPadding: 4
+
+                        Repeater {
+                            model: sportsConfig.getLeaguesForSport(modelData)
+                            delegate: LeagueChip {
+                                text: modelData.name
+                                checked: modelData.enabled
+                                onToggled: c => {
+                                    let list = JSON.parse(JSON.stringify(Config.options.bar.sports.monitoredLeagues));
+                                    let indexInMain = list.findIndex(l => l.league === modelData.league && l.sport === modelData.sport);
+                                    if (indexInMain !== -1) {
+                                        list[indexInMain].enabled = c;
+                                        Config.options.bar.sports.monitoredLeagues = list;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                LeagueChip {
-                    text: "Europa L."
-                    checked: Config.options.bar.sports.showUEL
-                    onToggled: c => Config.options.bar.sports.showUEL = c
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Add Preset League")
+            Layout.fillWidth: true
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                
+                property var presets: [
+                    { sport: "soccer", league: "bra.1", name: "Brasileirão" },
+                    { sport: "soccer", league: "eng.1", name: "Premier League" },
+                    { sport: "soccer", league: "uefa.champions", name: "Champions League" },
+                    { sport: "soccer", league: "ger.1", name: "Bundesliga" },
+                    { sport: "soccer", league: "esp.1", name: "LaLiga" },
+                    { sport: "soccer", league: "conmebol.libertadores", name: "Libertadores" },
+                    { sport: "basketball", league: "nba", name: "NBA" },
+                    { sport: "football", league: "nfl", name: "NFL" },
+                    { sport: "racing", league: "f1", name: "Formula 1" },
+                    { sport: "hockey", league: "nhl", name: "NHL" },
+                    { sport: "baseball", league: "mlb", name: "MLB" }
+                ]
+
+                Repeater {
+                    model: parent.presets
+                    delegate: RippleButton {
+                        buttonText: "+ " + modelData.name
+                        enabled: {
+                            let list = Config.options.bar.sports.monitoredLeagues || [];
+                            return !list.some(l => l.league === modelData.league && l.sport === modelData.sport);
+                        }
+                        onClicked: {
+                            let list = JSON.parse(JSON.stringify(Config.options.bar.sports.monitoredLeagues || []));
+                            list.push({
+                                sport: modelData.sport,
+                                league: modelData.league,
+                                name: modelData.name,
+                                enabled: true
+                            });
+                            Config.options.bar.sports.monitoredLeagues = list;
+                        }
+                    }
                 }
-                LeagueChip {
-                    text: "Conference L."
-                    checked: Config.options.bar.sports.showUECL
-                    onToggled: c => Config.options.bar.sports.showUECL = c
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Add Custom League")
+            Layout.fillWidth: true
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    MaterialTextField {
+                        id: newSportInput
+                        Layout.preferredWidth: 100
+                        Layout.fillWidth: true
+                        placeholderText: Translation.tr("Sport (e.g. soccer)")
+                    }
+
+                    MaterialTextField {
+                        id: newLeagueInput
+                        Layout.preferredWidth: 100
+                        Layout.fillWidth: true
+                        placeholderText: Translation.tr("League (e.g. f1)")
+                    }
+
+                    MaterialTextField {
+                        id: newNameInput
+                        Layout.preferredWidth: 100
+                        Layout.fillWidth: true
+                        placeholderText: Translation.tr("Name (e.g. F1)")
+                    }
                 }
-                LeagueChip {
-                    text: "Libertadores"
-                    checked: Config.options.bar.sports.showCLA
-                    onToggled: c => Config.options.bar.sports.showCLA = c
-                }
-                LeagueChip {
-                    text: "Premier L."
-                    checked: Config.options.bar.sports.showEPL
-                    onToggled: c => Config.options.bar.sports.showEPL = c
-                }
-                LeagueChip {
-                    text: "LaLiga"
-                    checked: Config.options.bar.sports.showLIGA
-                    onToggled: c => Config.options.bar.sports.showLIGA = c
-                }
-                LeagueChip {
-                    text: "Ligue 1"
-                    checked: Config.options.bar.sports.showLIG1
-                    onToggled: c => Config.options.bar.sports.showLIG1 = c
-                }
-                LeagueChip {
-                    text: "Serie A"
-                    checked: Config.options.bar.sports.showSERA
-                    onToggled: c => Config.options.bar.sports.showSERA = c
-                }
-                LeagueChip {
-                    text: "World Cup"
-                    checked: Config.options.bar.sports.showWC
-                    onToggled: c => Config.options.bar.sports.showWC = c
-                }
-                LeagueChip {
-                    text: "Women's WC"
-                    checked: Config.options.bar.sports.showWWC
-                    onToggled: c => Config.options.bar.sports.showWWC = c
+
+                RippleButtonWithIcon {
+                    Layout.alignment: Qt.AlignRight
+                    materialIcon: "add"
+                    mainText: Translation.tr("Add Custom League")
+                    enabled: newSportInput.text.trim() !== "" && newLeagueInput.text.trim() !== "" && newNameInput.text.trim() !== ""
+                    onClicked: {
+                        let list = JSON.parse(JSON.stringify(Config.options.bar.sports.monitoredLeagues || []));
+                        list.push({
+                            sport: newSportInput.text.trim().toLowerCase(),
+                            league: newLeagueInput.text.trim().toLowerCase(),
+                            name: newNameInput.text.trim(),
+                            enabled: true
+                        });
+                        Config.options.bar.sports.monitoredLeagues = list;
+                        newSportInput.text = "";
+                        newLeagueInput.text = "";
+                        newNameInput.text = "";
+                    }
                 }
             }
         }

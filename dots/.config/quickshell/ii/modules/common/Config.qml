@@ -78,11 +78,13 @@ Singleton {
         watchChanges: true
         blockWrites: root.blockWrites
         onFileChanged: {
-            if (!root.ready || root._ignoreFileChanges) return;
+            if (!root.ready || root._ignoreFileChanges)
+                return;
             fileReloadTimer.restart();
         }
         onAdapterUpdated: {
-            if (!root.ready) return;
+            if (!root.ready)
+                return;
             fileWriteTimer.restart();
         }
         onLoaded: root.ready = true
@@ -215,23 +217,22 @@ Singleton {
                 property string terminal: "kitty -1" // This is only for shell actions
                 property string update: "kitty -1 --hold=yes fish -i -c 'pkexec pacman -Syu'"
                 property string volumeMixer: `~/.config/hypr/hyprland/scripts/launch_first_available.sh "pavucontrol-qt" "pavucontrol"`
-
             }
 
             property var bluetoothDeviceImages: [
-                    {
-                        "mac": "E8:EE:CC:96:31:3A",
-                        "image": "anker_q30_.png"
-                    },
-                    {
-                        "mac": "40:35:E6:31:8B:AC",
-                        "image": "galaxy_buds_3.png"
-                    },
-                    {
-                        "mac": "64:1B:2F:9B:95:CE",
-                        "image": "samsung_s23.png"
-                    }
-                ]
+                {
+                    "mac": "E8:EE:CC:96:31:3A",
+                    "image": "anker_q30_.png"
+                },
+                {
+                    "mac": "40:35:E6:31:8B:AC",
+                    "image": "galaxy_buds_3.png"
+                },
+                {
+                    "mac": "64:1B:2F:9B:95:CE",
+                    "image": "samsung_s23.png"
+                }
+            ]
 
             property JsonObject background: JsonObject {
                 property bool enable: true // if someone wants to use an external wallpaper manager, note that its not fully tested but it should just disable background.qml from being loaded
@@ -426,10 +427,42 @@ Singleton {
                     property bool showUEL: false
                     property bool showWC: false
                     property bool showWWC: false
+                    property var monitoredLeagues: [
+                        {
+                            "sport": "soccer",
+                            "league": "bra.1",
+                            "name": "Brasileirão",
+                            "enabled": true
+                        },
+                        {
+                            "sport": "soccer",
+                            "league": "eng.1",
+                            "name": "Premier League",
+                            "enabled": true
+                        },
+                        {
+                            "sport": "soccer",
+                            "league": "uefa.champions",
+                            "name": "Champions League",
+                            "enabled": true
+                        },
+                        {
+                            "sport": "basketball",
+                            "league": "nba",
+                            "name": "NBA",
+                            "enabled": true
+                        },
+                        {
+                            "sport": "racing",
+                            "league": "f1",
+                            "name": "Formula 1",
+                            "enabled": false
+                        }
+                    ]
                     property string teamFilter: ""
                     property int updateInterval: 60
                     property int maxCardsPopup: 4
-                    property int showBeforeHours: 12
+                    property int showBeforeHours: 4
                     property int showAfterMinutes: 180
                 }
                 property list<string> screenList: [] // List of names, like "eDP-1", find out with 'hyprctl monitors' command
@@ -839,8 +872,7 @@ Singleton {
                     property string style: "android" // Options: classic, android
                     property JsonObject android: JsonObject {
                         property int columns: 5
-                        property list<var> pages: [
-                            [
+                        property list<var> pages: [[
                                 {
                                     "size": 2,
                                     "type": "network"
@@ -869,8 +901,7 @@ Singleton {
                                     "size": 1,
                                     "type": "soundcoreAnc"
                                 }
-                            ]
-                        ]
+                            ]]
                     }
                 }
 
