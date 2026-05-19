@@ -507,6 +507,18 @@ ContentPage {
             }
         }
 
+        Process {
+            id: importPresetProc
+            command: ["bash", "-c", `if command -v zenity >/dev/null; then FILE=$(zenity --file-selection --file-filter="JSON | *.json" 2>/dev/null); else FILE=$(kdialog --getopenfilename "$HOME" "*.json" 2>/dev/null); fi; if [ -n "$FILE" ] && [ -f "$FILE" ]; then preset_name=$(basename "$FILE" .json); mkdir -p "$HOME/.config/illogical-impulse/presets"; cp "$FILE" "$HOME/.config/illogical-impulse/presets/$preset_name.json"; echo 'success'; fi`]
+            stdout: SplitParser {
+                onRead: data => {
+                    if (data.trim() === "success") {
+                        refreshTimer.restart();
+                    }
+                }
+            }
+        }
+
         Component.onCompleted: {
             listPresetsProc.running = true;
         }
@@ -533,6 +545,17 @@ ContentPage {
                     Quickshell.execDetached(["bash", "-c", `${Directories.scriptPath}/presets.sh save "${presetNameInput.text}"`]);
                     refreshTimer.restart();
                     presetNameInput.text = "";
+                }
+            }
+
+            RippleButtonWithIcon {
+                materialIcon: "file_upload"
+                mainText: Translation.tr("Import")
+                buttonRadius: Appearance.rounding.small
+                Layout.fillHeight: true
+                onClicked: {
+                    importPresetProc.running = false;
+                    importPresetProc.running = true;
                 }
             }
         }
@@ -640,7 +663,7 @@ ContentPage {
                                 StyledText {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
-                                    anchors.right: deleteButton.left
+                                    anchors.right: exportButton.left
                                     anchors.rightMargin: 10
                                     text: model.name
                                     color: Appearance.colors.colOnLayer1
@@ -669,6 +692,40 @@ ContentPage {
                                     onClicked: {
                                         Quickshell.execDetached(["bash", "-c", `${Directories.scriptPath}/presets.sh delete "${model.name}"`]);
                                         refreshTimer.restart();
+                                    }
+
+                                    StyledToolTip {
+                                        text: Translation.tr("Delete preset")
+                                    }
+                                }
+
+                                RippleButton {
+                                    id: exportButton
+                                    anchors.right: deleteButton.left
+                                    anchors.rightMargin: 5
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    implicitWidth: 30
+                                    implicitHeight: 30
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: Appearance.colors.colPrimaryContainer
+                                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                                    colRipple: Appearance.colors.colPrimaryContainerActive
+
+                                    contentItem: MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "file_download"
+                                        iconSize: 16
+                                        color: Appearance.colors.colOnPrimaryContainer
+                                    }
+
+                                    onClicked: {
+                                        let presetName = model.name;
+                                        let cmd = `if command -v zenity >/dev/null; then FILE=$(zenity --file-selection --save --confirm-overwrite --filename="$HOME/${presetName}.json" --file-filter="JSON | *.json" 2>/dev/null); else FILE=$(kdialog --getsavefilename "$HOME/${presetName}.json" "*.json" 2>/dev/null); fi; if [ -n "$FILE" ]; then cp "$HOME/.config/illogical-impulse/presets/${presetName}.json" "$FILE"; fi`;
+                                        Quickshell.execDetached(["bash", "-c", cmd]);
+                                    }
+
+                                    StyledToolTip {
+                                        text: Translation.tr("Export preset")
                                     }
                                 }
                             }
