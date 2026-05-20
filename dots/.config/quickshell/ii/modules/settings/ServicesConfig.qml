@@ -221,6 +221,19 @@ ContentPage {
             }
         }
 
+        ConfigSwitch {
+            buttonIcon: "branding_watermark"
+            text: Translation.tr("Use transfer popup instead of notification")
+            checked: Config.options.localsend.preferPopupOverNotification
+            enabled: LocalSend.available
+            onCheckedChanged: {
+                Config.options.localsend.preferPopupOverNotification = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Show the interactive popup on incoming transfers. If disabled, a system notification will be shown instead.")
+            }
+        }
+
         MaterialTextArea {
             Layout.fillWidth: true
             placeholderText: Translation.tr("Download path")

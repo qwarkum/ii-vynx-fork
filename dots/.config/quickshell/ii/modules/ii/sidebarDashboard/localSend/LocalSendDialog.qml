@@ -85,6 +85,138 @@ WindowDialog {
                 Layout.bottomMargin: -8
             }
 
+            // SECTION: INCOMING TRANSFER
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 12
+                visible: LocalSend.currentTransfer !== null
+
+                // Section Title Row
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    
+                    MaterialSymbol {
+                        iconSize: 18
+                        text: "downloading"
+                        color: Appearance.colors.colPrimary
+                    }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Incoming Transfer") + " (" + (LocalSend.currentTransfer ? LocalSend.currentTransfer.files.length : 0) + ")"
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.weight: Font.Bold
+                        color: Appearance.colors.colOnLayer1
+                    }
+                }
+
+                // Transfer Details Card
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: detailsColumn.implicitHeight + 28
+                    radius: Appearance.rounding.normal
+                    color: Appearance.colors.colSurfaceContainerHigh
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
+
+                    ColumnLayout {
+                        id: detailsColumn
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 12
+
+                        StyledText {
+                            text: Translation.tr("From: %1").arg(LocalSend.currentTransfer ? LocalSend.currentTransfer.sender : "")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.Bold
+                            color: Appearance.colors.colOnSurface
+                        }
+
+                        // Files list
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Repeater {
+                                model: LocalSend.currentTransfer ? LocalSend.currentTransfer.files : []
+                                delegate: RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+
+                                    MaterialSymbol {
+                                        text: "file_present"
+                                        iconSize: 16
+                                        color: Appearance.colors.colPrimary
+                                    }
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: modelData.name
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        color: Appearance.colors.colOnSurface
+                                        elide: Text.ElideMiddle
+                                    }
+
+                                    StyledText {
+                                        text: LocalSend.formatFileSize(modelData.size || 0)
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        color: Appearance.colors.colSubtext
+                                    }
+                                }
+                            }
+                        }
+
+                        // Accept / Deny Buttons
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+                            Layout.topMargin: 4
+
+                            RippleButton {
+                                id: denyBtn
+                                Layout.fillWidth: true
+                                implicitHeight: 38
+                                buttonRadius: Appearance.rounding.small
+                                colBackground: Appearance.colors.colSurfaceContainerHighest
+                                colBackgroundHover: Appearance.colors.colErrorContainerHover
+                                onClicked: LocalSend.denyTransfer()
+
+                                contentItem: Item {
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Translation.tr("Decline")
+                                        color: denyBtn.containsMouse ? Appearance.colors.colOnErrorContainer : Appearance.colors.colError
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        font.weight: Font.Bold
+                                    }
+                                }
+                            }
+
+                            RippleButton {
+                                id: acceptBtn
+                                Layout.fillWidth: true
+                                implicitHeight: 38
+                                buttonRadius: Appearance.rounding.small
+                                colBackground: Appearance.colors.colPrimary
+                                colBackgroundHover: Appearance.colors.colPrimary
+                                onClicked: LocalSend.acceptTransfer()
+
+                                contentItem: Item {
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Translation.tr("Accept")
+                                        color: Appearance.colors.colOnPrimary
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        font.weight: Font.Bold
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // SECTION 1: FILES TO SEND
             ColumnLayout {
                 Layout.fillWidth: true

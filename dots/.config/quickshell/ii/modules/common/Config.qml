@@ -110,6 +110,7 @@ Singleton {
                 property bool autoStart: true
                 property string downloadPath: Directories.localSendDownloadPath.replace("file://", "")
                 property bool showNotifications: true
+                property bool preferPopupOverNotification: true
             }
 
             property JsonObject ai: JsonObject {

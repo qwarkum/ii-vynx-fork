@@ -25,6 +25,7 @@ Singleton {
     property bool autoStart: Config.options?.localsend?.autoStart ?? false
     property string downloadPath: Config.options?.localsend?.downloadPath
     property bool showNotifications: Config.options?.localsend?.showNotifications ?? true
+    property bool preferPopupOverNotification: Config.options?.localsend?.preferPopupOverNotification ?? true
 
     // Receive state
     property var currentTransfer: null
@@ -352,12 +353,14 @@ Singleton {
                 root.pendingTransfers.push(transfer)
                 root.transferRequested(transfer)
                 GlobalStates.localSendPopupTransfer = transfer
-                GlobalStates.localSendPopupOpen = true
+                if (root.preferPopupOverNotification) {
+                    GlobalStates.localSendPopupOpen = true
+                }
                 break
 
             case "prompt":
                 console.log("[LocalSend] Prompt received, showing notification")
-                if (root.currentTransfer && root.showNotifications) {
+                if (root.currentTransfer && root.showNotifications && !root.preferPopupOverNotification) {
                     root.showIncomingNotification(root.currentTransfer)
                 }
                 break
