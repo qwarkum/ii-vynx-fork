@@ -177,84 +177,158 @@ Item {
                 Layout.fillWidth: true
                 spacing: 12
 
-                // Connected Account Box
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 88
-                    color: Appearance.colors.colSurfaceContainerHigh
-                    radius: Appearance.rounding.large
+                StyledText {
+                    Layout.bottomMargin: 8
+                    text: Translation.tr("Accounts")
+                    font.pixelSize: Appearance.font.pixelSize.large
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-                        anchors.topMargin: 12
-                        anchors.bottomMargin: 12
-                        spacing: 12
+                Repeater {
+                    model: EmailService.accounts
+                    delegate: Rectangle {
+                        id: accCard
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 88
+                        color: EmailService.activeAccountIndex === index ? Appearance.colors.colSecondaryContainer : (accMouse.containsMouse ? Appearance.colors.colSurfaceContainerHighestHover : Appearance.colors.colSurfaceContainerHigh)
+                        radius: Appearance.rounding.large
+                        border.width: EmailService.activeAccountIndex === index ? 2 : 0
+                        border.color: Appearance.colors.colPrimary
 
-                        Item {
-                            Layout.preferredWidth: 56
-                            Layout.preferredHeight: 56
+                        Behavior on color {
+                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(accCard)
+                        }
 
-                            // Circular User Avatar with proper masking
-                            Rectangle {
-                                id: avatarContainer
-                                anchors.fill: parent
-                                radius: width / 2
-                                color: Appearance.colors.colSecondaryContainer
-                                antialiasing: true
+                        MouseArea {
+                            id: accMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: EmailService.switchAccount(index)
+                        }
 
-                                Image {
-                                    id: avatarImage
-                                    anchors.fill: parent
-                                    source: EmailService.userAvatar || ""
-                                    fillMode: Image.PreserveAspectCrop
-                                    visible: false // Hidden to be used as source for mask
-                                    antialiasing: true
-                                }
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 16
+                            anchors.topMargin: 12
+                            anchors.bottomMargin: 12
+                            spacing: 12
 
+                            Item {
+                                Layout.preferredWidth: 56
+                                Layout.preferredHeight: 56
+
+                                // Circular User Avatar with proper masking
                                 Rectangle {
-                                    id: avatarMask
+                                    id: avatarContainer
                                     anchors.fill: parent
                                     radius: width / 2
-                                    visible: false
+                                    color: Appearance.colors.colSurfaceContainerHighest
                                     antialiasing: true
-                                }
 
-                                OpacityMask {
-                                    anchors.fill: parent
-                                    source: avatarImage
-                                    maskSource: avatarMask
-                                    visible: avatarImage.status === Image.Ready
-                                    antialiasing: true
-                                }
+                                    Image {
+                                        id: avatarImage
+                                        anchors.fill: parent
+                                        source: modelData.avatar || ""
+                                        fillMode: Image.PreserveAspectCrop
+                                        visible: false
+                                        antialiasing: true
+                                    }
 
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "account_circle"
-                                    iconSize: 32
-                                    color: Appearance.colors.colOnSecondaryContainer
-                                    visible: !EmailService.userAvatar || avatarImage.status !== Image.Ready
+                                    Rectangle {
+                                        id: avatarMask
+                                        anchors.fill: parent
+                                        radius: width / 2
+                                        visible: false
+                                        antialiasing: true
+                                    }
+
+                                    OpacityMask {
+                                        anchors.fill: parent
+                                        source: avatarImage
+                                        maskSource: avatarMask
+                                        visible: avatarImage.status === Image.Ready
+                                        antialiasing: true
+                                    }
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "account_circle"
+                                        iconSize: 32
+                                        color: Appearance.colors.colOnSurfaceVariant
+                                        visible: !modelData.avatar || avatarImage.status !== Image.Ready
+                                    }
                                 }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                StyledText {
+                                    text: modelData.email
+                                    font.pixelSize: Appearance.font.pixelSize.larger
+                                    font.weight: Font.DemiBold
+                                    color: EmailService.activeAccountIndex === index ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnSurface
+                                }
+                                StyledText {
+                                    text: EmailService.activeAccountIndex === index ? Translation.tr("Active Account") : Translation.tr("Click to switch")
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: EmailService.activeAccountIndex === index ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnSurfaceVariant
+                                    opacity: 0.7
+                                }
+                            }
+
+                            MaterialSymbol {
+                                visible: EmailService.activeAccountIndex === index
+                                text: "check_circle"
+                                iconSize: 24
+                                color: Appearance.colors.colPrimary
                             }
                         }
+                    }
+                }
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
+                // Add account button
+                Rectangle {
+                    id: addAccBtn
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 56
+                    radius: Appearance.rounding.full
+                    color: addAccMouse.pressed ? Appearance.colors.colSurfaceContainerHighestActive : (addAccMouse.containsMouse ? Appearance.colors.colSurfaceContainerHighestHover : Appearance.colors.colSurfaceContainerHigh)
 
-                            StyledText {
-                                text: Translation.tr("Connected account:")
-                                font.pixelSize: Appearance.font.pixelSize.larger
-                                font.weight: Font.DemiBold
-                                color: Appearance.colors.colOnSurface
-                            }
-                            StyledText {
-                                text: EmailService.userEmail || Translation.tr("Loading...")
-                                font.pixelSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnSurfaceVariant
-                            }
+                    Behavior on color {
+                        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(addAccBtn)
+                    }
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 12
+                        MaterialSymbol {
+                            text: "person_add"
+                            iconSize: 20
+                            color: Appearance.colors.colOnSurface
                         }
+                        StyledText {
+                            text: Translation.tr("Add another account")
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnSurface
+                        }
+                    }
+
+                    MouseArea {
+                        id: addAccMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: EmailService.startOAuth()
+                    }
+
+                    scale: addAccMouse.pressed ? 0.98 : 1.0
+                    Behavior on scale {
+                        animation: Appearance.animation.clickBounce.numberAnimation.createObject(addAccBtn)
                     }
                 }
 
@@ -267,7 +341,7 @@ Item {
 
                     property bool confirmMode: false
 
-                    color: confirmMode ? Appearance.colors.colSecondary : Appearance.colors.colPrimary
+                    color: confirmMode ? Appearance.colors.colSecondary : Appearance.colors.colErrorContainer
 
                     Behavior on color {
                         animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(disconnectBtn)
@@ -279,10 +353,10 @@ Item {
                         spacing: 12
 
                         StyledText {
-                            text: disconnectBtn.confirmMode ? Translation.tr("Confirm") : Translation.tr("Disconnect account")
+                            text: disconnectBtn.confirmMode ? Translation.tr("Confirm") : Translation.tr("Disconnect current account")
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: Font.DemiBold
-                            color: disconnectBtn.confirmMode ? Appearance.colors.colOnSecondary : Appearance.colors.colOnPrimary
+                            color: disconnectBtn.confirmMode ? Appearance.colors.colOnSecondary : Appearance.colors.colOnErrorContainer
                         }
                     }
 
@@ -530,7 +604,7 @@ Item {
                     color: Appearance.colors.colOnSurfaceVariant
                 }
 
-                // Auto Mark as Read
+                // Stay in settings
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 64
@@ -539,6 +613,49 @@ Item {
                     topRightRadius: Appearance.rounding.large
                     bottomLeftRadius: Appearance.rounding.small
                     bottomRightRadius: Appearance.rounding.small
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 24
+
+                        MaterialShape {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            shape: MaterialShape.Shape.Cookie12Sided
+                            color: Appearance.colors.colSecondaryContainer
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "settings_applications"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: Translation.tr("Stay in settings after account switch")
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            color: Appearance.colors.colOnSurface
+                        }
+
+                        StyledSwitch {
+                            checked: EmailService.stayInSettingsAfterAccountSwitch
+                            onCheckedChanged: {
+                                if (EmailService.stayInSettingsAfterAccountSwitch !== checked) {
+                                    EmailService.stayInSettingsAfterAccountSwitch = checked;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Auto Mark as Read
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 64
+                    color: Appearance.colors.colSurfaceContainerHigh
+                    radius: Appearance.rounding.small
 
                     RowLayout {
                         anchors.fill: parent
@@ -720,7 +837,7 @@ Item {
                     color: Appearance.colors.colOnSurfaceVariant
                 }
 
-                // Starred
+                // All Inboxes
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 64
@@ -729,6 +846,49 @@ Item {
                     topRightRadius: Appearance.rounding.large
                     bottomLeftRadius: Appearance.rounding.small
                     bottomRightRadius: Appearance.rounding.small
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 24
+
+                        MaterialShape {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            shape: MaterialShape.Shape.Cookie12Sided
+                            color: Appearance.colors.colSecondaryContainer
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "all_inbox"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: Translation.tr("All Inboxes")
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            color: Appearance.colors.colOnSurface
+                        }
+
+                        StyledSwitch {
+                            checked: EmailService.enableAllInboxes
+                            onCheckedChanged: {
+                                if (EmailService.enableAllInboxes !== checked) {
+                                    EmailService.enableAllInboxes = checked;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Starred
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 64
+                    color: Appearance.colors.colSurfaceContainerHigh
+                    radius: Appearance.rounding.small
 
                     RowLayout {
                         anchors.fill: parent

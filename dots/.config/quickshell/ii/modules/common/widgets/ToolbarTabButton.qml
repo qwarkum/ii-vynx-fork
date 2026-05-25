@@ -10,6 +10,7 @@ RippleButton {
     id: root
     required property string materialSymbol
     required property bool current
+    property int tabCount: 0
     horizontalPadding: 10
 
     implicitHeight: 40
@@ -23,7 +24,7 @@ RippleButton {
     contentItem: Row {
         id: contentRow
         anchors.centerIn: parent
-        spacing: 6
+        spacing: label.visible ? 6 : 0
 
         MaterialSymbol {
             id: icon
@@ -35,6 +36,7 @@ RippleButton {
             id: label
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
+            visible: root.current || root.tabCount <= 3
         }
     }
 }

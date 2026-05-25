@@ -16,8 +16,10 @@ Singleton {
 
     // public state
     property bool authenticated: false
-    property bool loading: false
-    property bool sendingEmail: false
+    readonly property bool loading: tokenRefresher.running || inboxFetcher.running || sentFetcher.running || trashFetcher.running || spamFetcher.running || starredFetcher.running || importantFetcher.running || purchasesFetcher.running || searchFetcher.running || labelFetcher.running || allInboxesFetcher.running
+    property bool sendingEmail: emailSender.running
+    property var accounts: [] // List of {email, avatar, refreshToken}
+    property int activeAccountIndex: 0
     property string userEmail: ""
     property string userAvatar: ""
     property string currentEmailBody: ""
@@ -27,6 +29,7 @@ Singleton {
 
     property int maxEmails: 20
     property string historyId: ""
+    property bool enableAllInboxes: true
     property bool enableUpdates: false
     property bool enablePromotions: false
     property bool enableSocials: false
@@ -48,7 +51,13 @@ Singleton {
     property int bodyFontSize: 14
     property bool semanticTimestampsEnabled: true
     property bool autoMarkAsRead: true
+    property bool stayInSettingsAfterAccountSwitch: false
     property var navOrder: [
+        {
+            tab: "all_inboxes",
+            icon: "all_inbox",
+            label: "All Inboxes"
+        },
         {
             tab: "inbox",
             icon: "inbox",
@@ -151,6 +160,11 @@ Singleton {
     property bool credentialsCheckFailed: false
 
     onMaxEmailsChanged: _startDebouncedSync()
+    onEnableAllInboxesChanged: {
+        _startDebouncedSync();
+        if (enableAllInboxes)
+            syncAllInboxes();
+    }
     onEnableUpdatesChanged: _startDebouncedSync()
     onEnablePromotionsChanged: _startDebouncedSync()
     onEnableSocialsChanged: _startDebouncedSync()
@@ -183,7 +197,6 @@ Singleton {
         running: root.authenticated && root.refreshIntervalMinutes > 0
         repeat: true
         onTriggered: {
-            console.log("[Gmail] Auto-refresh Timer Triggered! Interval:", interval, "ms");
             root.syncAll();
         }
     }
@@ -194,7 +207,6 @@ Singleton {
         repeat: false
         onTriggered: {
             if (!root.authenticated && root._refreshToken !== "") {
-                console.log("[Gmail] Retrying token refresh...");
                 root._refreshAndFetch();
             }
         }
@@ -204,7 +216,6 @@ Singleton {
         target: Network
         function onWifiStatusChanged() {
             if (Network.wifiStatus === "connected" && !root.authenticated && root._refreshToken !== "") {
-                console.log("[Gmail] Network connected, retrying refresh...");
                 root._refreshAndFetch();
             }
         }
@@ -214,6 +225,7 @@ Singleton {
         id: emailSettings
         category: "EmailService"
         property alias maxEmails: root.maxEmails
+        property alias enableAllInboxes: root.enableAllInboxes
         property alias enableUpdates: root.enableUpdates
         property alias enablePromotions: root.enablePromotions
         property alias enableSocials: root.enableSocials
@@ -233,9 +245,11 @@ Singleton {
         property alias showAvatars: root.showAvatars
         property alias confirmDelete: root.confirmDelete
         property alias bodyFontSize: root.bodyFontSize
+        property alias stayInSettingsAfterAccountSwitch: root.stayInSettingsAfterAccountSwitch
         property alias autoMarkAsRead: root.autoMarkAsRead
         property alias navOrder: root.navOrder
         property alias credentialsConfigured: root.credentialsConfigured
+        property alias activeAccountIndex: root.activeAccountIndex
 
         // Draft persistence
         property alias composeDraftTo: root.composeDraftTo
@@ -251,6 +265,7 @@ Singleton {
     }
 
     property ListModel inboxMessages: ListModel {}
+    property ListModel allInboxesMessages: ListModel {}
     property ListModel sentMessages: ListModel {}
     property ListModel spamMessages: ListModel {}
     property ListModel starredMessages: ListModel {}
@@ -304,12 +319,43 @@ Singleton {
     IpcHandler {
         target: "gmail"
         function onAuthComplete(refreshToken: string, email: string, picture: string) {
+            let newAccounts = [];
+            if (root.accounts) {
+                for (let i = 0; i < root.accounts.length; i++) {
+                    newAccounts.push(root.accounts[i]);
+                }
+            }
+
+            let foundIdx = -1;
+            for (let i = 0; i < newAccounts.length; i++) {
+                if (newAccounts[i].email === email) {
+                    foundIdx = i;
+                    break;
+                }
+            }
+
+            if (foundIdx !== -1) {
+                newAccounts[foundIdx].refreshToken = refreshToken;
+                newAccounts[foundIdx].avatar = picture;
+                root.activeAccountIndex = foundIdx;
+            } else {
+                newAccounts.push({
+                    email: email,
+                    avatar: picture,
+                    refreshToken: refreshToken
+                });
+                root.activeAccountIndex = newAccounts.length - 1;
+            }
+
+            root.accounts = newAccounts;
+            KeyringStorage.setNestedField(["gmail_accounts"], newAccounts);
+
+            // Legacy fields for compatibility
             KeyringStorage.setNestedField(["gmail_refresh_token"], refreshToken);
             KeyringStorage.setNestedField(["gmail_user_email"], email);
             KeyringStorage.setNestedField(["gmail_user_avatar"], picture);
-            root.userEmail = email;
-            root.userAvatar = picture;
-            root._refreshToken = refreshToken;
+
+            _updateActiveAccount();
             root._refreshAndFetch();
         }
         function onTokenRefreshed(accessToken: string, expiresIn: int) {
@@ -320,8 +366,35 @@ Singleton {
         }
     }
 
+    function _migrateNavOrder() {
+        let foundAll = false;
+        for (let i = 0; i < root.navOrder.length; i++) {
+            if (root.navOrder[i].tab === "all_inboxes") {
+                foundAll = true;
+                break;
+            }
+        }
+        if (!foundAll) {
+            let newNav = root.navOrder.slice();
+            newNav.unshift({
+                tab: "all_inboxes",
+                icon: "all_inbox",
+                label: "All Inboxes"
+            });
+            root.navOrder = newNav;
+        }
+    }
+
+    Timer {
+        id: migrationTimer
+        interval: 500
+        repeat: false
+        onTriggered: _migrateNavOrder()
+    }
+
     // initialization — keyring might not have loaded yet
     Component.onCompleted: {
+        migrationTimer.start();
         root.checkCredentials();
         if (KeyringStorage.loaded) {
             _tryInit();
@@ -337,22 +410,76 @@ Singleton {
     }
 
     function _tryInit() {
+        const storedAccounts = KeyringStorage.keyringData["gmail_accounts"];
+
+        if (Array.isArray(storedAccounts) && storedAccounts.length > 0) {
+            root.accounts = storedAccounts;
+            if (root.activeAccountIndex >= root.accounts.length) {
+                root.activeAccountIndex = 0;
+            }
+
+            _updateActiveAccount();
+            _refreshAndFetch();
+            return;
+        }
+
+        // Migration from legacy fields
         const storedToken = KeyringStorage.keyringData["gmail_refresh_token"];
         const storedEmail = KeyringStorage.keyringData["gmail_user_email"];
         const storedAvatar = KeyringStorage.keyringData["gmail_user_avatar"];
 
-        if (storedEmail) {
-            root.userEmail = storedEmail;
-        }
+        if (storedToken && storedToken !== "" && storedEmail) {
+            let legacyAccount = {
+                email: storedEmail,
+                avatar: storedAvatar || "",
+                refreshToken: storedToken
+            };
+            root.accounts = [legacyAccount];
+            root.activeAccountIndex = 0;
+            KeyringStorage.setNestedField(["gmail_accounts"], root.accounts);
 
-        if (storedAvatar) {
-            root.userAvatar = storedAvatar;
-        }
-
-        if (storedToken && storedToken !== "") {
-            _refreshToken = storedToken;
+            _updateActiveAccount();
             _refreshAndFetch();
         }
+    }
+
+    function _updateActiveAccount() {
+        if (root.accounts && root.activeAccountIndex < root.accounts.length) {
+            const acc = root.accounts[root.activeAccountIndex];
+            root.userEmail = acc.email;
+            root.userAvatar = acc.avatar;
+            root._refreshToken = acc.refreshToken;
+        } else {
+            root.userEmail = "";
+            root.userAvatar = "";
+            root._refreshToken = "";
+            root.authenticated = false;
+        }
+    }
+
+    function switchAccount(index) {
+        if (index < 0 || !root.accounts || index >= root.accounts.length)
+            return;
+        if (index === root.activeAccountIndex && root.authenticated)
+            return;
+
+        root.activeAccountIndex = index;
+        root._accessToken = "";
+
+        // Clear all models
+        inboxMessages.clear();
+        allInboxesMessages.clear();
+        sentMessages.clear();
+        spamMessages.clear();
+        starredMessages.clear();
+        importantMessages.clear();
+        purchasesMessages.clear();
+        trashMessages.clear();
+        searchMessagesModel.clear();
+        labels.clear();
+
+        _updateActiveAccount();
+        _refreshAndFetch();
     }
 
     // public functions
@@ -365,32 +492,49 @@ Singleton {
     }
 
     function removeAccount() {
-        KeyringStorage.setNestedField(["gmail_refresh_token"], "");
-        KeyringStorage.setNestedField(["gmail_user_email"], "");
-        KeyringStorage.setNestedField(["gmail_user_avatar"], "");
-        _accessToken = "";
-        _refreshToken = "";
-        userEmail = "";
-        userAvatar = "";
-        authenticated = false;
-        inboxMessages.clear();
-        sentMessages.clear();
-        spamMessages.clear();
-        labels.clear();
+        if (!root.accounts || root.accounts.length === 0)
+            return;
+
+        let newAccounts = [];
+        for (let i = 0; i < root.accounts.length; i++) {
+            if (i !== root.activeAccountIndex) {
+                newAccounts.push(root.accounts[i]);
+            }
+        }
+
+        root.accounts = newAccounts;
+        KeyringStorage.setNestedField(["gmail_accounts"], newAccounts);
+
+        if (newAccounts.length > 0) {
+            root.activeAccountIndex = 0;
+            switchAccount(0);
+        } else {
+            // Last account removed
+            KeyringStorage.setNestedField(["gmail_refresh_token"], "");
+            KeyringStorage.setNestedField(["gmail_user_email"], "");
+            KeyringStorage.setNestedField(["gmail_user_avatar"], "");
+            _accessToken = "";
+            _refreshToken = "";
+            userEmail = "";
+            userAvatar = "";
+            authenticated = false;
+            inboxMessages.clear();
+            sentMessages.clear();
+            spamMessages.clear();
+            labels.clear();
+        }
     }
 
     function syncAll() {
-        const stored = KeyringStorage.keyringData["gmail_refresh_token"];
-        if (stored && stored !== "") {
-            _refreshToken = stored;
-            _refreshAndFetch();
+        if (root._refreshToken && root._refreshToken !== "") {
+            root._refreshAndFetch();
         }
     }
 
     function _refreshAndFetch() {
         if (_refreshToken === "")
             return;
-        loading = true;
+
         // First refresh the token, then fetch all labels in parallel
         tokenRefresher.command = ["python3", Directories.scriptPath + "/email/token_refresh.py", _refreshToken];
         tokenRefresher.running = true;
@@ -405,7 +549,6 @@ Singleton {
             onStreamFinished: {
                 if (text.length === 0) {
                     // Don't immediately de-authenticate on empty response, could be network glitch
-                    root.loading = false;
                     return;
                 }
                 try {
@@ -417,15 +560,12 @@ Singleton {
                     root._startFetchAll();
                 } catch (e) {
                     root.authenticated = false;
-                    root.loading = false;
                     console.warn("[Gmail] Token parse error:", e);
                 }
             }
         }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
-                // Keep authenticated true if we have a refresh token, just stop loading
-                root.loading = false;
                 if (!root.authenticated) {
                     retryRefreshTimer.start();
                 }
@@ -473,11 +613,43 @@ Singleton {
         return _pageTokens[t].length > pageIndex + 1;
     }
 
+    Process {
+        id: allInboxesFetcher
+        command: ["echo", "[]"]
+        onRunningChanged: {
+            if (running) {
+                root.syncingLabels["all_inboxes"] = true;
+                root.syncingLabelsChanged();
+            } else {
+                delete root.syncingLabels["all_inboxes"];
+                root.syncingLabelsChanged();
+            }
+        }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root._populateModel(root.allInboxesMessages, text, "all_inboxes", 0);
+            }
+        }
+    }
+
+    function syncAllInboxes() {
+        if (!authenticated || !root.accounts || root.accounts.length === 0)
+            return;
+
+        allInboxesFetcher.command = ["python3", Directories.scriptPath + "/email/fetch_all_accounts.py", JSON.stringify(root.accounts), maxEmails.toString()];
+        allInboxesFetcher.running = true;
+    }
+
     function syncLabel(label, pageIndex = 0, force = false) {
         if (!authenticated || _refreshToken === "")
             return;
 
         let tab = label.toLowerCase();
+        if (tab === "all_inboxes") {
+            syncAllInboxes();
+            return;
+        }
+
         let targetModel = tab === "inbox" ? inboxMessages : tab === "sent" ? sentMessages : tab === "spam" ? spamMessages : tab === "starred" ? starredMessages : tab === "important" ? importantMessages : tab === "purchases" ? purchasesMessages : tab === "trash" ? trashMessages : searchMessagesModel;
 
         // Clear model immediately if forcing or changing page to show loading state
@@ -485,9 +657,6 @@ Singleton {
             targetModel.clear();
         }
 
-        // Always set loading to true to provide UI feedback (progress bar)
-        // The global overlay in CheatsheetEmail.qml will only show if model.count === 0
-        loading = true;
         let hId = (force || targetModel.count === 0) ? "" : historyId;
         let token = _getToken(tab, pageIndex);
         let bestToken = _getBestToken();
@@ -540,17 +709,10 @@ Singleton {
 
     function _startFetchAll() {
         syncLabel("inbox");
+        if (root.enableAllInboxes)
+            syncLabel("all_inboxes");
         labelFetcher.command = ["python3", Directories.scriptPath + "/email/fetch_labels.py", _getBestToken(), enabledLabels.join(",")];
         labelFetcher.running = true;
-    }
-
-    property int _pendingFetches: 0
-
-    function _onFetchDone() {
-        _pendingFetches--;
-        if (_pendingFetches <= 0) {
-            loading = false;
-        }
     }
 
     Process {
@@ -560,7 +722,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -571,12 +732,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.inboxMessages, text, inboxFetcher._currentTab, inboxFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -587,7 +743,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -598,12 +753,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.sentMessages, text, sentFetcher._currentTab, sentFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -614,7 +764,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -625,12 +774,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.trashMessages, text, trashFetcher._currentTab, trashFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -641,7 +785,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -652,12 +795,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.spamMessages, text, spamFetcher._currentTab, spamFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -668,7 +806,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -679,12 +816,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.starredMessages, text, starredFetcher._currentTab, starredFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -695,7 +827,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -706,12 +837,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.importantMessages, text, importantFetcher._currentTab, importantFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -722,7 +848,6 @@ Singleton {
         command: ["echo", "[]"]
         onRunningChanged: {
             if (running) {
-                root._pendingFetches++;
                 root.syncingLabels["fetcher"] = true;
                 root.syncingLabelsChanged();
             } else {
@@ -733,12 +858,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.purchasesMessages, text, purchasesFetcher._currentTab, purchasesFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -748,18 +868,14 @@ Singleton {
         property int _currentPage: 0
         command: ["echo", "[]"]
         onRunningChanged: {
-            if (running)
-                root._pendingFetches++;
+            if (running) {
+                // ...
+            }
         }
         stdout: StdioCollector {
             onStreamFinished: {
                 root._populateModel(root.searchMessagesModel, text, searchFetcher._currentTab, searchFetcher._currentPage);
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -767,8 +883,9 @@ Singleton {
         id: labelFetcher
         command: ["echo", "{}"]
         onRunningChanged: {
-            if (running)
-                root._pendingFetches++;
+            if (running) {
+                // ...
+            }
         }
         stdout: StdioCollector {
             onStreamFinished: {
@@ -802,14 +919,9 @@ Singleton {
                         });
                     }
                 } catch (e) {
-                    console.warn("[Gmail] Labels parse error:", e);
+                    // console.warn("[Gmail] Labels parse error:", e);
                 }
-                root._onFetchDone();
             }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root._onFetchDone();
         }
     }
 
@@ -831,21 +943,20 @@ Singleton {
                 root.historyId = res.historyId;
             }
 
-            const newIds = new Set(msgs.map(m => m.id));
             const npt = res.nextPageToken || "";
 
             if (tab !== undefined && pageIndex !== undefined) {
                 root._setNextToken(tab, pageIndex, npt);
             }
 
-            // Deep comparison to avoid unnecessary updates and flickering
+            // Deep comparison
             if (targetModel.count === msgs.length) {
                 let identical = true;
                 for (let i = 0; i < msgs.length; i++) {
                     let oldItem = targetModel.get(i);
                     let newItem = msgs[i];
 
-                    if (oldItem.id !== newItem.id || oldItem.unread !== (newItem.unread || false) || oldItem.starred !== (newItem.starred || false) || oldItem.subject !== (newItem.subject || "(sem assunto)") || oldItem.snippet !== (newItem.snippet || "")) {
+                    if (oldItem.id !== newItem.id || oldItem.unread !== (newItem.unread || false) || oldItem.starred !== (newItem.starred || false) || oldItem.subject !== (newItem.subject || "(no subject)") || oldItem.snippet !== (newItem.snippet || "")) {
                         identical = false;
                         break;
                     }
@@ -891,6 +1002,7 @@ Singleton {
                     timestamp: msg.timestamp || 0,
                     labelsString: (msg.labels || []).join(","),
                     icon: msg.icon || "person",
+                    recipientAccount: msg.account || "",
                     isStack: root.stackingEnabled && threadCounts[msg.threadId] > 1,
                     stackCount: root.stackingEnabled ? (threadCounts[msg.threadId] || 1) : 1,
                     threadUnreadCount: root.stackingEnabled ? (threadUnreadCounts[msg.threadId] || 0) : 0
@@ -919,13 +1031,11 @@ Singleton {
                 } catch (e) {
                     root.emailSent(false, "Parse error: " + e);
                 }
-                root.sendingEmail = false;
             }
         }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
                 root.emailSent(false, "Process exited with code " + exitCode);
-                root.sendingEmail = false;
             }
         }
     }
@@ -935,7 +1045,6 @@ Singleton {
             root.emailSent(false, "Not authenticated");
             return;
         }
-        sendingEmail = true;
         let cmd = ["python3", Directories.scriptPath + "/email/send_email.py", _refreshToken, to, subject, bodyHtml];
         if (threadId)
             cmd.push("--thread-id", threadId);
@@ -993,7 +1102,7 @@ Singleton {
         });
 
         // Update local models
-        var models = [inboxMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, searchMessagesModel, currentThreadMessages];
+        var models = [inboxMessages, allInboxesMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, searchMessagesModel, currentThreadMessages];
         for (var i = 0; i < models.length; i++) {
             var m = models[i];
             for (var j = 0; j < m.count; j++) {
@@ -1017,7 +1126,7 @@ Singleton {
             Quickshell.execDetached(["curl", "-s", "-X", "POST", "-H", "Authorization: Bearer " + token, "-H", "Content-Type: application/json", "-d", bodyStr, `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`]);
         });
 
-        var models = [inboxMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, searchMessagesModel, currentThreadMessages];
+        var models = [inboxMessages, allInboxesMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, searchMessagesModel, currentThreadMessages];
         for (var i = 0; i < models.length; i++) {
             var m = models[i];
             for (var j = 0; j < m.count; j++) {
@@ -1037,7 +1146,6 @@ Singleton {
     }
 
     function trashMessage(messageId) {
-        console.log("[EmailService] Trashing message:", messageId);
         _ensureValidToken(token => {
             Quickshell.execDetached(["python3", Directories.scriptPath + "/email/delete_email.py", token, messageId, "trash"]);
         });
@@ -1045,7 +1153,6 @@ Singleton {
     }
 
     function deleteMessagePermanent(messageId) {
-        console.log("[EmailService] Permanently deleting message:", messageId);
         _ensureValidToken(token => {
             Quickshell.execDetached(["python3", Directories.scriptPath + "/email/delete_email.py", token, messageId, "permanent"]);
         });
@@ -1053,7 +1160,6 @@ Singleton {
     }
 
     function restoreMessage(messageId) {
-        console.log("[EmailService] Restoring message from trash:", messageId);
         _ensureValidToken(token => {
             Quickshell.execDetached(["python3", Directories.scriptPath + "/email/delete_email.py", token, messageId, "untrash"]);
         });
@@ -1061,7 +1167,7 @@ Singleton {
     }
 
     function _removeFromModels(messageId) {
-        let models = [inboxMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, trashMessages, searchMessagesModel, currentThreadMessages];
+        let models = [inboxMessages, allInboxesMessages, sentMessages, spamMessages, starredMessages, importantMessages, purchasesMessages, trashMessages, searchMessagesModel, currentThreadMessages];
         for (let m of models) {
             for (let i = 0; i < m.count; i++) {
                 let item = m.get(i);
@@ -1070,7 +1176,6 @@ Singleton {
                         root.decrementUnreadForModel(m);
                     }
                     m.remove(i);
-                    console.log("[EmailService] Removed from model:", messageId);
                     break;
                 }
             }
@@ -1080,7 +1185,6 @@ Singleton {
     function searchMessages(query, pageIndex = 0) {
         if (_refreshToken === "")
             return;
-        loading = true;
 
         let token = _getToken("search", pageIndex);
         let bestToken = _getBestToken();
@@ -1096,7 +1200,6 @@ Singleton {
         command: ["echo", ""]
         stdout: StdioCollector {
             onStreamFinished: {
-                console.log("[Gmail] Received body data:", text.substring(0, 500), "...");
                 try {
                     const data = JSON.parse(text);
                     root.currentEmailBody = data.body || "";
@@ -1104,7 +1207,6 @@ Singleton {
                     root.currentEmailAttachments.clear();
                     const atts = data.attachments || [];
                     atts.forEach(a => {
-                        console.log("[Gmail] Processing attachment:", a.name, "| hasEventInfo:", !!a.eventInfo);
                         root.currentEmailAttachments.append({
                             name: a.name || "",
                             mimeType: a.mimeType || "",
@@ -1145,10 +1247,8 @@ Singleton {
                 try {
                     const data = JSON.parse(text);
                     if (data.success) {
-                        console.log("[Gmail] Downloaded attachment to: ", data.path);
                         root.attachmentDownloadFinished(data.attachmentId || "", true, data.path);
                     } else {
-                        console.warn("[Gmail] Download error: ", data.error);
                         root.attachmentDownloadFinished(data.attachmentId || "", false, "");
                     }
                 } catch (e) {

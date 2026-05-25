@@ -189,6 +189,10 @@ ContentPage {
                         {
                             displayName: Translation.tr("Android 16"),
                             value: "android16"
+                        },
+                        {
+                            displayName: Translation.tr("One UI"),
+                            value: "oneui"
                         }
                     ]
 
@@ -434,6 +438,34 @@ ContentPage {
                     currentValue: Config.options.policies.translator
                     onSelected: newValue => {
                         Config.options.policies.translator = newValue;
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("No"),
+                            icon: "close",
+                            value: 0
+                        },
+                        {
+                            displayName: Translation.tr("Yes"),
+                            icon: "check",
+                            value: 1
+                        }
+                    ]
+                }
+            }
+        }
+
+        ConfigRow {
+            Layout.fillHeight: false
+
+            ContentSubsection {
+                title: Translation.tr("Sidebar player")
+                Layout.fillWidth: true
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.policies.player
+                    onSelected: newValue => {
+                        Config.options.policies.player = newValue;
                     }
                     options: [
                         {

@@ -25,10 +25,53 @@ MouseArea {
     property color textColor: Appearance.colors.colOnSurface
     visible: Battery.available
 
-    implicitWidth: (Config.options.battery.style === "android16" ? android16Battery.width : batteryContainer.width) + 12
+    implicitWidth: {
+        if (Config.options.battery.style === "android16") return android16Battery.width + 12;
+        if (Config.options.battery.style === "oneui") return oneuiBattery.implicitWidth + 12;
+        return batteryContainer.width + 12;
+    }
     implicitHeight: Appearance.sizes.baseBarHeight
 
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
+
+    ClippedProgressBar {
+        id: oneuiBattery
+        visible: Config.options.battery.style === "oneui"
+        anchors.centerIn: parent
+        value: root.percentage
+        highlightColor: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
+
+        Item {
+            anchors.centerIn: parent
+            width: oneuiBattery.valueBarWidth
+            height: oneuiBattery.valueBarHeight
+
+            RowLayout {
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    bottom: parent.bottom
+                    bottomMargin: (parent.height - height) / 2
+                }
+                spacing: 0
+
+                MaterialSymbol {
+                    id: boltIcon
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: -2
+                    Layout.rightMargin: -2
+                    fill: 1
+                    text: "bolt"
+                    iconSize: Appearance.font.pixelSize.smaller
+                    visible: root.effectivelyCharging && root.percentage < 1 // TODO: animation
+                }
+                StyledText {
+                    Layout.alignment: Qt.AlignVCenter
+                    font: oneuiBattery.font
+                    text: oneuiBattery.text
+                }
+            }
+        }
+    }
 
     Item {
         id: android16Battery
@@ -123,7 +166,7 @@ MouseArea {
 
     Item {
         id: batteryContainer
-        visible: Config.options.battery.style !== "android16"
+        visible: Config.options.battery.style !== "android16" && Config.options.battery.style !== "oneui"
         anchors.centerIn: parent
         height: 14
         width: height * (28 / 13)

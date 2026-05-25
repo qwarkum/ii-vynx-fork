@@ -12,21 +12,39 @@ Item {
     required property var scopeRoot
     property int sidebarPadding: 12
     anchors.fill: parent
+    
+    // Toggles from Config
     property bool aiChatEnabled: Config.options.policies.ai !== 0  
     property bool translatorEnabled: Config.options.policies.translator !== 0
+    property bool mediaEnabled: Config.options.policies.player !== 0
+    property bool wallpapersEnabled: Config.options.policies.wallpapers !== 0  
     property bool animeEnabled: Config.options.policies.weeb !== 0  
     property bool animeCloset: Config.options.policies.weeb === 2  
-    property bool wallpapersEnabled: Config.options.policies.wallpapers !== 0  
-    property var tabButtonList: [  
-        ...(root.aiChatEnabled ? [{"icon": "neurology", "name": Translation.tr("Intelligence")}] : []),  
-        ...(root.translatorEnabled ? [{"icon": "translate", "name": Translation.tr("Translator")}] : []), 
-        ...(root.wallpapersEnabled ? [{"icon": "wallpaper", "name": Translation.tr("Wallpapers")}] : []),
-        ...((root.animeEnabled && !root.animeCloset) ? [{"icon": "bookmark_heart", "name": Translation.tr("Anime")}] : []) 
+
+    // Tab and Page mapping
+    property var tabs: [
+        { icon: "neurology", name: Translation.tr("Intelligence"), enabled: root.aiChatEnabled, component: aiChat },
+        { icon: "translate", name: Translation.tr("Translator"), enabled: root.translatorEnabled, component: translator },
+        { icon: "music_note", name: Translation.tr("Media"), enabled: root.mediaEnabled, component: media },
+        { icon: "wallpaper", name: Translation.tr("Wallpapers"), enabled: root.wallpapersEnabled, component: wallpaperBrowser },
+        { icon: "bookmark_heart", name: Translation.tr("Anime"), enabled: root.animeEnabled && !root.animeCloset, component: anime }
     ]
-    property int tabCount: swipeView.count
+
+    property var activeTabs: tabs.filter(t => t.enabled)
+    property var tabButtonList: activeTabs.map(t => ({ icon: t.icon, name: t.name }))
+    property int tabCount: activeTabs.length
+
+    onActiveTabsChanged: {
+        // Ensure the current tab index is still valid when tabs are enabled/disabled
+        if (Persistent.states.sidebar.policies.tab >= tabCount) {
+            Persistent.states.sidebar.policies.tab = Math.max(0, tabCount - 1)
+        }
+    }
 
     function focusActiveItem() {
-        swipeView.currentItem.forceActiveFocus()
+        if (swipeView.currentItem && swipeView.currentItem.item) {
+            swipeView.currentItem.item.forceActiveFocus()
+        }
     }
 
     Keys.onPressed: (event) => {
@@ -53,7 +71,7 @@ Item {
         spacing: sidebarPadding
 
         Toolbar {
-            visible: tabButtonList.length > 1
+            visible: activeTabs.length > 1
             Layout.alignment: Qt.AlignHCenter
             enableShadow: false
             colBackground: Appearance.colors.colLayer3
@@ -62,24 +80,30 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 tabButtonList: root.tabButtonList
                 currentIndex: Persistent.states.sidebar.policies.tab
-                onCurrentIndexChanged: Persistent.states.sidebar.policies.tab = currentIndex
+                onCurrentIndexChanged: {
+                    if (currentIndex >= 0 && currentIndex < root.tabCount && Persistent.states.sidebar.policies.tab !== currentIndex) {
+                        Persistent.states.sidebar.policies.tab = currentIndex
+                    }
+                }
             }
         }
 
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            implicitWidth: swipeView.implicitWidth
-            implicitHeight: swipeView.implicitHeight
             radius: Appearance.rounding.normal
             color: "transparent"
 
-            SwipeView { // Content pages
+            SwipeView {
                 id: swipeView
                 anchors.fill: parent
-                spacing: 8
+                spacing: 10
                 currentIndex: Persistent.states.sidebar.policies.tab
-                onCurrentIndexChanged: Persistent.states.sidebar.policies.tab = currentIndex
+                onCurrentIndexChanged: {
+                    if (currentIndex >= 0 && currentIndex < root.tabCount && Persistent.states.sidebar.policies.tab !== currentIndex) {
+                        Persistent.states.sidebar.policies.tab = currentIndex
+                    }
+                }
 
                 clip: true
                 layer.enabled: true
@@ -91,13 +115,22 @@ Item {
                     }
                 }
 
-                contentChildren: [
-                    ...(root.aiChatEnabled ? [aiChat.createObject()] : []),
-                    ...(root.translatorEnabled ? [translator.createObject()] : []),
-                    ...((root.tabButtonList.length === 0 || (!root.aiChatEnabled && !root.translatorEnabled && root.animeCloset)) ? [placeholder.createObject()] : []),
-                    ...(root.wallpapersEnabled ? [wallpaperBrowser.createObject()] : []),
-                    ...(root.animeEnabled ? [anime.createObject()] : [])
-                ]
+                Repeater {
+                    model: root.activeTabs
+                    Loader {
+                        active: SwipeView.isCurrentItem || SwipeView.isNextItem || SwipeView.isPreviousItem
+                        sourceComponent: modelData.component
+                        onLoaded: {
+                            if (item) item.anchors.fill = this
+                        }
+                    }
+                }
+                
+                // Show placeholder if no tabs are active
+                Loader {
+                    active: root.activeTabs.length === 0
+                    sourceComponent: placeholder
+                }
             }
         }
 
@@ -108,6 +141,10 @@ Item {
         Component {
             id: translator
             Translator {}
+        }
+        Component {
+            id: media
+            SidebarPlayerControl {}
         }
         Component {  
             id: wallpaperBrowser  

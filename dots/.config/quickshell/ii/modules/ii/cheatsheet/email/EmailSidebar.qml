@@ -26,6 +26,7 @@ Item {
     property var _navButtons: {
         var list = EmailService.navOrder;
         var visibilityMap = {
+            "all_inboxes": EmailService.enableAllInboxes,
             "inbox": true,
             "spam": EmailService.enableSpam,
             "sent": EmailService.enableSent,
@@ -146,7 +147,11 @@ Item {
                                 if (!EmailService.enableUnreadBadges)
                                     return "";
                                 var count = 0;
-                                if (modelData.tab === "inbox")
+                                if (modelData.tab === "all_inboxes") {
+                                    for (let i = 0; i < EmailService.allInboxesMessages.count; i++) {
+                                        if (EmailService.allInboxesMessages.get(i).unread) count++;
+                                    }
+                                } else if (modelData.tab === "inbox")
                                     count = EmailService.inboxUnreadCount;
                                 else if (modelData.tab === "spam")
                                     count = EmailService.spamUnreadCount;

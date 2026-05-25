@@ -105,7 +105,7 @@ Item {
 
                 loading: EmailService.loading
                 activeTab: root.activeTab
-                model: root.activeTab === "spam" ? EmailService.spamMessages : root.activeTab === "sent" ? EmailService.sentMessages : root.activeTab === "trash" ? EmailService.trashMessages : root.activeTab === "starred" ? EmailService.starredMessages : root.activeTab === "important" ? EmailService.importantMessages : root.activeTab === "purchases" ? EmailService.purchasesMessages : root.activeTab === "search" ? EmailService.searchMessagesModel : root.activeTab.indexOf("label_") === 0 ? EmailService.searchMessagesModel : EmailService.inboxMessages
+                model: root.activeTab === "all_inboxes" ? EmailService.allInboxesMessages : root.activeTab === "spam" ? EmailService.spamMessages : root.activeTab === "sent" ? EmailService.sentMessages : root.activeTab === "trash" ? EmailService.trashMessages : root.activeTab === "starred" ? EmailService.starredMessages : root.activeTab === "important" ? EmailService.importantMessages : root.activeTab === "purchases" ? EmailService.purchasesMessages : root.activeTab === "search" ? EmailService.searchMessagesModel : root.activeTab.indexOf("label_") === 0 ? EmailService.searchMessagesModel : EmailService.inboxMessages
                 onEmailSelected: function(messageId, threadId, isStack, startX, startY, startWidth, startHeight, iconX, iconY, iconW, iconH, subjectX, subjectY, subjectW, subjectH) {
                     // Buscar dados do email no model ativo
                     var currentModel = emailInbox.model;
@@ -294,6 +294,12 @@ Item {
         function onAuthenticatedChanged() {
             if (!EmailService.authenticated) {
                 root.activeTab = "inbox";
+            }
+        }
+        function onActiveAccountIndexChanged() {
+            if (!EmailService.stayInSettingsAfterAccountSwitch && root.activeTab === "settings") {
+                root.activeTab = "inbox";
+                emailSidebar.activeTab = "inbox";
             }
         }
     }

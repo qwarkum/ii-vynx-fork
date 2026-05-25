@@ -687,6 +687,15 @@ Item {
                                             maximumLineCount: 1
                                         }
 
+                                        StyledText {
+                                            visible: root.activeTab === "all_inboxes" && model.recipientAccount !== ""
+                                            text: model.recipientAccount
+                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            color: Appearance.colors.colPrimary
+                                            opacity: 0.6
+                                            Layout.alignment: Qt.AlignVCenter
+                                        }
+
                                         Rectangle {
                                             Layout.preferredWidth: 8
                                             Layout.preferredHeight: 8

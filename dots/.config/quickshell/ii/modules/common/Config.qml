@@ -94,6 +94,7 @@ Singleton {
                 property int weeb: 0 // 0: No | 1: Open | 2: Closet
                 property int wallpapers: 1 // 0: No | 1: Yes
                 property int translator: 0 // 0: No | 1: Default (illogical-impulse) | 2: Expressive (reworked)
+                property int player: 1 // 0: No | 1: Yes
             }
 
             property JsonObject localsend: JsonObject {

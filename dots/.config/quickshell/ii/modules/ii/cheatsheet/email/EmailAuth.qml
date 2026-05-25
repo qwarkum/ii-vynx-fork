@@ -327,16 +327,29 @@ Item {
 
         MaterialLoadingIndicator {
             Layout.alignment: Qt.AlignHCenter
-            implicitSize: 120
+            implicitSize: 160
             loading: parent.visible
         }
 
-        StyledText {
+        ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
-            text: EmailService.checkingCredentials ? Translation.tr("Checking environment...") : Translation.tr("Authenticating with Google...")
-            font.pixelSize: Appearance.font.pixelSize.huge
-            color: Appearance.colors.colOnSurface
-            opacity: 0.8
+            spacing: 8
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: EmailService.checkingCredentials ? Translation.tr("Checking environment...") : Translation.tr("Authenticating with Google...")
+                font.pixelSize: 32
+                font.weight: Font.Bold
+                color: Appearance.colors.colOnSurface
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: Translation.tr("Connecting to Gmail and retrieving your updates...")
+                font.pixelSize: Appearance.font.pixelSize.larger
+                color: Appearance.colors.colOnSurfaceVariant
+                opacity: 0.8
+            }
         }
     }
 }
