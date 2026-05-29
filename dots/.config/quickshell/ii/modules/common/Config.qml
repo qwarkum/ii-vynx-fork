@@ -67,20 +67,12 @@ Singleton {
         path: root.filePath
         watchChanges: true
         blockWrites: root.blockWrites
-        onFileChanged: {
-            if (!root.ready)
-                return;
-            fileReloadTimer.restart();
-        }
-        onAdapterUpdated: {
-            if (!root.ready)
-                return;
-            fileWriteTimer.restart();
-        }
+        onFileChanged: fileReloadTimer.restart()
+        onAdapterUpdated: fileWriteTimer.restart()
         onLoaded: root.ready = true
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
-                root.ready = true;
+                writeAdapter();
             }
         }
 

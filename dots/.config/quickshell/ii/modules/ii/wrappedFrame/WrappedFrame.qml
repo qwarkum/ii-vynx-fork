@@ -124,7 +124,9 @@ Item {
                     WlrLayershell.namespace: "quickshell:bar"
                     WlrLayershell.layer: WlrLayer.Overlay
                     exclusionMode: ExclusionMode.Ignore
-                    mask: Region {} // Ignore pointer events so normal windows are clickable
+                    Component.onCompleted: {
+                        mask = emptyRegionComponent.createObject(combinedFrameWindow);
+                    }
 
                     property color baseColor: monitorScope.showBarBackground ? (Config.options.bar.expressiveColors ? activeTheme.barBackground : Appearance.colors.colLayer0) : "transparent"
                     Behavior on baseColor {
@@ -244,9 +246,17 @@ Item {
 
     // INVISIBLE SPACE RESERVERS: Push windows by frameThickness
     component FrameSpaceReserver: PanelWindow {
+        id: reserverRoot
         color: "transparent"
-        mask: Region {}
         exclusionMode: ExclusionMode.Exclusive
         visible: !monitorScope.fullscreen
+        Component.onCompleted: {
+            mask = emptyRegionComponent.createObject(reserverRoot);
+        }
+    }
+
+    Component {
+        id: emptyRegionComponent
+        Region {}
     }
 }
