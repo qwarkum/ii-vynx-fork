@@ -1269,6 +1269,12 @@ ContentPage {
             checked: Config.options.bar.resources.alwaysShowSwap
             onCheckedChanged: Config.options.bar.resources.alwaysShowSwap = checked
         }
+        ConfigSwitch {
+            buttonIcon: "dns"
+            text: Translation.tr("Docker")
+            checked: Config.options.bar.resources.showDocker
+            onCheckedChanged: Config.options.bar.resources.showDocker = checked
+        }
     }
 
     ContentSection {
