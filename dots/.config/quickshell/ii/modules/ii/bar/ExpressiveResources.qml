@@ -136,7 +136,7 @@ Item {
         // ── Docker capsule (horizontal) ───────────────────────────────────────
         Loader {
             id: dockerHLoader
-            active: Config.options.bar.resources.showDocker
+            active: Config.options.bar.resources.showDocker && DockerService.dockerRunning
             visible: active
             sourceComponent: DockerCapsule { vertical: false; barHeight: root._shapeSize }
         }
@@ -231,7 +231,7 @@ Item {
 
         // ── Docker capsule (vertical) ─────────────────────────────────────────
         Loader {
-            active: Config.options.bar.resources.showDocker
+            active: Config.options.bar.resources.showDocker && DockerService.dockerRunning
             visible: active
             Layout.alignment: Qt.AlignHCenter
             sourceComponent: DockerCapsule { vertical: true; barHeight: root._shapeVSize }

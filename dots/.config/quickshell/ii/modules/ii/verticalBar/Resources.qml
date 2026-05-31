@@ -82,7 +82,7 @@ MouseArea {
         // 2. Standalone Docker Vertical Capsule
         Rectangle {
             id: dockerCapsuleCol
-            property bool shown: Config.options.bar.resources.showDocker
+            property bool shown: Config.options.bar.resources.showDocker && DockerService.dockerRunning
             visible: shown
             clip: true
             implicitWidth: Appearance.sizes.verticalBarWidth - 8

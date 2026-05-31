@@ -81,7 +81,7 @@ MouseArea {
         // 2. Standalone Docker Capsule
         Rectangle {
             id: dockerCapsule
-            property bool shown: Config.options.bar.resources.showDocker
+            property bool shown: Config.options.bar.resources.showDocker && DockerService.dockerRunning
             visible: shown
             clip: true
             implicitWidth: shown ? (dockerRow.implicitWidth + 16) : 0

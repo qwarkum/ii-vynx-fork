@@ -401,7 +401,7 @@ Singleton {
                     property int swapWarningThreshold: 85
                     property int cpuWarningThreshold: 90
                     property bool expressivePopup: true
-                    property bool showDocker: true
+                    property bool showDocker: false
                 }
 
                 property JsonObject sports: JsonObject {
