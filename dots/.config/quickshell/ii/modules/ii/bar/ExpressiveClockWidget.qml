@@ -65,7 +65,7 @@ Item {
             }
 
             Rectangle {
-                visible: root.showDate && DateTime.dayNameShort !== ""
+                visible: !layoutVert.is12h && root.showDate && DateTime.dayNameShort !== ""
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 2
                 implicitWidth: Appearance.sizes.verticalBarWidth - 8
@@ -82,7 +82,7 @@ Item {
             }
 
             MaterialShape {
-                visible: layoutVert.showAMPM && !root.showDate
+                visible: layoutVert.is12h && layoutVert.showAMPM
                 Layout.alignment: Qt.AlignHCenter
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colTertiaryContainer
@@ -188,7 +188,7 @@ Item {
             }
 
             MaterialShape {
-                visible: layoutHoriz.showAMPM
+                visible: layoutHoriz.is12h && layoutHoriz.showAMPM
                 shapeString: "Cookie12Sided"
                 color: Appearance.colors.colTertiaryContainer
                 implicitSize: Appearance.sizes.baseBarHeight - 16
@@ -198,6 +198,22 @@ Item {
                     font.weight: Font.light
                     color: Appearance.colors.colOnTertiaryContainer
                     text: layoutHoriz.ampm
+                }
+            }
+
+            Rectangle {
+                visible: !layoutHoriz.is12h && root.showDate && DateTime.dayNameShort !== ""
+                implicitWidth: 32
+                implicitHeight: Appearance.sizes.baseBarHeight - 16
+                color: Appearance.colors.colTertiaryContainer
+                radius: Appearance.rounding.small
+                Layout.alignment: Qt.AlignVCenter
+                StyledText {
+                    anchors.centerIn: parent
+                    text: DateTime.dayNameShort.toUpperCase()
+                    font.pixelSize: 9
+                    font.weight: Font.Black
+                    color: Appearance.colors.colOnTertiaryContainer
                 }
             }
 
