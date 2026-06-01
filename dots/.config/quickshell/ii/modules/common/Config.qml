@@ -67,12 +67,20 @@ Singleton {
         path: root.filePath
         watchChanges: true
         blockWrites: root.blockWrites
-        onFileChanged: fileReloadTimer.restart()
-        onAdapterUpdated: fileWriteTimer.restart()
+        onFileChanged: {
+            if (!root.ready)
+                return;
+            fileReloadTimer.restart();
+        }
+        onAdapterUpdated: {
+            if (!root.ready)
+                return;
+            fileWriteTimer.restart();
+        }
         onLoaded: root.ready = true
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
-                writeAdapter();
+                root.ready = true;
             }
         }
 
@@ -179,6 +187,7 @@ Singleton {
                     property string accentColor: ""
                 }
                 property list<string> customColorSchemes: []
+                property bool colorfulScrollbar: false
             }
 
             property JsonObject audio: JsonObject {
@@ -368,6 +377,7 @@ Singleton {
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property int barGroupStyle: 1 // 0: Pills | 1: Island (opaque) | 2: Transparent (or maybe line-separated in the future)
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
+                property bool useMaterialSymbolForTopLeftIcon: false
                 property int barBackgroundStyle: 1 // 0: Transparent | 1: Visible | 2: Adaptive
                 property bool expressiveColors: false
                 property string expressiveColorTheme: "content"
@@ -699,7 +709,9 @@ Singleton {
 
             property JsonObject light: JsonObject {
                 property JsonObject darkMode: JsonObject {
-                    property bool automatic: false
+                    property bool automatic: true
+                    property string from: "18:00" // Format: "HH:mm", 24-hour time
+                    property string to: "06:00"   // Format: "HH:mm", 24-hour time
                 }
                 property JsonObject night: JsonObject {
                     property bool automatic: true
