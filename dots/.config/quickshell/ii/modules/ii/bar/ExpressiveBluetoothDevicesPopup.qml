@@ -12,24 +12,24 @@ StyledPopup {
     stickyHover: true
 
     readonly property bool hasDevices: BluetoothStatus.connectedDevices.length > 0
-    
+
     // Design Variables
     readonly property color colCard: Appearance.colors.colSurfaceContainerHigh
     readonly property color colName: Appearance.colors.colOnSurface
     readonly property color colBattery: Appearance.colors.colOnSecondaryContainer
     readonly property color colIconPrimary: Appearance.colors.colOnSecondaryContainer
     readonly property color colIconSecondary: Appearance.colors.colSecondary
-    readonly property real cardHeight: 180 
+    readonly property real cardHeight: 180
     readonly property int nameSize: Appearance.font.pixelSize.normal
     readonly property int batterySize: 42
-    
+
     // Smartphone Coloring
     readonly property color colPhoneBody: Appearance.colors.colSecondaryContainer
     readonly property color colPhoneCameraFrame: Appearance.colors.colPrimary
-    
+
     readonly property string iconEarbudsCushion: "../../../assets/images/devices/earbuds_cushion.svg"
     readonly property string iconEarbudsStem: "../../../assets/images/devices/earbuds_stem.svg"
-    
+
     // Pixel Folder Assets
     readonly property string pixelPath: "../../../assets/images/devices/pixel/"
     readonly property string iconFrameBody: pixelPath + "frame_body.svg"
@@ -187,7 +187,9 @@ StyledPopup {
                                     source: root.iconEarbudsCushion
                                     sourceSize: Qt.size(width, height)
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: root.colIconPrimary }
+                                    layer.effect: ColorOverlay {
+                                        color: root.colIconPrimary
+                                    }
                                 }
 
                                 Image {
@@ -195,7 +197,9 @@ StyledPopup {
                                     source: root.iconEarbudsStem
                                     sourceSize: Qt.size(width, height)
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: root.colIconSecondary }
+                                    layer.effect: ColorOverlay {
+                                        color: root.colIconSecondary
+                                    }
                                 }
                             }
 
@@ -214,7 +218,9 @@ StyledPopup {
                                     sourceSize: Qt.size(width, height)
                                     mirror: true
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: root.colIconPrimary }
+                                    layer.effect: ColorOverlay {
+                                        color: root.colIconPrimary
+                                    }
                                 }
 
                                 Image {
@@ -223,7 +229,9 @@ StyledPopup {
                                     sourceSize: Qt.size(width, height)
                                     mirror: true
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: root.colIconSecondary }
+                                    layer.effect: ColorOverlay {
+                                        color: root.colIconSecondary
+                                    }
                                 }
                             }
 
@@ -278,14 +286,16 @@ StyledPopup {
                             anchors.right: parent.right
                             anchors.rightMargin: 15
                             anchors.bottom: parent.bottom
-                            
+
                             // 1. Frame Body (The colorable part)
                             Image {
                                 anchors.fill: parent
                                 source: root.iconFrameBody
                                 sourceSize: Qt.size(width, height)
                                 layer.enabled: true
-                                layer.effect: ColorOverlay { color: root.colPhoneBody }
+                                layer.effect: ColorOverlay {
+                                    color: root.colPhoneBody
+                                }
                             }
 
                             // 2. Frame Details (Logo G, Antennas, Buttons - original detail preserved)
@@ -310,7 +320,9 @@ StyledPopup {
                                     source: root.iconCameraBase
                                     sourceSize: Qt.size(width, height)
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: root.colPhoneCameraFrame }
+                                    layer.effect: ColorOverlay {
+                                        color: root.colPhoneCameraFrame
+                                    }
                                 }
 
                                 // Camera Details (Original)

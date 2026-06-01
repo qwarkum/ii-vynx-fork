@@ -267,18 +267,19 @@ Item {
                 }
             }
 
-            // === SOUNDCORE ANC MODE INDICATOR ===
+            // === HEADPHONE ANC MODE INDICATOR ===
             Loader {
-                active: root.device?.name === "Soundcore Life Q30"
+                active: root.device?.name === "Soundcore Life Q30" || root.device?.name === "Pedro's Buds FE"
                 Layout.fillWidth: true
                 Layout.topMargin: 4
                 sourceComponent: RowLayout {
                     spacing: 8
                     MaterialSymbol {
                         text: {
-                            if (SoundcoreService.currentMode === "Normal") return "hearing";
-                            if (SoundcoreService.currentMode === "Transparency") return "visibility";
-                            if (SoundcoreService.currentMode === "NoiseCanceling") return "noise_control_off";
+                            let mode = SoundcoreService.getModeForMac(root.device?.address);
+                            if (mode === "Normal") return "hearing";
+                            if (mode === "Transparency") return "visibility";
+                            if (mode === "NoiseCanceling") return "noise_control_off";
                             return "hearing";
                         }
                         iconSize: 18
@@ -286,9 +287,10 @@ Item {
                     }
                     StyledText {
                         text: {
-                            if (SoundcoreService.currentMode === "Normal") return Translation.tr("Normal");
-                            if (SoundcoreService.currentMode === "Transparency") return Translation.tr("Transparency");
-                            if (SoundcoreService.currentMode === "NoiseCanceling") return Translation.tr("ANC");
+                            let mode = SoundcoreService.getModeForMac(root.device?.address);
+                            if (mode === "Normal") return Translation.tr("Normal");
+                            if (mode === "Transparency") return Translation.tr("Transparency");
+                            if (mode === "NoiseCanceling") return Translation.tr("ANC");
                             return Translation.tr("Normal");
                         }
                         font.pixelSize: Appearance.font.pixelSize.normal

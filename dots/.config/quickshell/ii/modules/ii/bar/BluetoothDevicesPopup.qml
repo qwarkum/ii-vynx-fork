@@ -269,15 +269,15 @@ StyledPopup {
                                 }
                             }
 
-                            // ANC Modes (Anker Soundcore Q30 Only)
+                            // ANC Modes (Supported Headsets Only)
                             RowLayout {
                                 Layout.fillWidth: true
                                 Layout.topMargin: 12
                                 Layout.alignment: Qt.AlignRight
-                                visible: modelData.address === "E8:EE:CC:96:31:3A"
+                                visible: SoundcoreService.isHeadsetSupported(modelData)
                                 spacing: 0
 
-                                readonly property string currentMode: SoundcoreService.currentMode
+                                readonly property string currentMode: SoundcoreService.getModeForMac(modelData.address)
                                 
                                 // ANC (Noise Canceling)
                                 RippleButton {
@@ -287,7 +287,7 @@ StyledPopup {
                                     buttonRadius: 16
                                     colBackground: parent.currentMode === "NoiseCanceling" ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
                                     colBackgroundHover: parent.currentMode === "NoiseCanceling" ? Appearance.colors.colPrimaryHover : Appearance.colors.colSurfaceContainerHighestHover
-                                    onClicked: SoundcoreService.setMode("NoiseCanceling")
+                                    onClicked: SoundcoreService.setMode(modelData.address, "NoiseCanceling")
 
                                     MaterialSymbol {
                                         anchors.centerIn: parent
@@ -311,7 +311,7 @@ StyledPopup {
                                     buttonRadius: 16
                                     colBackground: parent.currentMode === "Normal" ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
                                     colBackgroundHover: parent.currentMode === "Normal" ? Appearance.colors.colPrimaryHover : Appearance.colors.colSurfaceContainerHighestHover
-                                    onClicked: SoundcoreService.setMode("Normal")
+                                    onClicked: SoundcoreService.setMode(modelData.address, "Normal")
 
                                     MaterialSymbol {
                                         anchors.centerIn: parent
@@ -335,7 +335,7 @@ StyledPopup {
                                     buttonRadius: 16
                                     colBackground: parent.currentMode === "Transparency" ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
                                     colBackgroundHover: parent.currentMode === "Transparency" ? Appearance.colors.colPrimaryHover : Appearance.colors.colSurfaceContainerHighestHover
-                                    onClicked: SoundcoreService.setMode("Transparency")
+                                    onClicked: SoundcoreService.setMode(modelData.address, "Transparency")
 
                                     MaterialSymbol {
                                         anchors.centerIn: parent

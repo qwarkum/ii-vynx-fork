@@ -64,7 +64,8 @@ AbstractQuickPanel {
         var types = [];
         for (var p = 0; p < pages.length; p++) {
             var page = pages[p];
-            if (!page) continue;
+            if (!page)
+                continue;
             for (var i = 0; i < page.length; i++) {
                 if (page[i] && page[i].type)
                     types.push(page[i].type);
@@ -138,7 +139,7 @@ AbstractQuickPanel {
     // Page management functions
     function addPage() {
         var targetPage;
-        mutatePages(function(p) {
+        mutatePages(function (p) {
             p.push([]);
             targetPage = p.length - 1;
         });
@@ -146,10 +147,12 @@ AbstractQuickPanel {
     }
 
     function removePage(pageIndex) {
-        if (pages.length <= 1) return; // Never remove last page
-        if (pageIndex < 0 || pageIndex >= pages.length) return;
+        if (pages.length <= 1)
+            return; // Never remove last page
+        if (pageIndex < 0 || pageIndex >= pages.length)
+            return;
 
-        mutatePages(function(p) {
+        mutatePages(function (p) {
             p.splice(pageIndex, 1);
         });
 
@@ -158,7 +161,8 @@ AbstractQuickPanel {
     }
 
     function goToPage(pageIndex) {
-        if (pageIndex < 0 || pageIndex >= pages.length) return;
+        if (pageIndex < 0 || pageIndex >= pages.length)
+            return;
         currentPage = pageIndex;
     }
 
@@ -206,7 +210,7 @@ AbstractQuickPanel {
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.NoButton
-                    onWheel: function(wheelEvent) {
+                    onWheel: function (wheelEvent) {
                         if (root.editMode) {
                             wheelEvent.accepted = false;
                             return;
