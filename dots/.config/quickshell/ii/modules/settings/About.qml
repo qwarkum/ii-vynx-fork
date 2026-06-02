@@ -227,6 +227,7 @@ ContentPage {
                     mainText: actionProc.running && actionProc.mode === "update-fork" ? Translation.tr("Updating fork...") : Translation.tr("Update Fork")
                     enabled: !actionProc.running
                     onClicked: {
+                        Config.blockWrites = true;
                         actionProc.logOutput = "";
                         actionProc.finished = false;
                         actionProc.exitCode = -1;
@@ -244,6 +245,7 @@ ContentPage {
                     mainText: actionProc.running && actionProc.mode === "update-upstream" ? Translation.tr("Updating...") : Translation.tr("Update ii-vynx")
                     enabled: !actionProc.running
                     onClicked: {
+                        Config.blockWrites = true;
                         actionProc.logOutput = "";
                         actionProc.finished = false;
                         actionProc.exitCode = -1;
@@ -333,6 +335,7 @@ ContentPage {
                     mainText: actionProc.running && actionProc.mode === "fork" ? Translation.tr("Switching...") : Translation.tr("P3DROVFX Fork")
                     enabled: !actionProc.running
                     onClicked: {
+                        Config.blockWrites = true;
                         actionProc.logOutput = "";
                         actionProc.finished = false;
                         actionProc.exitCode = -1;
@@ -350,6 +353,7 @@ ContentPage {
                     mainText: actionProc.running && actionProc.mode === "upstream" ? Translation.tr("Switching...") : Translation.tr("ii-vynx Official")
                     enabled: !actionProc.running
                     onClicked: {
+                        Config.blockWrites = true;
                         actionProc.logOutput = "";
                         actionProc.finished = false;
                         actionProc.exitCode = -1;

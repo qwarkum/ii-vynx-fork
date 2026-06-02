@@ -122,11 +122,15 @@ Singleton {
 
         // Try to find a matching entry in current history to get a valid, fresh ID
         let found = false;
-        for (let i = 0; i < root.entries.length; i++) {
-            if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
-                actualEntry = root.entries[i];
-                found = true;
-                break;
+        if (root.entries.indexOf(entry) !== -1) {
+            found = true;
+        } else {
+            for (let i = 0; i < root.entries.length; i++) {
+                if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
+                    actualEntry = root.entries[i];
+                    found = true;
+                    break;
+                }
             }
         }
 
@@ -155,11 +159,15 @@ Singleton {
         const isImg = entryIsImage(entry);
 
         let found = false;
-        for (let i = 0; i < root.entries.length; i++) {
-            if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
-                actualEntry = root.entries[i];
-                found = true;
-                break;
+        if (root.entries.indexOf(entry) !== -1) {
+            found = true;
+        } else {
+            for (let i = 0; i < root.entries.length; i++) {
+                if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
+                    actualEntry = root.entries[i];
+                    found = true;
+                    break;
+                }
             }
         }
 
@@ -222,11 +230,15 @@ Singleton {
 
         // Find matching entry in root.entries to get the real ID to delete
         let found = false;
-        for (let i = 0; i < root.entries.length; i++) {
-            if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
-                actualEntry = root.entries[i];
-                found = true;
-                break;
+        if (root.entries.indexOf(entry) !== -1) {
+            found = true;
+        } else {
+            for (let i = 0; i < root.entries.length; i++) {
+                if (StringUtils.cleanCliphistEntry(root.entries[i]) === cleanPinned) {
+                    actualEntry = root.entries[i];
+                    found = true;
+                    break;
+                }
             }
         }
 

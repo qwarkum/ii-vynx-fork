@@ -44,26 +44,11 @@ Singleton {
         obj[keys[keys.length - 1]] = convertedValue;
     }
 
-    readonly property bool isPathValid: root.filePath !== "" && root.filePath.startsWith("/") && !root.filePath.includes("undefined")
-    property bool isReloading: false
-
-    onFilePathChanged: {
-        if (configFileView.path !== root.filePath) {
-            root.ready = false;
-        }
-    }
-
-    Component.onDestruction: {
-        root.blockWrites = true;
-        root.ready = false;
-    }
-
     Timer {
         id: fileReloadTimer
         interval: root.readWriteDelay
         repeat: false
         onTriggered: {
-            root.isReloading = true;
             configFileView.reload();
         }
     }
@@ -73,40 +58,21 @@ Singleton {
         interval: root.readWriteDelay
         repeat: false
         onTriggered: {
-            if (root.isPathValid) {
-                configFileView.writeAdapter();
-            }
+            configFileView.writeAdapter();
         }
     }
 
     FileView {
         id: configFileView
-        path: root.isPathValid ? root.filePath : ""
+        path: root.filePath
         watchChanges: true
         blockWrites: root.blockWrites
-        onFileChanged: {
-            if (!root.ready || !root.isPathValid)
-                return;
-            fileReloadTimer.restart();
-        }
-        onAdapterUpdated: {
-            if (!root.ready || root.isReloading || !root.isPathValid)
-                return;
-            fileWriteTimer.restart();
-        }
-        onLoaded: {
-            root.isReloading = false;
-            if (root.isPathValid) {
-                root.ready = true;
-            }
-        }
+        onFileChanged: fileReloadTimer.restart()
+        onAdapterUpdated: fileWriteTimer.restart()
+        onLoaded: root.ready = true
         onLoadFailed: error => {
-            root.isReloading = false;
-            if (error == FileViewError.FileNotFound && root.isPathValid) {
-                if (!root.blockWrites) {
-                    configFileView.writeAdapter();
-                }
-                root.ready = true;
+            if (error == FileViewError.FileNotFound) {
+                writeAdapter();
             }
         }
 

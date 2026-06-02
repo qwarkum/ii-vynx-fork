@@ -29,7 +29,7 @@ ContentPage {
 
         ConfigSwitch {
             buttonIcon: "trending_up"
-            text: Translation.tr("Frecency-based ranking")
+            text: Translation.tr("Frequency-based ranking")
             checked: Config.options.search.frecency
             onCheckedChanged: {
                 Config.options.search.frecency = checked;
