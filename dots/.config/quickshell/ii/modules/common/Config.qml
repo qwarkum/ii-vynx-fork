@@ -44,11 +44,13 @@ Singleton {
         obj[keys[keys.length - 1]] = convertedValue;
     }
 
-    readonly property bool isPathValid: root.filePath !== "" && root.filePath.startsWith("/") && !root.filePath.includes("undefined") && Directories.config !== "" && Directories.home !== ""
+    readonly property bool isPathValid: root.filePath !== "" && root.filePath.startsWith("/") && !root.filePath.includes("undefined")
     property bool isReloading: false
 
     onFilePathChanged: {
-        root.ready = false;
+        if (configFileView.path !== root.filePath) {
+            root.ready = false;
+        }
     }
 
     Component.onDestruction: {

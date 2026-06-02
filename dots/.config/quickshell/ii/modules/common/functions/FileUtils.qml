@@ -12,8 +12,19 @@ Singleton {
     function trimFileProtocol(str) {
         let s = str;
         if (typeof s !== "string") s = str.toString(); // Convert to string if it's an url or whatever
-        return s.startsWith("file://") ? s.slice(7) : s;
+        if (s.startsWith("file://")) {
+            s = s.slice(7);
+            if (s.startsWith("localhost/")) {
+                s = s.slice(9);
+            }
+        } else if (s.startsWith("file:/")) {
+            s = s.slice(5);
+        } else if (s.startsWith("file:")) {
+            s = s.slice(5);
+        }
+        return s;
     }
+
 
     /**
      * Extracts the file name from a file path
