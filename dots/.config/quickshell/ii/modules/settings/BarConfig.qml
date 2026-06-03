@@ -21,7 +21,8 @@ ContentPage {
             "timer": indicators,
             "record_indicator": indicators,
             "system_monitor": resourcesConfig,
-            "sports": sportsConfig
+            "sports": sportsConfig,
+            "dashboard_panel_button": dashboardButtonConfig
         })
 
     function scrollTo(stringId) {
@@ -1690,6 +1691,70 @@ ContentPage {
                         Config.options.bar.useMaterialSymbolForTopLeftIcon = true;
                     }
                 }
+            }
+        }
+    }
+
+    ContentSection {
+        id: dashboardButtonConfig
+        icon: "dashboard"
+        title: Translation.tr("Dashboard button")
+
+        ContentSubsection {
+            title: Translation.tr("Visible status indicators")
+            tooltip: Translation.tr("Toggle which status indicators to show on the dashboard panel button")
+
+            ConfigRow {
+                uniform: true
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Volume")
+                    checked: Config.options.bar.dashboardButton.showVolume
+                    onCheckedChanged: {
+                        Config.options.bar.dashboardButton.showVolume = checked;
+                    }
+                }
+                ConfigSwitch {
+                    buttonIcon: "mic"
+                    text: Translation.tr("Microphone")
+                    checked: Config.options.bar.dashboardButton.showMic
+                    onCheckedChanged: {
+                        Config.options.bar.dashboardButton.showMic = checked;
+                    }
+                }
+            }
+
+            ConfigRow {
+                uniform: true
+                ConfigSwitch {
+                    buttonIcon: "wifi"
+                    text: Translation.tr("Network")
+                    checked: Config.options.bar.dashboardButton.showNetwork
+                    onCheckedChanged: {
+                        Config.options.bar.dashboardButton.showNetwork = checked;
+                    }
+                }
+                ConfigSwitch {
+                    buttonIcon: "bluetooth"
+                    text: Translation.tr("Bluetooth")
+                    checked: Config.options.bar.dashboardButton.showBluetooth
+                    onCheckedChanged: {
+                        Config.options.bar.dashboardButton.showBluetooth = checked;
+                    }
+                }
+            }
+
+            ConfigRow {
+                uniform: true
+                ConfigSwitch {
+                    buttonIcon: "notifications"
+                    text: Translation.tr("Notifications")
+                    checked: Config.options.bar.dashboardButton.showNotifications
+                    onCheckedChanged: {
+                        Config.options.bar.dashboardButton.showNotifications = checked;
+                    }
+                }
+                Item { Layout.fillWidth: true }
             }
         }
     }

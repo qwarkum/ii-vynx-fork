@@ -513,6 +513,13 @@ Singleton {
                         property bool minimal: false
                     }
                 }
+                property JsonObject dashboardButton: JsonObject {
+                    property bool showVolume: true
+                    property bool showMic: true
+                    property bool showNetwork: true
+                    property bool showBluetooth: true
+                    property bool showNotifications: true
+                }
                 property JsonObject layouts: JsonObject {
                     // Only storing id and layout-specific flags (visible, centered)
                     // Component display info (icon, title) comes from BarComponentRegistry
