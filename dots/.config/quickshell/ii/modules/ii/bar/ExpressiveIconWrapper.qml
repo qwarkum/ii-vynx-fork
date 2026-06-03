@@ -6,7 +6,8 @@ import qs.modules.common.widgets
 MaterialShape {
     id: root
 
-    property bool toggled: GlobalStates.sidebarRightOpen
+    property bool toggled: !GlobalStates.sidebarRightOpen
+    property bool vertical: false
 
     readonly property var circularShapes: [
         MaterialShape.Shape.Circle,
@@ -21,7 +22,7 @@ MaterialShape {
         MaterialShape.Shape.SoftBoom
     ]
 
-    implicitSize: 32
+    implicitSize: (vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.baseBarHeight) - 14
     color: toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colSecondaryContainerHover
 
     Component.onCompleted: {

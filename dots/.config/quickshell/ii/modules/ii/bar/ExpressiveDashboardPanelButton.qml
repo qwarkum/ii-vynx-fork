@@ -16,7 +16,7 @@ Item {
     property bool isMaterial: true // Forced expressive
 
     implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : pill.implicitWidth
-    implicitHeight: vertical ? flow.implicitHeight + 6 : pill.implicitHeight
+    implicitHeight: vertical ? pill.implicitHeight : Appearance.sizes.baseBarHeight
 
     MouseArea {
         id: mouseArea
@@ -34,25 +34,27 @@ Item {
         anchors.centerIn: parent
 
         property color pillColor: GlobalStates.sidebarRightOpen 
-            ? Appearance.colors.colPrimary 
-            : (mouseArea.containsMouse ? Appearance.colors.colLayer4Hover : Appearance.colors.colSecondaryContainer)
+            ? (mouseArea.containsMouse ? Appearance.colors.colLayer4Hover : "transparent")
+            : (mouseArea.containsMouse ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimaryContainer)
 
         property color borderColor: GlobalStates.sidebarRightOpen 
-            ? "transparent" 
-            : Appearance.colors.colPrimary
+            ? Appearance.colors.colPrimary
+            : "transparent"
 
-        property real borderWidth: GlobalStates.sidebarRightOpen ? 0 : 1.5
-        property real dashLength: GlobalStates.sidebarRightOpen ? 0 : 6
-        property real gapLength: GlobalStates.sidebarRightOpen ? 0 : 4
+        property real borderWidth: GlobalStates.sidebarRightOpen ? 1.5 : 0
+        property real dashLength: GlobalStates.sidebarRightOpen ? 6 : 0
+        property real gapLength: GlobalStates.sidebarRightOpen ? 4 : 0
         property real radius: Config.options.bar.barGroupStyle === 1 ? Appearance.rounding.windowRounding : Appearance.rounding.full
+        property real dashOffset: 0
 
-        implicitWidth: root.vertical ? Appearance.sizes.verticalBarWidth - 6 : flow.implicitWidth + 16
-        implicitHeight: root.vertical ? flow.implicitHeight + 14 : flow.implicitHeight + 8
+        implicitWidth: root.vertical ? Appearance.sizes.verticalBarWidth - 8 : flow.implicitWidth + 10
+        implicitHeight: root.vertical ? flow.implicitHeight + 10 : Appearance.sizes.baseBarHeight - 8
 
         onPillColorChanged: requestPaint()
         onBorderColorChanged: requestPaint()
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
+        onDashOffsetChanged: requestPaint()
 
         Behavior on pillColor {
             ColorAnimation { duration: 150 }
@@ -81,12 +83,36 @@ Item {
             ctx.fillStyle = pillColor;
             ctx.fill();
 
-            ctx.strokeStyle = borderColor;
-            ctx.lineWidth = bw;
-            ctx.setLineDash([dashLength, gapLength]);
-            ctx.stroke();
+            if (bw > 0) {
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = bw;
+                ctx.setLineDash([dashLength, gapLength]);
+                ctx.lineDashOffset = dashOffset;
+                ctx.stroke();
+            }
 
             ctx.restore();
+        }
+    }
+
+    NumberAnimation {
+        id: dashSlideAnim
+        target: pill
+        property: "dashOffset"
+        from: 0
+        to: 20
+        duration: 800
+        easing.type: Easing.OutCubic
+    }
+
+    Connections {
+        target: GlobalStates
+        function onSidebarRightOpenChanged() {
+            if (GlobalStates.sidebarRightOpen) {
+                dashSlideAnim.restart();
+            } else {
+                pill.dashOffset = 0;
+            }
         }
     }
 
@@ -100,6 +126,7 @@ Item {
             reveal: Config.options.bar.dashboardButton.showVolume
             ExpressiveIconWrapper {
                 id: volumeWrapper
+                vertical: root.vertical
                 MaterialSymbol {
                     text: Audio.sink?.audio?.muted ? "volume_off" : "volume_up"
                     iconSize: Appearance.font.pixelSize.larger
@@ -112,6 +139,7 @@ Item {
             reveal: Config.options.bar.dashboardButton.showMic && (Audio.source?.audio?.muted ?? false)
             ExpressiveIconWrapper {
                 id: micWrapper
+                vertical: root.vertical
                 MaterialSymbol {
                     text: "mic_off"
                     iconSize: Appearance.font.pixelSize.larger
@@ -124,6 +152,7 @@ Item {
             reveal: Config.options.bar.dashboardButton.showNetwork
             ExpressiveIconWrapper {
                 id: netWrapper
+                vertical: root.vertical
                 MaterialSymbol {
                     text: Network.materialSymbol
                     iconSize: Appearance.font.pixelSize.larger
@@ -136,6 +165,7 @@ Item {
             reveal: Config.options.bar.dashboardButton.showBluetooth && BluetoothStatus.available
             ExpressiveIconWrapper {
                 id: btWrapper
+                vertical: root.vertical
                 MaterialSymbol {
                     text: BluetoothStatus.connected ? "bluetooth_connected" : BluetoothStatus.enabled ? "bluetooth" : "bluetooth_disabled"
                     iconSize: Appearance.font.pixelSize.larger
@@ -148,6 +178,7 @@ Item {
             reveal: Config.options.bar.dashboardButton.showNotifications && (Notifications.silent || Notifications.unread > 0)
             ExpressiveIconWrapper {
                 id: notifWrapper
+                vertical: root.vertical
                 Loader {
                     id: notifLoader
                     source: "ExpressiveNotificationUnreadCount.qml"
