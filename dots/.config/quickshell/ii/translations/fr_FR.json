@@ -611,5 +611,7 @@
   "Use varying shapes for password characters": "Utiliser des formes variées pour les caractères du mot de passe",
   "Battery full": "Batterie pleine",
   "Pin": "Épingler",
-  "Unpin": "Désépingler"
+  "Unpin": "Désépingler",
+  "Scroll gestures": "Gestes de défilement",
+  "Enable or disable scrolling on the bar to change volume or brightness": "Activer ou désactiver le défilement sur la barre pour changer le volume ou la luminosité"
 }

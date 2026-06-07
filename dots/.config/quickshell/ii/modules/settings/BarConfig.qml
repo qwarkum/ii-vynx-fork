@@ -307,6 +307,32 @@ ContentPage {
                 }
             }
         }
+
+        ContentSubsection {
+            title: Translation.tr("Scroll gestures")
+            tooltip: Translation.tr("Enable or disable scrolling on the bar to change volume or brightness")
+            Layout.fillWidth: true
+
+            ConfigRow {
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Scroll to change volume")
+                    checked: Config.options.bar.enableVolumeScroll
+                    onCheckedChanged: {
+                        Config.options.bar.enableVolumeScroll = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "brightness_5"
+                    text: Translation.tr("Scroll to change brightness")
+                    checked: Config.options.bar.enableBrightnessScroll
+                    onCheckedChanged: {
+                        Config.options.bar.enableBrightnessScroll = checked;
+                    }
+                }
+            }
+        }
     }
 
     ContentSection {

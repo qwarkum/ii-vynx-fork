@@ -617,5 +617,7 @@
   "Windows 11": "Windows 11",
   "Pin": "Pin",
   "Auto Dark Mode (%1 - %2)": "Auto Dark Mode (%1 - %2)",
-  "Unpin": "Unpin"
+  "Unpin": "Unpin",
+  "Scroll gestures": "Scroll gestures",
+  "Enable or disable scrolling on the bar to change volume or brightness": "Enable or disable scrolling on the bar to change volume or brightness"
 }

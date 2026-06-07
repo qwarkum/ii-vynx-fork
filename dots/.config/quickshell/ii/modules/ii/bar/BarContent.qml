@@ -221,8 +221,8 @@ Item { // Bar content region
         }
         implicitHeight: Appearance.sizes.baseBarHeight
 
-        onScrollDown: Brightness.decreaseBrightness()
-        onScrollUp: Brightness.increaseBrightness()
+        onScrollDown: if (Config.options.bar.enableBrightnessScroll) Brightness.decreaseBrightness()
+        onScrollUp: if (Config.options.bar.enableBrightnessScroll) Brightness.increaseBrightness()
         onMovedAway: GlobalStates.osdBrightnessOpen = false
         onPressed: event => {
             if (event.button === Qt.LeftButton)
@@ -230,7 +230,7 @@ Item { // Bar content region
         }
 
         ScrollHint {
-            reveal: barLeftSideMouseArea.hovered
+            reveal: barLeftSideMouseArea.hovered && Config.options.bar.enableBrightnessScroll
             icon: Hyprsunset.gamma === 100 ? "light_mode" : "wb_twilight"
             tooltipText: Translation.tr("Scroll to change brightness")
             side: "left"
@@ -424,8 +424,8 @@ Item { // Bar content region
         }
         implicitHeight: Appearance.sizes.baseBarHeight
 
-        onScrollDown: Audio.decrementVolume()
-        onScrollUp: Audio.incrementVolume()
+        onScrollDown: if (Config.options.bar.enableVolumeScroll) Audio.decrementVolume()
+        onScrollUp: if (Config.options.bar.enableVolumeScroll) Audio.incrementVolume()
         onMovedAway: GlobalStates.osdVolumeOpen = false
         onPressed: event => {
             if (event.button === Qt.LeftButton) {
@@ -434,7 +434,7 @@ Item { // Bar content region
         }
 
         ScrollHint {
-            reveal: barRightSideMouseArea.hovered
+            reveal: barRightSideMouseArea.hovered && Config.options.bar.enableVolumeScroll
             icon: "volume_up"
             tooltipText: Translation.tr("Scroll to change volume")
             side: "right"

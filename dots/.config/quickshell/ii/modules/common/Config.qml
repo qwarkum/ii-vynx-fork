@@ -379,6 +379,8 @@ Singleton {
                 property string expressiveColorTheme: "content"
                 property bool verbose: true
                 property bool vertical: false
+                property bool enableVolumeScroll: true
+                property bool enableBrightnessScroll: true
 
                 property JsonObject mediaPlayer: JsonObject {
                     property bool expressivePopup: false
