@@ -51,6 +51,7 @@ Item {
     // Widget variables
     property bool translationFor: false // Indicates if the translation is for an autocorrected text
     property string translatedText: ""
+    property string secondTranslatedText: ""
     property list<string> languages: []
 
     // Options
@@ -92,21 +93,62 @@ Item {
                 translateProc.running = true; // Restart the process
             } else {
                 root.translatedText = "";
+                root.secondTranslatedText = "";
             }
         }
     }
 
     Process {
         id: translateProc
-        command: ["bash", "-c", `trans -brief -no-bidi` + ` -source '${StringUtils.shellSingleQuoteEscape(root.sourceLanguage)}'` + ` -target '${StringUtils.shellSingleQuoteEscape(root.targetLanguage)}'` + ` '${StringUtils.shellSingleQuoteEscape(root.inputField.text.trim())}'`]
+
+        property bool canTransliterate: ([
+            "العربية","বাংলা","भोजपुरी","简体中文","繁體中文","粵語","文言","ગુજરાતી","हिन्दी",
+            "日本語","ಕನ್ನಡ","한국어","मराठी","پښتو","فارسی","ਪੰਜਾਬੀ","русский","தமிழ்",
+            "తెలుగు","ไทย","اردو"
+        ].includes(root.targetLanguage))
         property string buffer: ""
+        command: [
+            "bash", "-c",
+            `trans -brief -no-bidi` + ` -source '${StringUtils.shellSingleQuoteEscape(root.sourceLanguage)}'` + ` -target '${StringUtils.shellSingleQuoteEscape(root.targetLanguage)}'` + ` '${StringUtils.shellSingleQuoteEscape(root.inputField.text.trim())}'`
+        ]
         stdout: SplitParser {
             onRead: data => {
-                translateProc.buffer += data + "\n";
+                translateProc.buffer += data + "\n"
             }
         }
+        onStarted: {
+            buffer = ""
+            root.translatedText = ""
+            root.secondTranslatedText = ""
+        }
         onExited: (exitCode, exitStatus) => {
-            root.translatedText = translateProc.buffer.trim();
+            root.translatedText = buffer.trim()
+
+            if (canTransliterate) {
+                secondProc.running = true
+            }
+        }
+    }
+    
+    Process {
+        id: secondProc
+        property string secondBuffer: ""
+        command: [
+            "bash",
+            "-c",
+            `trans -brief -no-bidi -source '${StringUtils.shellSingleQuoteEscape(root.sourceLanguage)}' -target '@${StringUtils.shellSingleQuoteEscape(root.targetLanguage)}' '${StringUtils.shellSingleQuoteEscape(root.inputField.text.trim())}'`
+        ]
+        stdout: SplitParser {
+            onRead: data => {
+                secondProc.secondBuffer += data + "\n"
+            }
+        }
+        onStarted: {
+            secondBuffer = ""
+        }
+        onExited: {
+            root.secondTranslatedText = secondBuffer.trim()
+            running = false
         }
     }
 
@@ -323,16 +365,95 @@ Item {
                 StyledFlickable {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.minimumHeight: 0
                     clip: true
-                    contentHeight: outputText.implicitHeight
 
-                    StyledText {
-                        id: outputText
+                    contentHeight: contentColumn.implicitHeight
+
+                    ColumnLayout {
+                        id: contentColumn
                         width: parent.width
-                        wrapMode: Text.Wrap
-                        text: root.translatedText
-                        font.pixelSize: Appearance.font.pixelSize.huge // Material 3 Expressive
-                        color: colResultText
+                        spacing: 8
+
+                        // Main translated output
+                        StyledText {
+                            text: root.translatedText
+                            visible: text.length > 0
+
+                            wrapMode: Text.Wrap
+                            font.pixelSize: Appearance.font.pixelSize.huge
+                            color: colResultText
+
+                            Layout.fillWidth: true
+                        }
+
+                        // Transliteration translated output
+                        Rectangle {
+                            id: transliterationBubble
+
+                            Layout.fillWidth: true
+                            visible: root.secondTranslatedText.length > 0
+                            
+                            opacity: visible ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                            radius: Appearance.rounding.large
+                            color: Qt.darker(colResultBox, 1.8)
+
+                            implicitHeight: transliterationText.implicitHeight + 20
+                            property bool hovered: false
+
+                            HoverHandler {
+                                onHoveredChanged: transliterationBubble.hovered = hovered
+                            }
+
+                            StyledText {
+                                id: transliterationText
+
+                                text: root.secondTranslatedText
+                                wrapMode: Text.Wrap
+                                color: colResultText
+
+                                anchors {
+                                    top: parent.top
+                                    left: parent.left
+                                    right: parent.right
+                                    margins: 10
+                                    bottomMargin: 10
+                                }
+                            }
+
+                            // Copy button
+                            RippleButton {
+                                implicitWidth: 28
+                                implicitHeight: 28
+                                buttonRadius: Appearance.rounding.full
+
+                                anchors {
+                                    right: parent.right
+                                    bottom: parent.bottom
+                                    margins: 6
+                                }
+
+                                opacity: transliterationBubble.hovered ? 1.0 : 0.0
+                                visible: opacity > 0.01
+                                colBackground: pressed ? colResultActionBtnActive : (hovered ? colResultActionBtnHover : colResultActionBtn)
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                                contentItem: Item {
+                                    anchors.fill: parent
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "content_copy"
+                                        color: colResultActionIcon
+                                        font.pixelSize: 14
+                                    }
+                                }
+
+                                onClicked: Quickshell.clipboardText = root.secondTranslatedText
+                            }
+                        }
                     }
                 }
 
