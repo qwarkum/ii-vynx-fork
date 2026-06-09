@@ -167,6 +167,15 @@ ContentPage {
         }
 
         ConfigSwitch {
+            buttonIcon: "auto_awesome_mosaic"
+            text: Translation.tr("Smart auto-grouping")
+            checked: Config.options.dock.smartGrouping ?? false
+            onCheckedChanged: {
+                Config.options.dock.smartGrouping = checked;
+            }
+        }
+
+        ConfigSwitch {
             buttonIcon: "desktop_windows"
             text: Translation.tr("Isolate monitors")
             checked: Config.options.dock.isolateMonitors ?? false

@@ -331,17 +331,9 @@ Item {
                 result.push({ type: "weather", orderKey: "weather" })
                 seenOrderKeys["weather"] = true
             } else if (entry === "runningApps") {
-                // Expand running apps as individual entries at this position
-                var ras = Object.values(runningAppMap)
-                for (var ri = 0; ri < ras.length; ri++) {
-                    var runningKey = "runningApp:" + ras[ri].appId
-                    if (!seenOrderKeys[runningKey] && !explicitKeys[runningKey] && !explicitKeys["app:" + ras[ri].appId]) {
-                        result.push({ type: "app", appId: ras[ri].appId, appData: ras[ri], orderKey: runningKey })
-                        seenOrderKeys[runningKey] = true
-                        // Also mark the app: variant to prevent duplicates
-                        seenOrderKeys["app:" + ras[ri].appId] = true
-                    }
-                }
+                // The legacy runningApps marker is ignored.
+                // Unpinned apps will be handled by the smart append logic at the end,
+                // grouping them correctly after the last explicit app icon.
             } else if (entry.startsWith("runningApp:")) {
                 // Individual running app that was previously reordered
                 var runningAppId = entry.substring(11)
@@ -378,36 +370,96 @@ Item {
             }
         }
 
-        // Append any running apps that weren't in the order at all
+        // Append any running apps and pinned apps that weren't in the order at all
+        var remainingApps = []
         var remainingRas = Object.values(runningAppMap)
         for (var rj = 0; rj < remainingRas.length; rj++) {
             var rKey = "runningApp:" + remainingRas[rj].appId
             if (!seenOrderKeys[rKey]) {
-                result.push({ type: "app", appId: remainingRas[rj].appId, appData: remainingRas[rj], orderKey: rKey })
+                remainingApps.push({ type: "app", appId: remainingRas[rj].appId, appData: remainingRas[rj], orderKey: rKey })
                 seenOrderKeys[rKey] = true
                 seenOrderKeys["app:" + remainingRas[rj].appId] = true
             }
         }
 
-        // Append pinned apps that aren't in the order at all (e.g. newly pinned apps)
         var remainingPinned = Object.values(pinnedAppMap)
         for (var pk = 0; pk < remainingPinned.length; pk++) {
             var pKey = "app:" + remainingPinned[pk].appId
             if (!seenOrderKeys[pKey]) {
-                result.push({ type: "app", appId: remainingPinned[pk].appId, appData: remainingPinned[pk], orderKey: pKey })
+                remainingApps.push({ type: "app", appId: remainingPinned[pk].appId, appData: remainingPinned[pk], orderKey: pKey })
                 seenOrderKeys[pKey] = true
                 seenOrderKeys["runningApp:" + remainingPinned[pk].appId] = true
             }
         }
 
+        if (remainingApps.length > 0) {
+            var targetIndex = -1;
+            for (var idx = result.length - 1; idx >= 0; idx--) {
+                if (result[idx].type === "app") {
+                    targetIndex = idx + 1;
+                    break;
+                }
+            }
+            if (targetIndex === -1) {
+                targetIndex = result.length;
+                while (targetIndex > 0) {
+                    var item = result[targetIndex - 1];
+                    if (item.type === "action" && (item.actionId === "trash" || item.actionId === "overview" || item.actionId === "pin")) {
+                        targetIndex--;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            for (var m = 0; m < remainingApps.length; m++) {
+                result.splice(targetIndex + m, 0, remainingApps[m]);
+            }
+        }
+
         // Append pinned files that aren't in the order at all (e.g. newly pinned folders)
-        var remainingFiles = Object.values(pinnedFileMap)
-        for (var fk = 0; fk < remainingFiles.length; fk++) {
-            var fKey = "file:" + remainingFiles[fk].path
+        var remainingFiles = []
+        var pinnedFiles = Object.values(pinnedFileMap)
+        for (var fk = 0; fk < pinnedFiles.length; fk++) {
+            var fKey = "file:" + pinnedFiles[fk].path
             if (!seenOrderKeys[fKey]) {
-                result.push({ type: "file", path: remainingFiles[fk].path, orderKey: fKey })
+                remainingFiles.push({ type: "file", path: pinnedFiles[fk].path, orderKey: fKey })
                 seenOrderKeys[fKey] = true
             }
+        }
+
+        if (remainingFiles.length > 0) {
+            var fileTargetIndex = -1;
+            for (var fidx = result.length - 1; fidx >= 0; fidx--) {
+                if (result[fidx].type === "file") {
+                    fileTargetIndex = fidx + 1;
+                    break;
+                }
+            }
+            if (fileTargetIndex === -1) {
+                fileTargetIndex = result.length;
+                while (fileTargetIndex > 0) {
+                    var fitem = result[fileTargetIndex - 1];
+                    if (fitem.type === "action" && (fitem.actionId === "trash" || fitem.actionId === "overview" || fitem.actionId === "pin")) {
+                        fileTargetIndex--;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            for (var n = 0; n < remainingFiles.length; n++) {
+                result.splice(fileTargetIndex + n, 0, remainingFiles[n]);
+            }
+        }
+
+        if (Config.options?.dock?.smartGrouping) {
+            var mapped = result.map(function(el, i) {
+                return { index: i, value: el, cat: root.getItemCategory(el) };
+            });
+            mapped.sort(function(a, b) {
+                if (a.cat !== b.cat) return a.cat - b.cat;
+                return a.index - b.index;
+            });
+            result = mapped.map(function(el) { return el.value; });
         }
 
         return result
@@ -418,6 +470,31 @@ Item {
         if (!item) return false
         var t = item.type
         return t === "media" || t === "weather" || t === "action"
+    }
+
+    function getItemCategory(item) {
+        if (!item) return 99;
+        var t = item.type;
+        
+        if (t === "action" && item.actionId === "overview") return 1;
+        if (t === "action" && item.actionId === "pin") return 2;
+        if (t === "weather") return 3;
+        
+        var id = "";
+        if (t === "app" && item.appId) id = item.appId.toLowerCase();
+        
+        if (id.match(/(firefox|chrome|chromium|edge|brave|librewolf|vivaldi|opera|waterfox|tor|safari|thorium|zen)/)) return 10;
+        if (t === "file" || id.match(/(dolphin|nautilus|thunar|pcmanfm|nemo|caja|kitty|alacritty|konsole|wezterm|foot|terminal|files)/)) return 20;
+        if (id.match(/(code|vscode|vscodium|idea|intellij|pycharm|webstorm|neovim|nvim|vim|emacs|sublime|notepadqq|kate|kwrite|gedit|geany|zed)/)) return 30;
+        if (id.match(/(discord|vesktop|slack|telegram|whatsapp|signal|teams|element|skype|mattermost)/)) return 40;
+        if (id.match(/(gimp|inkscape|krita|kdenlive|davinci|obs|blender|audacity|lmms|figma)/)) return 50;
+        if (t === "media" || id.match(/(spotify|youtube-music|vlc|mpv|spotify-launcher|amberol|elisa|lollypop|rhythmbox|audacious|cider|mpd)/)) return 60;
+        if (id.match(/(steam|heroic|lutris|epic|minigalaxy|prismlauncher|bottles)/)) return 70;
+        
+        if (t === "action" && item.actionId === "trash") return 100;
+        
+        if (t === "app") return 80;
+        return 90;
     }
 
     function mimeIconFromPath(path) {
@@ -544,10 +621,20 @@ Item {
                 return root.isSpecialItem(root.flattenedItems[delegateIndex + 1])
             }
             readonly property bool _sepDividersOn: Config.options?.dock?.showDividers ?? true
-            readonly property bool _sepShowBefore: _sepDividersOn && _sepIsSpecial && delegateIndex > 0
-            readonly property bool _sepShowAfter: _sepDividersOn && _sepIsSpecial
-                && delegateIndex < root.flattenedItems.length - 1
-                && !_sepNextIsSpecial
+            readonly property bool _sepShowBefore: {
+                if (!_sepDividersOn || delegateIndex === 0) return false;
+                if (Config.options?.dock?.smartGrouping) {
+                    return root.getItemCategory(root.flattenedItems[delegateIndex]) !== root.getItemCategory(root.flattenedItems[delegateIndex - 1]);
+                }
+                return _sepIsSpecial && delegateIndex > 0;
+            }
+            readonly property bool _sepShowAfter: {
+                if (!_sepDividersOn || delegateIndex >= root.flattenedItems.length - 1) return false;
+                if (Config.options?.dock?.smartGrouping) {
+                    return false; // we only draw before to avoid double lines
+                }
+                return _sepIsSpecial && !_sepNextIsSpecial;
+            }
             readonly property real _sepGapCenter: -(root.sepThickness / 2 + 1)
 
             // Horizontal mode: left vertical line

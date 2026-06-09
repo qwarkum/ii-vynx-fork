@@ -671,6 +671,7 @@ Singleton {
 
             property JsonObject dock: JsonObject {
                 property bool enable: true
+                property bool smartGrouping: false
                 property bool isolateMonitors: false
                 property bool monochromeIcons: false
                 property bool dimInactiveIcons: false
