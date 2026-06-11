@@ -193,6 +193,19 @@ Item {
     }
 
     readonly property int selectedSize: {
+        if (selectedIsImage && selectedEntry) {
+            const match = selectedEntry.match(/binary data ([\d.]+)\s*([KMG]i?B|B)/i);
+            if (match) {
+                const val = parseFloat(match[1]);
+                const unit = match[2].toUpperCase();
+                if (unit === "B") return Math.round(val);
+                if (unit === "KIB" || unit === "KB") return Math.round(val * 1024);
+                if (unit === "MIB" || unit === "MB") return Math.round(val * 1048576);
+                if (unit === "GIB" || unit === "GB") return Math.round(val * 1073741824);
+                return Math.round(val);
+            }
+            return 0;
+        }
         if (!selectedDecodedContent) return 0;
         return selectedDecodedContent.length;
     }

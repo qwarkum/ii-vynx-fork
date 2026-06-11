@@ -28,7 +28,9 @@ Item {
     readonly property real totalTopPush: !hasTopFrame ? Math.max(0, Appearance.sizes.barHeight - visualsRoot.hBarHiddenAmount) : 0
     readonly property real totalBottomPush: !hasBottomFrame ? Math.max(0, Appearance.sizes.barHeight - visualsRoot.hBarHiddenAmount) : 0
 
-    Bar.BarThemes { id: barThemes }
+    Bar.BarThemes {
+        id: barThemes
+    }
     property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
     property color baseColor: showBarBackground ? (Config.options.bar.expressiveColors ? activeTheme.barBackground : Appearance.colors.colLayer0) : "transparent"
 
@@ -45,10 +47,10 @@ Item {
     Rectangle {
         id: topFrame
         visible: true
-        anchors { 
+        anchors {
             top: parent.top
             left: parent.left
-            right: parent.right 
+            right: parent.right
             topMargin: (!hasTopFrame) ? -Math.max(0, frameThickness - visualsRoot.hBarHiddenAmount) : 0
             leftMargin: visualsRoot.totalLeftPush
             rightMargin: visualsRoot.totalRightPush
@@ -60,10 +62,10 @@ Item {
     Rectangle {
         id: bottomFrame
         visible: true
-        anchors { 
+        anchors {
             bottom: parent.bottom
             left: parent.left
-            right: parent.right 
+            right: parent.right
             bottomMargin: (!hasBottomFrame) ? -Math.max(0, frameThickness - visualsRoot.hBarHiddenAmount) : 0
             leftMargin: visualsRoot.totalLeftPush
             rightMargin: visualsRoot.totalRightPush
@@ -75,12 +77,12 @@ Item {
     // VERTICAL FRAMES
     Rectangle {
         id: leftFrame
-        visible: !leftSidebarOffset
+        visible: true
         anchors {
             top: parent.top
             bottom: parent.bottom
             left: parent.left
-            leftMargin: (!hasLeftFrame) ? -Math.max(0, frameThickness - visualsRoot.vBarHiddenAmount) + visualsRoot.leftSidebarOffset : visualsRoot.leftSidebarOffset
+            leftMargin: (!hasLeftFrame) ? -Math.max(0, frameThickness - visualsRoot.vBarHiddenAmount) : visualsRoot.leftSidebarOffset
             topMargin: hasTopFrame ? frameThickness : Math.max(frameThickness, visualsRoot.totalTopPush)
             bottomMargin: hasBottomFrame ? frameThickness : Math.max(frameThickness, visualsRoot.totalBottomPush)
         }
@@ -90,12 +92,12 @@ Item {
 
     Rectangle {
         id: rightFrame
-        visible: !rightSidebarOffset
+        visible: true
         anchors {
             top: parent.top
             bottom: parent.bottom
             right: parent.right
-            rightMargin: (!hasRightFrame) ? -Math.max(0, frameThickness - visualsRoot.vBarHiddenAmount) + visualsRoot.rightSidebarOffset : visualsRoot.rightSidebarOffset
+            rightMargin: (!hasRightFrame) ? -Math.max(0, frameThickness - visualsRoot.vBarHiddenAmount) : visualsRoot.rightSidebarOffset
             topMargin: hasTopFrame ? frameThickness : Math.max(frameThickness, visualsRoot.totalTopPush)
             bottomMargin: hasBottomFrame ? frameThickness : Math.max(frameThickness, visualsRoot.totalBottomPush)
         }
@@ -161,13 +163,29 @@ Item {
     }
 
     property Region frameMask: Region {
-        Region { item: topFrame }
-        Region { item: bottomFrame }
-        Region { item: leftFrame }
-        Region { item: rightFrame }
-        Region { item: topLeftCorner }
-        Region { item: topRightCorner }
-        Region { item: bottomLeftCorner }
-        Region { item: bottomRightCorner }
+        Region {
+            item: topFrame
+        }
+        Region {
+            item: bottomFrame
+        }
+        Region {
+            item: leftFrame
+        }
+        Region {
+            item: rightFrame
+        }
+        Region {
+            item: topLeftCorner
+        }
+        Region {
+            item: topRightCorner
+        }
+        Region {
+            item: bottomLeftCorner
+        }
+        Region {
+            item: bottomRightCorner
+        }
     }
 }

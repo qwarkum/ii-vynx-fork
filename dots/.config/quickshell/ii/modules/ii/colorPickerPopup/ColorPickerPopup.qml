@@ -68,8 +68,8 @@ Scope {
         component: PanelWindow {
             id: popupWindow
             color: "transparent"
-            visible: true
-            screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+            visible: Quickshell.screens.length > 0 && true
+            screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0] ?? null
 
             WlrLayershell.namespace: "quickshell:colorPickerPopup"
             WlrLayershell.layer: WlrLayer.Overlay

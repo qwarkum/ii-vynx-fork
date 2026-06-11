@@ -42,8 +42,8 @@ Scope {
     PanelWindow {
         id: popupWindow
         color: "transparent"
-        visible: root.isOpen || (popupContent ? popupContent.isExitAnimRunning : false)
-        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+        visible: Quickshell.screens.length > 0 && (root.isOpen || (popupContent ? popupContent.isExitAnimRunning : false))
+        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0] ?? null
 
         WlrLayershell.namespace: "quickshell:keyboardLayoutTransitionPopup"
         WlrLayershell.layer: WlrLayer.Overlay

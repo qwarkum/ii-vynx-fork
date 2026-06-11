@@ -82,7 +82,7 @@ log "Fork updated. Re-applying config..."
 VERBOSE_FLAG=""
 [ "$VERBOSE" = true ] && VERBOSE_FLAG="-v"
 
-if ! bash "$FORK_DIR/setup-ii-vynx.sh" --no-confirm --preserve-config $VERBOSE_FLAG; then
+if ! bash "$FORK_DIR/setup-ii-vynx.sh" --update-only --no-confirm $VERBOSE_FLAG; then
     err "Setup failed."
     exit 1
 fi

@@ -12,6 +12,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.ii.bar as Bar
 import qs.modules.ii.wrappedFrame
+
 Scope {
     id: bar
 
@@ -31,7 +32,6 @@ Scope {
             required property ShellScreen modelData
             property var monitorIndex: barVariant.variantModel.indexOf(barLoader.modelData)
 
-
             active: GlobalStates.barOpen && !GlobalStates.screenLocked && !GlobalStates.connectModeActive
             component: Scope {
                 id: barScope
@@ -48,13 +48,11 @@ Scope {
                         bottom: true
                     }
                     exclusionMode: ExclusionMode.Normal
-                    
+
                     property real targetZone: Appearance.sizes.baseVerticalBarWidth + (Config.options.bar.cornerStyle === 1 ? Appearance.sizes.hyprlandGapsOut : 0)
                     property real minZone: Config.options.appearance.fakeScreenRounding === 3 ? Config.options.appearance.wrappedFrameThickness : 0
-                    
-                    exclusiveZone: (Config?.options.bar.autoHide.enable && !Config?.options.bar.autoHide.pushWindows) 
-                        ? minZone 
-                        : Math.max(minZone, targetZone - (barRoot ? barRoot.hiddenAmount : 0))
+
+                    exclusiveZone: (Config?.options.bar.autoHide.enable && !Config?.options.bar.autoHide.pushWindows) ? minZone : Math.max(minZone, targetZone - (barRoot ? barRoot.hiddenAmount : 0))
 
                     implicitWidth: Appearance.sizes.verticalBarWidth + Appearance.rounding.screenRounding
                     color: "transparent"
@@ -124,7 +122,7 @@ Scope {
                     exclusiveZone: 0
                     WlrLayershell.namespace: "quickshell:verticalBar"
                     // WlrLayershell.layer: WlrLayer.Overlay // TODO: enable this when bar can reliably hide when fullscreen without crashing
-                    
+
                     mask: Region {
                         item: hoverMaskRegion
                     }

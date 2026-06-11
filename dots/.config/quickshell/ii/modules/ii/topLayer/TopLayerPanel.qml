@@ -482,6 +482,7 @@ PanelWindow {
 
         Loader {
             active: !GlobalStates.policiesDetached
+            asynchronous: true
             anchors.fill: parent
             sourceComponent: Policies.SidebarPoliciesContent {
                 scopeRoot: topPanel
@@ -537,6 +538,7 @@ PanelWindow {
 
         Loader {
             active: true
+            asynchronous: true
             anchors.fill: parent
             sourceComponent: Dashboard.SidebarDashboardContent {}
         }
