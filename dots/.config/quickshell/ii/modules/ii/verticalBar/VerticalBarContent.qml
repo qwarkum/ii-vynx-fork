@@ -116,6 +116,7 @@ Item { // Bar content region
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
         Behavior on height {
+            enabled: !root.isDynamicIsland
             NumberAnimation {
                 duration: 450
                 easing.type: Easing.OutExpo

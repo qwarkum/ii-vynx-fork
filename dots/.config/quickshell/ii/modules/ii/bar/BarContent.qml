@@ -140,6 +140,7 @@ Item { // Bar content region
         }
 
         Behavior on width {
+            enabled: !root.isDynamicIsland
             NumberAnimation {
                 duration: 450
                 easing.type: Easing.OutExpo
