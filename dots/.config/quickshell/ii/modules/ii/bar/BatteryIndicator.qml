@@ -26,9 +26,11 @@ MouseArea {
     visible: Battery.available
 
     implicitWidth: {
-        if (Config.options.battery.style === "android16") return android16Battery.width + 12;
-        if (Config.options.battery.style === "oneui") return oneuiBattery.implicitWidth + 12;
-        return batteryContainer.width + 12;
+        if (Config.options.battery.style === "android16")
+            return android16Battery.width + 12;
+        if (Config.options.battery.style === "oneui")
+            return oneuiBattery.implicitWidth + 12;
+        return batteryContainerOuter.implicitWidth + 12;
     }
     implicitHeight: Appearance.sizes.baseBarHeight
 
@@ -164,92 +166,116 @@ MouseArea {
         }
     }
 
-    Item {
-        id: batteryContainer
+    Row {
+        id: batteryContainerOuter
         visible: Config.options.battery.style !== "android16" && Config.options.battery.style !== "oneui"
         anchors.centerIn: parent
-        height: 14
-        width: height * (28 / 13)
+        spacing: 7
+
+        StyledText {
+            visible: (Config.options.battery.showPercentage === "left")
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: (Config.options.battery.showPercentage === "left" || Config.options.battery.showPercentage === "right") ? 0.5 : 0
+            text: Math.round(root.percentage * 100) + "%"
+            color: root.textColor
+            font.pixelSize: Appearance.font.pixelSize.small
+            font.weight: Font.Bold
+        }
 
         Item {
-            id: fillClipping
-            clip: true
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.leftMargin: batteryContainer.width * (1.5 / 28)
+            id: batteryContainer
+            anchors.verticalCenter: parent.verticalCenter
+            height: 14
+            width: height * (28 / 13)
 
-            readonly property real clampedPct: Math.max(0, Math.min(1, root.percentage))
-            width: (batteryContainer.width * (22 / 28)) * clampedPct
-            z: 0
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
+            Item {
+                id: fillClipping
+                clip: true
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 anchors.left: parent.left
+                anchors.leftMargin: 3
 
-                height: batteryContainer.height * (10 / 13)
-                width: batteryContainer.width * (22 / 28)
+                readonly property real clampedPct: Math.max(0, Math.min(1, root.percentage))
+                width: (batteryContainer.width - 9) * clampedPct
+                z: 0
 
-                radius: batteryContainer.height * (2 / 13)
+                Rectangle {
+                    y: 3
+                    anchors.left: parent.left
 
-                color: {
-                    if (root.isCritical && !root.effectivelyCharging)
-                        return "#E53935";
-                    if (root.isLow && !root.effectivelyCharging)
-                        return "#FB8C00";
-                    if (root.effectivelyCharging)
-                        return "#43A047";
-                    if (root.isPowerSaving)
-                        return "#FFC917";
-                    if (root.isPerformance)
-                        return "#42A5F5";
-                    return root.textColor;
+                    height: 8
+                    width: batteryContainer.width - 9
+                    radius: 2
+
+                    color: {
+                        if (root.isCritical && !root.effectivelyCharging)
+                            return "#E53935";
+                        if (root.isLow && !root.effectivelyCharging)
+                            return "#FB8C00";
+                        if (root.effectivelyCharging)
+                            return "#43A047";
+                        if (root.isPowerSaving)
+                            return "#FFC917";
+                        if (root.isPerformance)
+                            return "#42A5F5";
+                        return root.textColor;
+                    }
                 }
             }
-        }
 
-        CustomIcon {
-            anchors.fill: parent
-            source: "Battery.svg"
-            colorize: true
-            color: {
-                if (root.isCritical && !root.effectivelyCharging)
-                    return Appearance.m3colors.m3error;
-                if (root.isLow && !root.effectivelyCharging)
-                    return Appearance.m3colors.m3error;
-                return root.textColor;
+            CustomIcon {
+                anchors.fill: parent
+                source: "Battery.svg"
+                colorize: true
+                color: {
+                    if (root.isCritical && !root.effectivelyCharging)
+                        return Appearance.m3colors.m3error;
+                    if (root.isLow && !root.effectivelyCharging)
+                        return Appearance.m3colors.m3error;
+                    return root.textColor;
+                }
+                z: 1
             }
-            z: 1
+
+            MaterialSymbol {
+                visible: root.effectivelyCharging
+
+                anchors.top: parent.top
+                anchors.topMargin: -5
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
+
+                text: "bolt"
+                iconSize: 17
+                fill: 1
+                color: Appearance.colors.colLayer0
+                z: 2
+            }
+
+            MaterialSymbol {
+                visible: root.effectivelyCharging
+
+                anchors.top: parent.top
+                anchors.topMargin: -6
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
+
+                text: "bolt"
+                iconSize: 16
+                fill: 1
+                color: root.textColor
+                z: 3
+            }
         }
 
-        MaterialSymbol {
-            visible: root.effectivelyCharging
-
-            anchors.top: parent.top
-            anchors.topMargin: -5
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
-
-            text: "bolt"
-            iconSize: 17
-            fill: 1
-            color: Appearance.colors.colLayer0
-            z: 2
-        }
-
-        MaterialSymbol {
-            visible: root.effectivelyCharging
-
-            anchors.top: parent.top
-            anchors.topMargin: -6
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
-
-            text: "bolt"
-            iconSize: 16
-            fill: 1
+        StyledText {
+            visible: (Config.options.battery.showPercentage === "right")
+            anchors.verticalCenter: parent.verticalCenter
+            text: Math.round(root.percentage * 100) + "%"
             color: root.textColor
-            z: 3
+            font.pixelSize: Appearance.font.pixelSize.small
+            font.weight: Font.Bold
         }
     }
 
