@@ -331,7 +331,7 @@ Item { // Bar content region
         }
     }
 
-    RowLayout { // Middle section
+    Item { // Middle section
         id: middleSection
         visible: !root.isDynamicIsland
         anchors {
@@ -339,10 +339,16 @@ Item { // Bar content region
             bottom: barBackground.bottom
             horizontalCenter: barBackground.horizontalCenter
         }
-        spacing: 4
+        width: Math.max(middleLeft.width, middleRight.width) * 2 + centerCenter.width + 8
 
         RowLayout {
-            Layout.fillHeight: true
+            id: middleLeft
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                right: centerCenter.left
+                rightMargin: 4
+            }
             Repeater {
                 id: middleLeftRepeater
                 model: root.leftList
@@ -356,7 +362,7 @@ Item { // Bar content region
 
         RowLayout { //center
             id: centerCenter
-            Layout.fillHeight: true
+            anchors.centerIn: parent
             Repeater {
                 model: root.centerList
                 delegate: BarComponent {
@@ -368,7 +374,13 @@ Item { // Bar content region
         }
 
         RowLayout {
-            Layout.fillHeight: true
+            id: middleRight
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                left: centerCenter.right
+                leftMargin: 4
+            }
             Repeater {
                 id: middleRightRepeater
                 model: root.rightList

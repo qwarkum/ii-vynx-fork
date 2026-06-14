@@ -27,16 +27,52 @@ Item {
     property real dragAbsX: 0
     property real dragAbsY: 0
     property int pageIndex: 0
+    property int gridColumns: 4
+    property var panel: null
+    property var gridRef: null
 
-    Layout.columnSpan: root.buttonData.sizeW ?? 2
-    Layout.rowSpan: root.buttonData.sizeH ?? 2
+    property string tooltipText: {
+        var player = MprisController.activePlayer;
+        if (player && player.trackTitle) {
+            var artist = player.trackArtist ? player.trackArtist : Translation.tr("Unknown Artist");
+            return player.trackTitle + " - " + artist;
+        }
+        return Translation.tr("Media Player");
+    }
+
+    // Effective sizes for live preview during resize
+    readonly property int effectiveSizeW: {
+        if (root.editMode && visualButton.editingRight) {
+            var delta = root.baseCellWidth > 0 ? Math.round(visualButton.editDragX / root.baseCellWidth) : 0;
+            var w = (root.buttonData.sizeW ?? 2) + delta;
+            return Math.max(1, Math.min(8, w));
+        }
+        return root.buttonData.sizeW ?? 2;
+    }
+    readonly property int effectiveSizeH: {
+        if (root.editMode && visualButton.editingBottom) {
+            var delta = root.baseCellHeight > 0 ? Math.round(visualButton.editDragY / root.baseCellHeight) : 0;
+            var h = (root.buttonData.sizeH ?? 2) + delta;
+            return Math.max(1, Math.min(8, h));
+        }
+        return root.buttonData.sizeH ?? 2;
+    }
+
+    property bool hovered: hoverHandler.hovered || (root.editMode && editModeInteraction.containsMouse)
+
+    HoverHandler {
+        id: hoverHandler
+    }
+
+    Layout.columnSpan: root.effectiveSizeW
+    Layout.rowSpan: root.effectiveSizeH
     Layout.preferredWidth: root.implicitWidth
     Layout.preferredHeight: root.implicitHeight
     Layout.fillWidth: false
     Layout.fillHeight: false
 
-    property real baseWidth: root.baseCellWidth * Layout.columnSpan + cellSpacing * (Layout.columnSpan - 1)
-    property real baseHeight: root.baseCellHeight * Layout.rowSpan + cellSpacing * (Layout.rowSpan - 1)
+    property real baseWidth: root.baseCellWidth * root.effectiveSizeW + cellSpacing * (root.effectiveSizeW - 1)
+    property real baseHeight: root.baseCellHeight * root.effectiveSizeH + cellSpacing * (root.effectiveSizeH - 1)
 
     implicitWidth: baseWidth
     implicitHeight: baseHeight
@@ -65,6 +101,13 @@ Item {
         }
         Behavior on y {
             enabled: !root.isDragging
+            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(visualButton)
+        }
+        
+        Behavior on width {
+            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(visualButton)
+        }
+        Behavior on height {
             animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(visualButton)
         }
 
@@ -97,8 +140,8 @@ Item {
                 if (MprisController.players.length === 0) {
                     return emptyStateComp;
                 }
-                var w = root.buttonData.sizeW || 2;
-                var h = root.buttonData.sizeH || 2;
+                var w = root.effectiveSizeW || 2;
+                var h = root.effectiveSizeH || 2;
                 if (w >= 4) {
                     return layout4x2StandardComp;
                 } else if (h === 1) {
@@ -381,7 +424,7 @@ Item {
             id: editModeInteraction
             visible: root.editMode
             anchors.fill: parent
-            cursorShape: root.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+            cursorShape: root.isDragging ? Qt.ClosedHandCursor : (root.isUnused ? Qt.PointingHandCursor : Qt.OpenHandCursor)
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton
 
@@ -391,9 +434,13 @@ Item {
             property real initialVisualY: 0
 
             function mutatePages(mutatorFn) {
-                var cloned = JSON.parse(JSON.stringify(Config.options.sidebar.quickToggles.android.pages));
-                mutatorFn(cloned);
-                Config.options.sidebar.quickToggles.android.pages = cloned;
+                if (root.panel && root.panel.mutatePages) {
+                    root.panel.mutatePages(mutatorFn);
+                } else {
+                    var cloned = JSON.parse(JSON.stringify(Config.options.sidebar.quickToggles.android.pages));
+                    mutatorFn(cloned);
+                    Config.options.sidebar.quickToggles.android.pages = cloned;
+                }
             }
 
             function toggleEnabled() {
@@ -440,6 +487,12 @@ Item {
                         }
                     }
                 });
+            }
+
+            function resolveLayoutConflicts() {
+                if (root.panel && root.panel.resolveLayoutConflicts) {
+                    root.panel.resolveLayoutConflicts(root.pageIndex, root.gridColumns);
+                }
             }
 
             function checkForSwap(gridX, gridY) {
@@ -528,13 +581,30 @@ Item {
         Rectangle {
             id: editBorder
             anchors.fill: parent
-            anchors.rightMargin: visualButton.editingRight ? -visualButton.editDragX : 0
-            anchors.bottomMargin: visualButton.editingBottom ? -visualButton.editDragY : 0
-            visible: root.editMode && !root.isUnused && !root.isDragging
+            visible: root.editMode && !root.isDragging
             color: "transparent"
-            border.color: Appearance.colors.colPrimary
             border.width: 2
             radius: Appearance.rounding.large
+            
+            border.color: {
+                if (root.isUnused) {
+                    return root.hovered ? Appearance.colors.colPrimary : "transparent";
+                } else {
+                    return root.hovered ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colPrimary, 0.7);
+                }
+            }
+            
+            Behavior on border.color {
+                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(editBorder)
+            }
+            
+            MouseArea {
+                id: editBorderMouseArea
+                anchors.fill: parent
+                visible: root.isUnused
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
+            }
 
             Rectangle {
                 id: rightDragHandle
@@ -545,10 +615,11 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: -width / 2
+                visible: !root.isUnused
 
                 MouseArea {
                     anchors.fill: parent
-                    anchors.margins: -10
+                    anchors.margins: -12
                     cursorShape: Qt.SizeHorCursor
                     preventStealing: true
                     property real pressAbsX: 0
@@ -581,6 +652,7 @@ Item {
                             if (newSizeW == 4 && currentH == 1)
                                 currentH = 2;
                             editModeInteraction.setSize(newSizeW, currentH);
+                            editModeInteraction.resolveLayoutConflicts();
                         }
                     }
                 }
@@ -595,11 +667,11 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: -height / 2
-                visible: (root.buttonData.sizeW ?? 2) <= 2 // Only allow height resize for 2x width
+                visible: !root.isUnused && (root.buttonData.sizeW ?? 2) <= 2 // Only allow height resize for 2x width
 
                 MouseArea {
                     anchors.fill: parent
-                    anchors.margins: -10
+                    anchors.margins: -12
                     cursorShape: Qt.SizeVerCursor
                     preventStealing: true
                     property real pressAbsY: 0
@@ -626,25 +698,38 @@ Item {
                         visualButton.editDragY = 0;
                         if (newSizeH !== currentH) {
                             editModeInteraction.setSize(root.buttonData.sizeW ?? 2, newSizeH);
+                            editModeInteraction.resolveLayoutConflicts();
                         }
                     }
                 }
             }
         }
+    }
 
-        Rectangle {
-            id: unusedHoverOverlay
-            anchors.fill: parent
-            radius: Appearance.rounding.large
-            color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.5)
-            visible: root.isUnused && editModeInteraction.containsMouse
-
-            MaterialSymbol {
-                anchors.centerIn: parent
-                text: "add"
-                iconSize: 28
-                color: Appearance.colors.colOnLayer0
-            }
+    Rectangle {
+        id: addBadge
+        width: 20
+        height: 20
+        radius: 10
+        color: Appearance.m3colors.m3success
+        anchors.top: parent.top
+        anchors.topMargin: -6
+        anchors.right: parent.right
+        anchors.rightMargin: -6
+        visible: root.isUnused
+        z: 10
+        
+        MaterialSymbol {
+            anchors.centerIn: parent
+            text: "add"
+            iconSize: 14
+            color: Appearance.m3colors.m3onSuccess
         }
+    }
+
+    StyledToolTip {
+        parent: root
+        extraVisibleCondition: root.tooltipText !== "" && root.hovered
+        text: root.tooltipText
     }
 }

@@ -16,7 +16,7 @@ pragma ComponentBehavior: Bound
 //   • On overview close: reverse-animates scale back to 1.0 then hides.
 //
 // Flicker prevention:
-//   • ScreencopyView is kept live:true during overview so captures are always fresh.
+//   • ScreencopyView uses live:false for performance; captures are taken once on open.
 //   • captureSource is set BEFORE setting visible=true (QML binding order).
 //   • A 16ms delay ensures QML has painted the layer at scale=1.0 before
 //     we read GlobalStates.overviewZoomScale (which may already be < 1).
@@ -24,8 +24,10 @@ pragma ComponentBehavior: Bound
 import qs
 import qs.services
 import qs.modules.common
+import qs.modules.common.widgets
 import Qt5Compat.GraphicalEffects
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -110,14 +112,14 @@ Scope {
             // ── Visibility / readiness ──────────────────────────────────────
             // Must be visible while overview is open OR while exit animation runs.
             property bool exitAnimating: false
-            property bool isOverviewActive: GlobalStates.overviewOpen
+            property bool isOverviewActive: false
 
             // Delay applying window opacity rule to let ScreencopyView render its first frame (prevents 1-frame wallpaper pop on open)
             Timer {
                 id: openDelayTimer
                 interval: 60
                 onTriggered: {
-                    if (tRoot.monitorFocused) {
+                    if (Quickshell.screens.length > 0 && tRoot.screen === Quickshell.screens[0]) {
                         Quickshell.execDetached(["hyprctl", "eval", "hl.window_rule({ match = { class = '.*' }, opacity = '0.0 0.0', no_anim = true })"]);
                     }
                 }
@@ -128,7 +130,7 @@ Scope {
                 id: restoreWindowsTimer
                 interval: 300
                 onTriggered: {
-                    if (tRoot.monitorFocused) {
+                    if (Quickshell.screens.length > 0 && tRoot.screen === Quickshell.screens[0]) {
                         Quickshell.execDetached(["hyprctl", "reload"]);
                     }
                 }
@@ -245,7 +247,7 @@ Scope {
                 function onFeatureEnabledChanged() {
                     if (!transitionScope.featureEnabled) {
                         openDelayTimer.stop()
-                        if (GlobalStates.overviewOpen && tRoot.monitorFocused) {
+                        if (GlobalStates.overviewOpen && (Quickshell.screens.length > 0 && tRoot.screen === Quickshell.screens[0])) {
                             Quickshell.execDetached(["hyprctl", "reload"]);
                         }
                     }
@@ -260,8 +262,9 @@ Scope {
                 id: scaleContainer
                 anchors.fill: parent
                 opacity: tRoot.shouldBeActive ? 1.0 : 0.0
-                // Clip prevents window captures from bleeding outside screen bounds
-                clip: true
+                // Performance: removed clip to avoid scissor overhead during scale
+                // Window captures are already positioned within screen bounds
+                // clip: true
 
                 // ── OUTGOING WORKSPACE CONTAINER ────────────────────────────
                 Item {
@@ -269,8 +272,8 @@ Scope {
                     width: parent.width
                     height: parent.height
                     
-                    x: !tRoot.isVertical ? -tRoot.transitionDirection * tRoot.transitionProgress * (tRoot.width * 0.3) : 0
-                    y: tRoot.isVertical ? -tRoot.transitionDirection * tRoot.transitionProgress * (tRoot.height * 0.3) : 0
+                    x: !tRoot.isVertical ? -tRoot.transitionDirection * tRoot.transitionProgress * (tRoot.width * 0.5) : 0
+                    y: tRoot.isVertical ? -tRoot.transitionDirection * tRoot.transitionProgress * (tRoot.height * 0.5) : 0
                     opacity: 1.0 - tRoot.transitionProgress
                     scale: 1.0 - (0.07 * tRoot.transitionProgress)
                     visible: opacity > 0.0
@@ -349,7 +352,31 @@ Scope {
         required property int screenHeight
 
         readonly property string address: `0x${toplevel.HyprlandToplevel?.address}`
-        readonly property var windowData: HyprlandData.windowByAddress[address]
+        property var windowData: null
+
+        function updateWindowData() {
+            if (!tRoot.exitAnimating) {
+                windowData = HyprlandData.windowByAddress[address] || null;
+            }
+        }
+
+        onAddressChanged: updateWindowData()
+
+        Connections {
+            target: HyprlandData
+            ignoreUnknownSignals: true
+            function onWindowByAddressChanged() {
+                tile.updateWindowData();
+            }
+        }
+
+        Connections {
+            target: tRoot
+            ignoreUnknownSignals: true
+            function onExitAnimatingChanged() {
+                tile.updateWindowData();
+            }
+        }
 
         // Position and size from hyprland window data (screen-relative coordinates)
         readonly property int monitorOffsetX: monitorData?.x ?? 0
@@ -374,11 +401,20 @@ Scope {
             }
         }
 
+        // Soft shadow behind the window capture
+        StyledRectangularShadow {
+            target: tile
+            blur: 16
+            opacity: 0.3
+            offset: Qt.vector2d(0, 4)
+        }
+
         ScreencopyView {
             id: capture
             anchors.fill: parent
             captureSource: tile.visible ? tile.toplevel : null
-            live: !tRoot.exitAnimating
+            // Performance: live false to avoid continuous screencopy overhead
+            live: false
             paintCursor: false
             opacity: 1.0
         }

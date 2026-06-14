@@ -122,14 +122,15 @@ log_verbose() {
 
 # Files that must NEVER be overwritten during any install or switch
 PROTECTED_FILES=(
-    "modules/settings/About.qml"
 )
 
 # Patterns for files that must NEVER be overwritten (glob-style, relative to TARGET_DIR)
 PROTECTED_PATTERNS=(
     "*.env"
     ".env"
-    "user/generated/*.json"
+    "user/generated/*"
+    "user/*"
+    "defaults/themes/*.json"
 )
 
 backup_protected_files() {
@@ -138,22 +139,22 @@ backup_protected_files() {
     rm -rf "$tmpdir"
     mkdir -p "$tmpdir"
 
+    # Explicitly protect About.qml ONLY when switching to official ii-vynx
+    if [ "$USE_II_VYNX" = "true" ]; then
+        local about_src="$target/modules/settings/About.qml"
+        if [ -f "$about_src" ] && grep -q "update-fork" "$about_src" 2>/dev/null; then
+            local dest_dir="$tmpdir/modules/settings"
+            mkdir -p "$dest_dir"
+            cp "$about_src" "$tmpdir/modules/settings/About.qml"
+            log_verbose "Protected (backed up): modules/settings/About.qml"
+        fi
+    else
+        echo -e "${YELLOW}• Updating fork: Overwriting About.qml with updated repository version.${NC}"
+    fi
+
     for rel in "${PROTECTED_FILES[@]}"; do
         local src="$target/$rel"
         if [ -f "$src" ]; then
-            if [ "$rel" = "modules/settings/About.qml" ]; then
-                # Only preserve About.qml when switching/updating to official ii-vynx.
-                # If we are installing or updating the fork (USE_II_VYNX=false), we want to overwrite it
-                # so the user gets the updated About.qml from the fork repository.
-                if [ "$USE_II_VYNX" = "false" ]; then
-                    echo -e "${YELLOW}• Updating fork: Overwriting About.qml with updated repository version.${NC}"
-                    continue
-                fi
-                if ! grep -q "update-fork" "$src" 2>/dev/null; then
-                    echo -e "${YELLOW}• About.qml lacks update buttons. Replacing with repository version.${NC}"
-                    continue
-                fi
-            fi
             local dest_dir="$tmpdir/$(dirname "$rel")"
             mkdir -p "$dest_dir"
             cp "$src" "$tmpdir/$rel"
@@ -176,6 +177,16 @@ backup_protected_files() {
 restore_protected_files() {
     local target="$1"
     local tmpdir="/tmp/ii-vynx-protected"
+
+    if [ "$USE_II_VYNX" = "true" ]; then
+        local about_src="$tmpdir/modules/settings/About.qml"
+        if [ -f "$about_src" ]; then
+            local dest_dir="$target/modules/settings"
+            mkdir -p "$dest_dir"
+            cp "$about_src" "$target/modules/settings/About.qml"
+            log_verbose "Restored protected: modules/settings/About.qml"
+        fi
+    fi
 
     for rel in "${PROTECTED_FILES[@]}"; do
         local src="$tmpdir/$rel"
@@ -314,6 +325,13 @@ install_cli() {
     ln -sf "$SCRIPT_DIR/setup-ii-vynx.sh" "$TARGET"
     echo -e "${GREEN}✓ Symlinked vynx → $TARGET${NC}"
 }
+
+# ── Restart ──────────────────────────────────────────────────────────────────
+
+echo ""
+echo -e "${NC}• Restarting Quickshell...${NC}"
+trap '' TERM HUP
+pkill -x quickshell
 
 # ── Banner ───────────────────────────────────────────────────────────────────
 echo ""
@@ -468,8 +486,8 @@ if [ "$NO_CONFIRM" = false ]; then
 fi
 
 # ── Check source exists ──────────────────────────────────────────────────────
-if [ ! -d "$SOURCE_DIR" ]; then
-    echo -e "${RED}✗ Source directory not found: $SOURCE_DIR${NC}"
+if [ ! -d "$SOURCE_DIR" ] || [ -z "$(ls -A "$SOURCE_DIR" 2>/dev/null)" ]; then
+    echo -e "${RED}✗ Source directory not found or is empty: $SOURCE_DIR${NC}"
     exit 1
 fi
 
@@ -506,6 +524,12 @@ fi
 # ── Backup + Copy (preserving protected files) ───────────────────────────────
 echo ""
 echo -e "${NC}• Switching quickshell source...${NC}"
+
+# Kill quickshell to prevent it from overwriting config.json when files change under it
+echo -e "${NC}• Stopping Quickshell to safely update files...${NC}"
+pkill -x qs || true
+sleep 0.5
+
 mkdir -p "$(dirname "$TARGET_DIR")"
 
 # Step 1: Save protected files from current TARGET_DIR
@@ -562,23 +586,23 @@ fi
 
 
 # ── Restart ──────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${NC}• Starting Quickshell...${NC}"
+pkill -x qs || true
+sleep 0.5
+nohup qs --path "$HOME/.config/quickshell/ii" >/dev/null 2>&1 &
+
 if [ "$UPDATE_ONLY" = true ]; then
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${GREEN}    Update completed successfully!   ${NC}"
-    echo -e "${YELLOW} Reload the shell (Super+Shift+R) to apply. ${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     exit 0
 fi
 
-echo ""
-echo -e "${NC}• Restarting Quickshell...${NC}"
-pkill -x qs
-sleep 0.5
 hyprctl reload
 sleep 0.5
-nohup qs --path "$HOME/.config/quickshell/ii" >/dev/null 2>&1 &
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

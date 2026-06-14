@@ -317,6 +317,8 @@ switch() {
         mkdir -p "$(dirname "$STATE_DIR/user/generated/colors.json")"
         cp "$theme_file" "$STATE_DIR/user/generated/colors.json"
         echo "[switchwall.sh] Applied theme: $type_flag"
+        python3 "$HOME/.config/quickshell/ii/scripts/colors/recolor_icons.py"
+        "$SCRIPT_DIR"/applycolor.sh
     else
         matugen "${matugen_args[@]}"
         python3 "$HOME/.config/quickshell/ii/scripts/colors/recolor_icons.py"
@@ -435,6 +437,19 @@ main() {
             break
         fi
     done
+    
+    theme_file=""
+    if [[ $valid_type -eq 0 ]]; then
+        # Check if it's a custom or default theme
+        if [[ -f "$XDG_CONFIG_HOME/illogical-impulse/themes/$type_flag.json" ]]; then
+            theme_file="$XDG_CONFIG_HOME/illogical-impulse/themes/$type_flag.json"
+            valid_type=1
+        elif [[ -f "$CONFIG_DIR/defaults/themes/$type_flag.json" ]]; then
+            theme_file="$CONFIG_DIR/defaults/themes/$type_flag.json"
+            valid_type=1
+        fi
+    fi
+
     if [[ $valid_type -eq 0 ]]; then
         echo "[switchwall.sh] Warning: Invalid type '$type_flag', defaulting to 'auto'" >&2
         type_flag="auto"
@@ -493,7 +508,7 @@ main() {
         fi
     fi
 
-    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color"
+    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color" "$theme_file"
 }
 
 main "$@"

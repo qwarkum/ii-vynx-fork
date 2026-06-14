@@ -48,8 +48,12 @@ case "${SKIP_HYPRLAND}" in
   true) sleep 0;;
   *)
     install_dir__sync dots/.config/hypr/hyprland "$XDG_CONFIG_HOME"/hypr/hyprland
-    for i in hypr{land,lock}.conf {monitors,workspaces}.conf ; do
-      install_file__auto_backup "dots/.config/hypr/$i" "${XDG_CONFIG_HOME}/hypr/$i"
+    for name in hyprland hyprlock monitors workspaces ; do
+      if [ -f "dots/.config/hypr/$name.lua" ]; then
+        install_file__auto_backup "dots/.config/hypr/$name.lua" "${XDG_CONFIG_HOME}/hypr/$name.lua"
+      elif [ -f "dots/.config/hypr/$name.conf" ]; then
+        install_file__auto_backup "dots/.config/hypr/$name.conf" "${XDG_CONFIG_HOME}/hypr/$name.conf"
+      fi
     done
     for i in hypridle.conf ; do
       if [[ "${INSTALL_VIA_NIX}" == true ]]; then

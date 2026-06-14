@@ -6,6 +6,7 @@ import qs.modules.common.functions
 import qs.modules.common.widgets
 import Qt5Compat.GraphicalEffects
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -105,6 +106,14 @@ Item { // Window
         animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
     }
 
+    // Soft shadow behind the window
+    StyledRectangularShadow {
+        target: root
+        blur: 16
+        opacity: 0.3
+        offset: Qt.vector2d(0, 4)
+    }
+
     // Windows are not always rendered in scrolling mode, so background stays transparent. This fallback is needed to make sure the window is visible
     Loader {
         z: 0
@@ -120,7 +129,8 @@ Item { // Window
         id: windowPreview
         anchors.fill: parent
         captureSource: root.toplevel
-        live: true
+        // Performance: live false to avoid continuous screencopy overhead
+        live: false
         z: 1
 
         // Color overlay for interactions

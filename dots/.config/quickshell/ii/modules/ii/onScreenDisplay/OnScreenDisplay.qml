@@ -13,7 +13,14 @@ import Quickshell.Hyprland
 Scope {
     id: root
     property string protectionMessage: ""
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0] ?? null
+    
+    property bool isStartup: true
+    Timer {
+        running: true
+        interval: 2000
+        onTriggered: root.isStartup = false
+    }
 
     property string currentIndicator: "volume"
     property var indicators: [
@@ -73,13 +80,13 @@ Scope {
         // Listen to volume changes
         target: Audio.sink?.audio ?? null
         function onVolumeChanged() {
-            if (!Audio.ready)
+            if (!Audio.ready || root.isStartup)
                 return;
             root.currentIndicator = "volume";
             root.triggerOsd();
         }
         function onMutedChanged() {
-            if (!Audio.ready)
+            if (!Audio.ready || root.isStartup)
                 return;
             root.currentIndicator = "volume";
             root.triggerOsd();
@@ -141,7 +148,7 @@ Scope {
 
             implicitWidth: columnLayout.implicitWidth
             implicitHeight: columnLayout.implicitHeight
-            visible: osdLoader.active
+            visible: Quickshell.screens.length > 0 && osdLoader.active
 
             ColumnLayout {
                 id: columnLayout

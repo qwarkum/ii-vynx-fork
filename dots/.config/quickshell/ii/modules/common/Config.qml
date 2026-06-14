@@ -69,7 +69,8 @@ Singleton {
         blockWrites: root.blockWrites
         onFileChanged: fileReloadTimer.restart()
         onAdapterUpdated: {
-            if (root.ready) fileWriteTimer.restart();
+            if (root.ready)
+                fileWriteTimer.restart();
         }
         onLoaded: root.ready = true
         onLoadFailed: error => {
@@ -147,6 +148,7 @@ Singleton {
                     property string monospace: "JetBrains Mono NF"
                     property string reading: "Readex Pro"
                     property string expressive: "Space Grotesk"
+                    property bool roundnessFull: false
                 }
                 property JsonObject transparency: JsonObject {
                     property bool enable: false
@@ -156,6 +158,9 @@ Singleton {
                     property real contentTransparency: 0.38
                 }
                 property int blurSize: 10
+                property int borderWidth: 2
+                property int gapsIn: 4
+                property int gapsOut: 5
                 property real ignoreAlpha: 0.4
                 property JsonObject wallpaperTheming: JsonObject {
                     property bool enableAppsAndShell: true
@@ -309,6 +314,8 @@ Singleton {
                 property string thumbnailPath: ""
                 property bool hideWhenFullscreen: true
                 property int zoomOutStyle: 0 // 0: Blurred Backing | 1: Mirrored Plane
+                property bool blurWhenWindowsOpen: false
+                property int blurWhenWindowsOpenRadius: 80
                 property JsonObject parallax: JsonObject {
                     property bool vertical: false
                     property bool autoVertical: false
@@ -384,8 +391,8 @@ Singleton {
 
                 property JsonObject mediaPlayer: JsonObject {
                     property bool expressivePopup: false
-                    property bool useFixedSize: false
-                    property int customSize: 250
+                    property bool useFixedSize: true
+                    property int customSize: 200
                     property int maxSize: 400
                     property JsonObject artwork: JsonObject {
                         property bool enable: false
@@ -672,6 +679,7 @@ Singleton {
 
             property JsonObject dock: JsonObject {
                 property bool enable: true
+                property bool smartGrouping: false
                 property bool isolateMonitors: false
                 property bool monochromeIcons: false
                 property bool dimInactiveIcons: false
@@ -683,10 +691,17 @@ Singleton {
                 property bool enablePreview: true
                 property bool hoverToReveal: true
                 property bool enableMediaWidget: true
+                property bool enableWeatherWidget: true
+                property bool showDividers: true
+                property bool showOverviewButton: true
+                property bool showPinButton: true
+                property bool showTrashButton: true
+                property bool showNotificationBadges: true
                 property string position: "auto"
                 property list<string> pinnedApps: ["org.kde.dolphin", "kitty",]
                 property list<string> ignoredAppRegexes: []
                 property list<string> pinnedFiles: []
+                property list<string> order: ["pin", "app:org.kde.dolphin", "app:kitty", "runningApps", "media", "weather", "trash", "overview"]
             }
 
             property JsonObject hyprland: JsonObject {
@@ -714,6 +729,16 @@ Singleton {
                     property string defaultTargetLanguage: "auto"
                     property string defaultSourceLanguage: "auto"
                 }
+            }
+
+            property JsonObject userProfile: JsonObject {
+                property string imageStyle: "initial" // "initial", "expressive", "custom"
+                property string imagePath: Directories.home + "/.config/quickshell/ii/assets/profile.png"
+                property string customName: ""
+                property string customGreeting: ""
+                property string customBio: ""
+                property string avatarShape: "Cookie9Sided"
+                property string avatarColor: "primary"
             }
 
             property JsonObject launcher: JsonObject {
@@ -1050,6 +1075,7 @@ Singleton {
                     property int focus: 1500
                     property int longBreak: 900
                 }
+                property list<var> worldClocks: []
                 property bool secondPrecision: false
             }
 
