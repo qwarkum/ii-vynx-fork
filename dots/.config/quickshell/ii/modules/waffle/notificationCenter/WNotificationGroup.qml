@@ -15,16 +15,26 @@ MouseArea {
     required property var notificationGroup
     readonly property var notifications: notificationGroup?.notifications ?? []
     property bool expanded: false
+    property var draggedItem: contentLayout
 
     implicitWidth: contentLayout.implicitWidth
     implicitHeight: contentLayout.implicitHeight
 
-    function dismissAll() {
+    function dismissAll(left = undefined) {
+        if (left === undefined) {
+            const pos = Config?.options.notifications.position ?? "top_right";
+            if (pos.endsWith("left")) left = true;
+            else if (pos.endsWith("right")) left = false;
+            else left = contentLayout.x < 0;
+        }
+        removeAnimation.left = left;
+
         root.notifications.forEach(notif => {
             Qt.callLater(() => {
                 Notifications.discardNotification(notif.notificationId);
             });
         });
+        contentLayout.opacity = contentLayout.opacity; // Break binding
         removeAnimation.start();
     }
 
@@ -37,12 +47,17 @@ MouseArea {
     drag {
         axis: Drag.XAxis
         target: contentLayout
-        minimumX: 0
+        minimumX: (Config?.options.notifications.position ?? "top_right").endsWith("left") ? 0 : -Infinity
+        maximumX: (Config?.options.notifications.position ?? "top_right").endsWith("right") ? 0 : Infinity
         onActiveChanged: {
             if (drag.active)
                 return;
-            if (contentLayout.x > root.dragDismissThreshold) {
-                root.dismissAll();
+            
+            const threshold = root.dragDismissThreshold;
+            const value = contentLayout.x;
+            
+            if (Math.abs(value) > threshold) {
+                root.dismissAll(value < 0);
             } else {
                 contentLayout.x = 0;
             }
@@ -53,6 +68,20 @@ MouseArea {
         id: contentLayout
         spacing: 4
         width: root.width
+
+        opacity: {
+            if (!root.drag.active) return 1.0;
+            var u = Math.min(1.0, Math.abs(contentLayout.x) / root.width);
+            return (1.0 - u * u * u) * (1.0 - u * u * u);
+        }
+        Behavior on opacity {
+            enabled: !root.drag.active
+            NumberAnimation {
+                duration: 250
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Looks.transition.easing.bezierCurve.easeIn
+            }
+        }
 
         Behavior on x {
             animation: Looks.transition.enter.createObject(this)

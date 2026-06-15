@@ -429,6 +429,31 @@ Item {
                     ]
                 }
             }
+
+            ContentSubsection {
+                title: Translation.tr("Notification position")
+                icon: "place"
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.notifications.position
+                    onSelected: newValue => { Config.options.notifications.position = newValue; }
+                    options: [
+                        { displayName: Translation.tr("Top Left"),     icon: "align_horizontal_left",   value: "top_left" },
+                        { displayName: Translation.tr("Top"),          icon: "align_horizontal_center", value: "top" },
+                        { displayName: Translation.tr("Top Right"),    icon: "align_horizontal_right",  value: "top_right" }
+                    ]
+                }
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.notifications.position
+                    onSelected: newValue => { Config.options.notifications.position = newValue; }
+                    options: [
+                        { displayName: Translation.tr("Bottom Left"),  icon: "align_horizontal_left",   value: "bottom_left" },
+                        { displayName: Translation.tr("Bottom"),       icon: "align_horizontal_center", value: "bottom" },
+                        { displayName: Translation.tr("Bottom Right"), icon: "align_horizontal_right",  value: "bottom_right" }
+                    ]
+                }
+            }
         }
 
         // ── Tooltips & Popups ─────────────────────────────────────────────

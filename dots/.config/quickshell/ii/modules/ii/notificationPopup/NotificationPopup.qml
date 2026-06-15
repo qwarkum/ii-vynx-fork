@@ -16,34 +16,47 @@ Scope {
         visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked
         screen: Quickshell.screens.find(s => Config.options.notifications.monitor.enable ? s.name === Config.options.notifications.monitor.name : s.name === Hyprland.focusedMonitor?.name) ?? null
 
+        property string position: Config.options.notifications.position ?? "top_right"
+        property bool isTop: position.startsWith("top")
+        property bool isBottom: position.startsWith("bottom")
+        property bool isLeft: position.endsWith("left")
+        property bool isRight: position.endsWith("right")
+
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay
         exclusiveZone: 0
 
         anchors {
             top: true
-            right: true
             bottom: true
+            left: true
+            right: true
         }
 
         mask: Region {
-            item: listview.contentItem
+            item: listview
         }
 
         color: "transparent"
-        implicitWidth: Appearance.sizes.notificationPopupWidth
 
         NotificationListView {
             id: listview
             anchors {
-                top: parent.top
-                bottom: parent.bottom
-                right: parent.right
-                rightMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
+                left: root.isLeft ? parent.left : undefined
+                right: root.isRight ? parent.right : undefined
+                horizontalCenter: (!root.isLeft && !root.isRight) ? parent.horizontalCenter : undefined
+                top: root.isTop ? parent.top : undefined
+                bottom: root.isBottom ? parent.bottom : undefined
+
+                leftMargin: root.isLeft ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
+                rightMargin: root.isRight ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
                 topMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
+                bottomMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
             }
-            implicitWidth: parent.width - Appearance.sizes.elevationMargin * 2
+            width: Appearance.sizes.notificationPopupWidth
             popup: true
+            height: Math.min(contentItem.height + topMargin + bottomMargin, parent.height)
+            verticalLayoutDirection: root.isBottom ? ListView.BottomToTop : ListView.TopToBottom
         }
     }
 }
