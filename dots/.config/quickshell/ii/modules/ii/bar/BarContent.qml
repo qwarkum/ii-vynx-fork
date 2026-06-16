@@ -149,6 +149,7 @@ Item { // Bar content region
             border.color: root.showBarBackground ? Appearance.colors.colLayer0Border : "transparent"
 
             Behavior on width {
+                enabled: !root.isDynamicIsland
                 NumberAnimation {
                     duration: 450
                     easing.type: Easing.OutExpo

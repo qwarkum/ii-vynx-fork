@@ -55,10 +55,16 @@ Item {
     }
 
     Behavior on implicitWidth {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        NumberAnimation {
+            duration: 450
+            easing.type: Easing.OutExpo
+        }
     }
     Behavior on implicitHeight {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        NumberAnimation {
+            duration: 450
+            easing.type: Easing.OutExpo
+        }
     }
 
     ColumnLayout {
