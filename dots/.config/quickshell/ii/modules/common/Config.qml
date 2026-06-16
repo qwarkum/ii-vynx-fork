@@ -344,6 +344,7 @@ Singleton {
             property JsonObject bar: JsonObject {
                 property bool borderless: false
                 property JsonObject styles: JsonObject {
+                    property string activeWindow: "default"
                     property string clock: "expressive" // default, expressive
                     property string media: "expressive"
                     property string notification: "default"
@@ -363,6 +364,7 @@ Singleton {
 
                 property JsonObject activeWindow: JsonObject {
                     property bool fixedSize: false
+                    property int customSize: 225
                 }
 
                 property JsonObject autoHide: JsonObject {
@@ -870,6 +872,7 @@ Singleton {
                 }
                 property JsonObject annotation: JsonObject {
                     property bool useSatty: false
+                    property bool enableInlineEditor: false
                 }
             }
 

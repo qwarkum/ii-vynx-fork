@@ -62,7 +62,7 @@ Item { // Bar content region
     // Background shadow
     Loader {
         active: root.showBarBackground && Config.options.bar.cornerStyle === 1 && Config.options.bar.floatStyleShadow
-        anchors.fill: barBackground
+        anchors.fill: backgroundGroup
         sourceComponent: StyledRectangularShadow {
             anchors.fill: undefined // The loader's anchors act on this, and this should not have any anchor
             target: barBackground
@@ -252,9 +252,9 @@ Item { // Bar content region
     Item {
         id: leftStopper
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
-            left: barBackground.left
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
+            left: backgroundGroup.left
             leftMargin: 4
         }
         width: 1
@@ -264,9 +264,9 @@ Item { // Bar content region
         id: islandSections
         visible: root.isDynamicIsland
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
-            horizontalCenter: barBackground.horizontalCenter
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
+            horizontalCenter: backgroundGroup.horizontalCenter
         }
         spacing: barBackground.islandSectionSpacing
 
@@ -325,8 +325,8 @@ Item { // Bar content region
         id: leftSection
         visible: !root.isDynamicIsland
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
             left: leftStopper.right
         }
         spacing: 4
@@ -345,9 +345,9 @@ Item { // Bar content region
         id: middleSection
         visible: !root.isDynamicIsland
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
-            horizontalCenter: barBackground.horizontalCenter
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
+            horizontalCenter: backgroundGroup.horizontalCenter
         }
         width: Math.max(middleLeft.width, middleRight.width) * 2 + centerCenter.width + 8
 
@@ -407,8 +407,8 @@ Item { // Bar content region
         id: rightSection
         visible: !root.isDynamicIsland
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
             right: rightStopper.left
             rightMargin: 4
         }
@@ -427,9 +427,9 @@ Item { // Bar content region
     Item {
         id: rightStopper
         anchors {
-            top: barBackground.top
-            bottom: barBackground.bottom
-            right: barBackground.right
+            top: backgroundGroup.top
+            bottom: backgroundGroup.bottom
+            right: backgroundGroup.right
         }
         width: 1
     }

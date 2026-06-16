@@ -30,8 +30,8 @@ Item {
     property string appTitleText: root.focusingThisMonitor && root.activeWindow?.activated && root.biggestWindow ? 
                 root.activeWindow?.title : (root.biggestWindow?.title) ?? `${Translation.tr("Workspace")} ${monitor?.activeWorkspace?.id ?? 1}`
     
-    implicitHeight: root.vertical && isFixedSize ? fixedSize : (root.vertical ? Math.max(classText.implicitWidth, titleText.implicitWidth) + 20 : colLayout.implicitHeight)
-    implicitWidth: !root.vertical && isFixedSize ? fixedSize : (root.vertical ? undefined : Math.min(Math.max(classText.implicitWidth, titleText.implicitWidth) + 20, maxSize))
+    implicitHeight: root.vertical && isFixedSize ? fixedSize : (root.vertical ? Math.max(expressiveText.implicitWidth) + 30 : Appearance.sizes.baseBarHeight)
+    implicitWidth: !root.vertical && isFixedSize ? fixedSize : (root.vertical ? Appearance.sizes.verticalBarWidth : Math.min(Math.max(expressiveText.implicitWidth) + 30, maxSize))
     clip: true
 
     property bool containsMouse: mouseArea.containsMouse
@@ -61,37 +61,28 @@ Item {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
-    ColumnLayout {
-        visible: true
-        id: colLayout
-
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: -4
-
-        width: root.vertical ? implicitWidth : root.width
-        height: root.vertical ? root.height : implicitHeight
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 4
+        radius: Appearance.rounding.full
+        color: "transparent"
+        border.color: Appearance.colors.colTertiaryContainer
+        border.width: 2
 
         StyledText {
-            id: classText
-            Layout.leftMargin: 6
-            visible: !root.vertical
-            Layout.fillWidth: true
-            font.pixelSize: Appearance.font.pixelSize.smaller
-            color: Appearance.colors.colSubtext
-            elide: Text.ElideRight
-            text: root.appClassText
-        }
-
-        StyledText {
-            id: titleText
-            Layout.leftMargin: root.vertical ? 0 : 6
-            Layout.fillWidth: true
+            id: expressiveText
+            anchors.centerIn: parent
+            rotation: root.vertical ? -90 : 0
+            text: root.vertical ? root.appClassText : root.appTitleText
+            font.family: Appearance.font.family.expressive
+            font.variableAxes: Appearance.font.variableAxes.rounded
+            font.weight: Font.Bold
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer0
             elide: Text.ElideRight
-            rotation: root.vertical ? -90 : 0
-            text: root.vertical ? root.appClassText : root.appTitleText
+            width: root.vertical ? parent.height - 20 : parent.width - 20
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 }
