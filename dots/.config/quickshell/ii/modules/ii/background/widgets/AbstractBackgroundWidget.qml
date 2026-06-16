@@ -18,10 +18,24 @@ AbstractWidget {
     property bool visibleWhenLocked: false
     property var configEntry: Config.options.background.widgets[configEntryName]
     property string placementStrategy: configEntry.placementStrategy
-    property real targetX: Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width))
-    property real targetY : Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height))
-    x: targetX
-    y: targetY
+    property real calculatedX: 0
+    property real calculatedY: 0
+    property real targetX: (placementStrategy === "free" || placementStrategy === "draggable") ? Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width)) : calculatedX
+    property real targetY : (placementStrategy === "free" || placementStrategy === "draggable") ? Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height)) : calculatedY
+
+    Binding {
+        target: root
+        property: "x"
+        value: root.targetX
+        when: !root.drag.active
+    }
+    Binding {
+        target: root
+        property: "y"
+        value: root.targetY
+        when: !root.drag.active
+    }
+
     visible: opacity > 0
     opacity: (GlobalStates.screenLocked && !visibleWhenLocked) ? 0 : 1
     Behavior on opacity {
@@ -32,12 +46,18 @@ AbstractWidget {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
-    draggable: placementStrategy === "free"
+    draggable: placementStrategy === "free" || placementStrategy === "draggable"
+    animateXPos: !drag.active
+    animateYPos: !drag.active
+    onXChanged: {
+        if (drag.active) configEntry.x = x;
+    }
+    onYChanged: {
+        if (drag.active) configEntry.y = y;
+    }
     onReleased: {
-        root.targetX = root.x;
-        root.targetY = root.y;
-        configEntry.x = root.targetX;
-        configEntry.y = root.targetY;
+        configEntry.x = root.x;
+        configEntry.y = root.y;
     }
 
     property bool needsColText: false
@@ -70,7 +90,7 @@ AbstractWidget {
     }
     function refreshPlacementIfNeeded() {
         if (!Config.ready) return;
-        if (root.placementStrategy === "free" && !root.needsColText) return;
+        if ((root.placementStrategy === "free" || root.placementStrategy === "draggable") && !root.needsColText) return;
         leastBusyRegionProc.wallpaperPath = root.wallpaperPath;
         leastBusyRegionProc.running = false;
         leastBusyRegionProc.running = true;
@@ -91,7 +111,7 @@ AbstractWidget {
             , "--horizontal-padding", horizontalPadding //
             , "--vertical-padding", verticalPadding //
             , wallpaperPath //
-            , ...(root.placementStrategy === "mostBusy" ? ["--busiest"] : [])
+            , ...(root.placementStrategy === "mostBusy" || root.placementStrategy === "most_busy" ? ["--busiest"] : [])
             // "--visual-output",
         ]
         stdout: StdioCollector {
@@ -102,9 +122,8 @@ AbstractWidget {
                 if (output.length === 0) return;
                 const parsedContent = JSON.parse(output);
                 root.dominantColor = parsedContent.dominant_color || Appearance.colors.colPrimary;
-                if (root.placementStrategy === "free") return;
-                root.targetX = parsedContent.center_x * root.wallpaperScale - root.width / 2;
-                root.targetY  = parsedContent.center_y * root.wallpaperScale - root.height / 2;
+                root.calculatedX = parsedContent.center_x * root.wallpaperScale - root.width / 2;
+                root.calculatedY  = parsedContent.center_y * root.wallpaperScale - root.height / 2;
             }
         }
     }

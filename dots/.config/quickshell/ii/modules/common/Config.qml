@@ -344,6 +344,7 @@ Singleton {
             property JsonObject bar: JsonObject {
                 property bool borderless: false
                 property JsonObject styles: JsonObject {
+                    property string activeWindow: "default"
                     property string clock: "expressive" // default, expressive
                     property string media: "expressive"
                     property string notification: "default"
@@ -363,6 +364,7 @@ Singleton {
 
                 property JsonObject activeWindow: JsonObject {
                     property bool fixedSize: false
+                    property int customSize: 225
                 }
 
                 property JsonObject autoHide: JsonObject {
@@ -633,6 +635,7 @@ Singleton {
 
             property JsonObject battery: JsonObject {
                 property string style: "android16"
+                property string showPercentage: "off"
                 property int low: 20
                 property int critical: 5
                 property int full: 101
@@ -869,6 +872,7 @@ Singleton {
                 }
                 property JsonObject annotation: JsonObject {
                     property bool useSatty: false
+                    property bool enableInlineEditor: false
                 }
             }
 
@@ -1139,7 +1143,7 @@ Singleton {
                     property bool leftAlignApps: false
                 }
                 property JsonObject actionCenter: JsonObject {
-                    property list<string> toggles: ["network", "bluetooth", "easyEffects", "powerProfile", "idleInhibitor", "nightLight", "darkMode", "antiFlashbang", "cloudflareWarp", "mic", "musicRecognition", "notifications", "onScreenKeyboard", "gameMode", "screenSnip", "colorPicker"]
+                    property list<string> toggles: ["network", "bluetooth", "easyEffects", "powerProfile", "idleInhibitor", "nightLight", "darkMode", "antiFlashbang", "cloudflareWarp", "mic", "musicRecognition", "notifications", "onScreenKeyboard", "gameMode", "screenSnip", "colorPicker", "videoEditor"]
                 }
                 property JsonObject calendar: JsonObject {
                     property bool force2CharDayOfWeek: true

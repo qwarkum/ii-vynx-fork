@@ -19,6 +19,7 @@ Singleton {
         },
         {
             id: "active_window", icon: "label", title: "Active window",
+            styleConfigKey: "activeWindow", styleOptions: defaultStyleOptions,
             configPage: "ActiveWindowConfig.qml"
         },
         {

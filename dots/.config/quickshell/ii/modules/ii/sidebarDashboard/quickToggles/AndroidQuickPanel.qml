@@ -26,7 +26,7 @@ AbstractQuickPanel {
     readonly property real baseCellHeight: 56
 
     // Toggles config
-    readonly property list<string> availableToggleTypes: ["network", "bluetooth", "idleInhibitor", "easyEffects", "nightLight", "darkMode", "cloudflareWarp", "gameMode", "screenSnip", "colorPicker", "onScreenKeyboard", "mic", "audio", "notifications", "powerProfile", "musicRecognition", "antiFlashbang", "soundcoreAnc", "localSend", "mediaWidget", "volumeSlider", "micSlider", "brightnessSlider", "gammaSlider"]
+    readonly property list<string> availableToggleTypes: ["network", "bluetooth", "idleInhibitor", "easyEffects", "nightLight", "darkMode", "cloudflareWarp", "gameMode", "screenSnip", "colorPicker", "videoEditor", "onScreenKeyboard", "mic", "audio", "notifications", "powerProfile", "musicRecognition", "antiFlashbang", "soundcoreAnc", "localSend", "mediaWidget", "volumeSlider", "micSlider", "brightnessSlider", "gammaSlider"]
     readonly property int columns: Config.options.sidebar.quickToggles.android.columns
 
     // Pages data — reads from Config.

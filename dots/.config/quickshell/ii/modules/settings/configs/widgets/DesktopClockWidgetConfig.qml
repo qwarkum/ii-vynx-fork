@@ -8,7 +8,7 @@ ContentPage {
     id: root
     forceWidth: false
 
-    signal goBack()
+    signal goBack
 
     RowLayout {
         spacing: 12
@@ -50,19 +50,40 @@ ContentPage {
             Layout.fillWidth: true
             spacing: 4
 
-            ContentSubsectionLabel { text: Translation.tr("General") }
-
-            ConfigSelectionArray {
-                currentValue: Config.options.background.widgets.clock.placementStrategy
-                onSelected: newValue => {
-                    Config.options.background.widgets.clock.placementStrategy = newValue;
-                }
-                options: [
-                    { displayName: Translation.tr("Draggable"), icon: "pan_tool", value: "draggable" },
-                    { displayName: Translation.tr("Least busy"), icon: "low_priority", value: "least_busy" },
-                    { displayName: Translation.tr("Most busy"), icon: "priority_high", value: "most_busy" }
-                ]
+            ContentSubsectionLabel {
+                text: Translation.tr("General")
             }
+
+            ContentSubsection {
+                title: Translation.tr("Position")
+                Layout.fillWidth: true
+                icon: "arrows_output"
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.background.widgets.clock.placementStrategy
+                    onSelected: newValue => {
+                        Config.options.background.widgets.clock.placementStrategy = newValue;
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("Draggable"),
+                            icon: "pan_tool",
+                            value: "draggable"
+                        },
+                        {
+                            displayName: Translation.tr("Least busy"),
+                            icon: "low_priority",
+                            value: "least_busy"
+                        },
+                        {
+                            displayName: Translation.tr("Most busy"),
+                            icon: "priority_high",
+                            value: "most_busy"
+                        }
+                    ]
+                }
+            }
+
 
             ConfigSwitch {
                 buttonIcon: "lock"
@@ -85,9 +106,21 @@ ContentPage {
                         Config.options.background.widgets.clock.style = newValue;
                     }
                     options: [
-                        { displayName: Translation.tr("Digital"), icon: "123", value: "digital" },
-                        { displayName: Translation.tr("Cookie"), icon: "cookie", value: "cookie" },
-                        { displayName: Translation.tr("Nagasaki"), icon: "sports_martial_arts", value: "nagasaki" }
+                        {
+                            displayName: Translation.tr("Digital"),
+                            icon: "123",
+                            value: "digital"
+                        },
+                        {
+                            displayName: Translation.tr("Cookie"),
+                            icon: "cookie",
+                            value: "cookie"
+                        },
+                        {
+                            displayName: Translation.tr("Nagasaki"),
+                            icon: "sports_martial_arts",
+                            value: "nagasaki"
+                        }
                     ]
                 }
             }
@@ -103,14 +136,29 @@ ContentPage {
                         Config.options.background.widgets.clock.styleLocked = newValue;
                     }
                     options: [
-                        { displayName: Translation.tr("Digital"), icon: "123", value: "digital" },
-                        { displayName: Translation.tr("Cookie"), icon: "cookie", value: "cookie" },
-                        { displayName: Translation.tr("Nagasaki"), icon: "sports_martial_arts", value: "nagasaki" }
+                        {
+                            displayName: Translation.tr("Digital"),
+                            icon: "123",
+                            value: "digital"
+                        },
+                        {
+                            displayName: Translation.tr("Cookie"),
+                            icon: "cookie",
+                            value: "cookie"
+                        },
+                        {
+                            displayName: Translation.tr("Nagasaki"),
+                            icon: "sports_martial_arts",
+                            value: "nagasaki"
+                        }
                     ]
                 }
             }
 
-            Item { Layout.preferredHeight: 16; visible: Config.options.background.widgets.clock.style === "digital" || Config.options.background.widgets.clock.styleLocked === "digital" }
+            Item {
+                Layout.preferredHeight: 16
+                visible: Config.options.background.widgets.clock.style === "digital" || Config.options.background.widgets.clock.styleLocked === "digital"
+            }
 
             // Digital Style Settings
             ColumnLayout {
@@ -118,7 +166,9 @@ ContentPage {
                 Layout.fillWidth: true
                 spacing: 4
 
-                ContentSubsectionLabel { text: Translation.tr("Digital Style Settings") }
+                ContentSubsectionLabel {
+                    text: Translation.tr("Digital Style Settings")
+                }
 
                 ConfigSwitch {
                     buttonIcon: "swap_vert"
@@ -232,7 +282,10 @@ ContentPage {
                 }
             }
 
-            Item { Layout.preferredHeight: 16; visible: Config.options.background.widgets.clock.style === "cookie" || Config.options.background.widgets.clock.styleLocked === "cookie" }
+            Item {
+                Layout.preferredHeight: 16
+                visible: Config.options.background.widgets.clock.style === "cookie" || Config.options.background.widgets.clock.styleLocked === "cookie"
+            }
 
             // Cookie Style Settings
             ColumnLayout {
@@ -240,7 +293,9 @@ ContentPage {
                 Layout.fillWidth: true
                 spacing: 4
 
-                ContentSubsectionLabel { text: Translation.tr("Cookie Style Settings") }
+                ContentSubsectionLabel {
+                    text: Translation.tr("Cookie Style Settings")
+                }
 
                 ConfigSpinBox {
                     icon: "interests"
@@ -302,9 +357,21 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.aiStylingModel = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("Gemini"), icon: "smart_toy", value: "gemini" },
-                            { displayName: Translation.tr("ChatGPT"), icon: "smart_toy", value: "chatgpt" },
-                            { displayName: Translation.tr("Claude"), icon: "smart_toy", value: "claude" }
+                            {
+                                displayName: Translation.tr("Gemini"),
+                                icon: "smart_toy",
+                                value: "gemini"
+                            },
+                            {
+                                displayName: Translation.tr("ChatGPT"),
+                                icon: "smart_toy",
+                                value: "chatgpt"
+                            },
+                            {
+                                displayName: Translation.tr("Claude"),
+                                icon: "smart_toy",
+                                value: "claude"
+                            }
                         ]
                     }
                 }
@@ -320,10 +387,26 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.dialNumberStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("None"), icon: "do_not_disturb", value: "none" },
-                            { displayName: Translation.tr("Dots"), icon: "fiber_manual_record", value: "dots" },
-                            { displayName: Translation.tr("Numbers"), icon: "123", value: "numbers" },
-                            { displayName: Translation.tr("Roman"), icon: "format_list_numbered_rtl", value: "roman" }
+                            {
+                                displayName: Translation.tr("None"),
+                                icon: "do_not_disturb",
+                                value: "none"
+                            },
+                            {
+                                displayName: Translation.tr("Dots"),
+                                icon: "fiber_manual_record",
+                                value: "dots"
+                            },
+                            {
+                                displayName: Translation.tr("Numbers"),
+                                icon: "123",
+                                value: "numbers"
+                            },
+                            {
+                                displayName: Translation.tr("Roman"),
+                                icon: "format_list_numbered_rtl",
+                                value: "roman"
+                            }
                         ]
                     }
                 }
@@ -339,8 +422,16 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.hourHandStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("Line"), icon: "horizontal_rule", value: "line" },
-                            { displayName: Translation.tr("Dot"), icon: "fiber_manual_record", value: "dot" }
+                            {
+                                displayName: Translation.tr("Line"),
+                                icon: "horizontal_rule",
+                                value: "line"
+                            },
+                            {
+                                displayName: Translation.tr("Dot"),
+                                icon: "fiber_manual_record",
+                                value: "dot"
+                            }
                         ]
                     }
                 }
@@ -356,8 +447,16 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.minuteHandStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("Line"), icon: "horizontal_rule", value: "line" },
-                            { displayName: Translation.tr("Dot"), icon: "fiber_manual_record", value: "dot" }
+                            {
+                                displayName: Translation.tr("Line"),
+                                icon: "horizontal_rule",
+                                value: "line"
+                            },
+                            {
+                                displayName: Translation.tr("Dot"),
+                                icon: "fiber_manual_record",
+                                value: "dot"
+                            }
                         ]
                     }
                 }
@@ -373,10 +472,26 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.secondHandStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("None"), icon: "do_not_disturb", value: "none" },
-                            { displayName: Translation.tr("Line"), icon: "horizontal_rule", value: "line" },
-                            { displayName: Translation.tr("Dot"), icon: "fiber_manual_record", value: "dot" },
-                            { displayName: Translation.tr("Fluid"), icon: "water_drop", value: "fluid" }
+                            {
+                                displayName: Translation.tr("None"),
+                                icon: "do_not_disturb",
+                                value: "none"
+                            },
+                            {
+                                displayName: Translation.tr("Line"),
+                                icon: "horizontal_rule",
+                                value: "line"
+                            },
+                            {
+                                displayName: Translation.tr("Dot"),
+                                icon: "fiber_manual_record",
+                                value: "dot"
+                            },
+                            {
+                                displayName: Translation.tr("Fluid"),
+                                icon: "water_drop",
+                                value: "fluid"
+                            }
                         ]
                     }
                 }
@@ -392,9 +507,21 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.dateStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("None"), icon: "do_not_disturb", value: "none" },
-                            { displayName: Translation.tr("Simple"), icon: "calendar_today", value: "simple" },
-                            { displayName: Translation.tr("Full"), icon: "event_note", value: "full" }
+                            {
+                                displayName: Translation.tr("None"),
+                                icon: "do_not_disturb",
+                                value: "none"
+                            },
+                            {
+                                displayName: Translation.tr("Simple"),
+                                icon: "calendar_today",
+                                value: "simple"
+                            },
+                            {
+                                displayName: Translation.tr("Full"),
+                                icon: "event_note",
+                                value: "full"
+                            }
                         ]
                     }
                 }
@@ -410,9 +537,21 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.backgroundStyle = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("Solid"), icon: "format_color_fill", value: "solid" },
-                            { displayName: Translation.tr("Blur"), icon: "blur_on", value: "blur" },
-                            { displayName: Translation.tr("Transparent"), icon: "visibility_off", value: "transparent" }
+                            {
+                                displayName: Translation.tr("Solid"),
+                                icon: "format_color_fill",
+                                value: "solid"
+                            },
+                            {
+                                displayName: Translation.tr("Blur"),
+                                icon: "blur_on",
+                                value: "blur"
+                            },
+                            {
+                                displayName: Translation.tr("Transparent"),
+                                icon: "visibility_off",
+                                value: "transparent"
+                            }
                         ]
                     }
                 }
@@ -428,22 +567,38 @@ ContentPage {
                             Config.options.background.widgets.clock.cookie.backgroundShape = newValue;
                         }
                         options: [
-                            { displayName: Translation.tr("Circle"), icon: "circle", value: "circle" },
-                            { displayName: Translation.tr("Square"), icon: "square", value: "square" },
-                            { displayName: Translation.tr("Cookie"), icon: "cookie", value: "cookie" }
+                            {
+                                displayName: Translation.tr("Circle"),
+                                icon: "circle",
+                                value: "circle"
+                            },
+                            {
+                                displayName: Translation.tr("Square"),
+                                icon: "square",
+                                value: "square"
+                            },
+                            {
+                                displayName: Translation.tr("Cookie"),
+                                icon: "cookie",
+                                value: "cookie"
+                            }
                         ]
                     }
                 }
             }
 
-            Item { Layout.preferredHeight: 16 }
+            Item {
+                Layout.preferredHeight: 16
+            }
 
             // Quote Settings
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 4
 
-                ContentSubsectionLabel { text: Translation.tr("Quote Settings") }
+                ContentSubsectionLabel {
+                    text: Translation.tr("Quote Settings")
+                }
 
                 ConfigSwitch {
                     buttonIcon: "format_quote"
