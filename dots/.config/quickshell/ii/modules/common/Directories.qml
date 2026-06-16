@@ -69,7 +69,7 @@ Singleton {
     property string aiChats: FileUtils.trimFileProtocol(`${Directories.state}/user/ai/chats`)
     property string aiTranslationScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/ai/gemini-translate.sh`)
     property string recordScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/videos/record.sh`)
-    property string processVideoScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/videos/process_video.sh`)
+    property string processVideoScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/videos/compress_video.py`)
     property string extractColorsScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/wallpapers/extract-colors.sh`)
     property string colorCachePath: FileUtils.trimFileProtocol(`${Directories.cache}/wallpapers/colors.json`)
     property string userAvatarPathAccountsService: FileUtils.trimFileProtocol(`/var/lib/AccountsService/icons/${SystemInfo.username}`)

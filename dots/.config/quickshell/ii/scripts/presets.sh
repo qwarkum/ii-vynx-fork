@@ -26,8 +26,15 @@ case $action in
             # Use python helper to expand paths and fallbacks
             python3 "$SCRIPTS_DIR/presets_helper.py" expand "$PRESETS_DIR/$name.json" "$CONFIG_FILE" "$PRESETS_DIR" "$name"
             
+            # Read colorEngine from the newly expanded config.json to run the correct script
+            color_engine=$(jq -r '.appearance.colorEngine // "vynx"' "$CONFIG_FILE" 2>/dev/null)
+            switch_script="switchwall_vynx.sh"
+            if [[ "$color_engine" == "fork" ]]; then
+                switch_script="switchwall.sh"
+            fi
+            
             # Apply wallpaper and colors from the newly loaded config
-            env -u LD_LIBRARY_PATH -u PYTHONHOME -u PYTHONPATH PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH" "$SCRIPTS_DIR/colors/switchwall.sh" --noswitch > /tmp/presets_switchwall.log 2>&1 &
+            env -u LD_LIBRARY_PATH -u PYTHONHOME -u PYTHONPATH PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH" "$SCRIPTS_DIR/colors/$switch_script" --noswitch > /tmp/presets_switchwall.log 2>&1 &
         fi
         ;;
     delete)

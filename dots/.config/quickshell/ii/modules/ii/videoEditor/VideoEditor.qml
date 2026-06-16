@@ -10,29 +10,21 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
-PanelWindow {
+FloatingWindow {
     id: root
     visible: GlobalStates.videoEditorOpen
     
     color: "transparent"
-    
-    WlrLayershell.namespace: "quickshell:videoEditor"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    exclusionMode: ExclusionMode.Ignore
-
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
+    width: 1200
+    height: 800
 
     MediaPlayer {
         id: player
-        source: GlobalStates.videoEditorPath !== "" ? "file://" + GlobalStates.videoEditorPath : ""
+        autoPlay: true
+        source: GlobalStates.videoEditorPath !== "" ? "file://" + encodeURI(GlobalStates.videoEditorPath) : ""
         videoOutput: videoOutput
         audioOutput: AudioOutput {}
         loops: MediaPlayer.Infinite
@@ -45,6 +37,35 @@ PanelWindow {
                 position = root.startTime
             }
         }
+        
+        onErrorChanged: {
+            if (error !== MediaPlayer.NoError) {
+                console.error("[VideoEditor] MediaPlayer Error:", errorString)
+            }
+        }
+    }
+
+    Process {
+        id: sizeProcess
+        command: ["stat", "-c%s", GlobalStates.videoEditorPath]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (this.text) {
+                    root.currentFileSize = parseInt(this.text.trim())
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: GlobalStates
+        function onVideoEditorPathChanged() {
+            if (GlobalStates.videoEditorPath !== "") {
+                sizeProcess.running = true
+            } else {
+                root.currentFileSize = 0
+            }
+        }
     }
 
     onVisibleChanged: {
@@ -53,6 +74,9 @@ PanelWindow {
             cropW = -1
             startTime = 0
             endTime = -1
+            compressionPercent = 100
+            isCompressMode = false
+            sizeProcess.running = true
         } else {
             player.stop()
         }
@@ -65,6 +89,10 @@ PanelWindow {
     property real startTime: 0
     property real endTime: -1
     readonly property real effectiveEndTime: endTime === -1 ? player.duration : endTime
+
+    property real currentFileSize: 0
+    property real compressionPercent: 100
+    property bool isCompressMode: false
 
     function applyPreset(ratio) {
         let vW = videoOutput.contentRect.width
@@ -104,7 +132,8 @@ PanelWindow {
             Math.round(effectiveEndTime),
             Math.round(videoOutput.contentRect.width),
             Math.round(videoOutput.contentRect.height),
-            replace ? "1" : "0"
+            replace ? "1" : "0",
+            Math.round(compressionPercent)
         ]
         Quickshell.execDetached(args)
         GlobalStates.videoEditorOpen = false
@@ -112,14 +141,18 @@ PanelWindow {
 
     Rectangle {
         id: mainContainer
-        anchors.centerIn: parent
-        width: Math.min(parent.width * 0.9, 1400)
-        height: Math.min(parent.height * 0.9, 900)
+        anchors.fill: parent
         radius: Appearance.rounding.windowRounding
         
         color: Config.options.appearance.transparency.enable ? Appearance.colors.colLayer1 : Appearance.m3colors.m3surfaceContainer
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
+
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            onPressed: root.startSystemMove()
+        }
 
         Keys.onSpacePressed: {
             if (player.playbackState === MediaPlayer.PlayingState) player.pause()
@@ -149,6 +182,23 @@ PanelWindow {
                 }
                 Item { Layout.fillWidth: true }
                 
+                Rectangle {
+                    visible: root.compressionPercent < 100
+                    radius: 16
+                    height: 32
+                    width: chipLayout.implicitWidth + 24
+                    color: Appearance.colors.colPrimaryContainer
+                    RowLayout {
+                        id: chipLayout
+                        anchors.centerIn: parent
+                        spacing: 8
+                        MaterialSymbol { text: "compress"; iconSize: 18; color: Appearance.colors.colOnPrimaryContainer }
+                        StyledText { text: `${Math.round(100 - root.compressionPercent)}% Compression`; font.weight: Font.Bold; font.pixelSize: 14; color: Appearance.colors.colOnPrimaryContainer }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+                
                 RippleButton {
                     id: closeBtn
                     width: 52
@@ -173,8 +223,22 @@ PanelWindow {
                 Layout.fillHeight: true
                 clip: true
 
+                Process {
+                    id: filePickerProcess
+                    running: false
+                    command: ["bash", "-c", "if command -v kdialog &> /dev/null; then FILE=$(kdialog --getopenfilename \"$HOME\" \"*.mp4 *.mkv *.webm *.avi *.mov\" 2>/dev/null); elif command -v zenity &> /dev/null; then FILE=$(zenity --file-selection --file-filter=\"Videos | *.mp4 *.mkv *.webm *.avi *.mov\" 2>/dev/null); fi; if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then echo \"$FILE\"; fi"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            if (this.text && this.text.trim().length > 0) {
+                                GlobalStates.videoEditorPath = this.text.trim()
+                            }
+                        }
+                    }
+                }
+
                 VideoOutput {
                     id: videoOutput
+                    visible: GlobalStates.videoEditorPath !== ""
                     anchors.centerIn: parent
                     width: parent.width
                     height: parent.height
@@ -236,7 +300,76 @@ PanelWindow {
                     }
                 }
 
+                DropArea {
+                    id: dropArea
+                    anchors.fill: parent
+                    visible: GlobalStates.videoEditorPath === ""
+                    
+                    onDropped: (drop) => {
+                        if (drop.hasUrls) {
+                            let url = drop.urls[0].toString()
+                            if (url.startsWith("file://")) {
+                                url = url.substring(7)
+                            }
+                            GlobalStates.videoEditorPath = decodeURI(url)
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: dropArea.containsDrag ? Appearance.colors.colSurfaceContainerHigh : "transparent"
+                        radius: 16
+                        border.color: dropArea.containsDrag ? Appearance.colors.colPrimary : Appearance.colors.colOutline
+                        border.width: 2
+
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 16
+
+                            MaterialSymbol {
+                                text: "upload_file"
+                                iconSize: 64
+                                color: Appearance.colors.colOnSurfaceVariant
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+
+                            StyledText {
+                                text: Translation.tr("Drag and drop a video here")
+                                font.pixelSize: 20
+                                font.weight: Font.Medium
+                                color: Appearance.colors.colOnSurface
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+
+                            StyledText {
+                                text: Translation.tr("or")
+                                font.pixelSize: 16
+                                color: Appearance.colors.colOnSurfaceVariant
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+
+                            RippleButton {
+                                implicitWidth: 180
+                                implicitHeight: 48
+                                buttonRadius: 24
+                                colBackground: Appearance.colors.colPrimary
+                                Layout.alignment: Qt.AlignHCenter
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 8
+                                        MaterialSymbol { text: "folder_open"; iconSize: 20; color: Appearance.colors.colOnPrimary }
+                                        StyledText { text: Translation.tr("Browse Files"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnPrimary }
+                                    }
+                                }
+                                onClicked: filePickerProcess.running = true
+                            }
+                        }
+                    }
+                }
+
                 RippleButton {
+                    visible: GlobalStates.videoEditorPath !== ""
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     anchors.margins: 16
@@ -260,6 +393,7 @@ PanelWindow {
             }
 
             ColumnLayout {
+                visible: GlobalStates.videoEditorPath !== ""
                 Layout.fillWidth: true
                 spacing: 24
 
@@ -338,65 +472,45 @@ PanelWindow {
                     spacing: 20
                     Layout.alignment: Qt.AlignBottom
 
-                    ColumnLayout {
-                        spacing: 8
-                        StyledText { text: Translation.tr("Aspect Ratio"); font.weight: Font.Medium; color: Appearance.colors.colOnSurface }
-                        RowLayout {
-                            spacing: 8
-                            Repeater {
-                                model: [
-                                    { name: "Free", ratio: -1, icon: "aspect_ratio" },
-                                    { name: "16:9", ratio: 1.7777777777777777, icon: "rectangle" },
-                                    { name: "9:16", ratio: 0.5625, icon: "smartphone" },
-                                    { name: "4:3", ratio: 1.3333333333333333, icon: "desktop_windows" },
-                                    { name: "1:1", ratio: 1, icon: "square" }
-                                ]
-                                delegate: RippleButton {
-                                    id: ratioBtn
-                                    required property var modelData
-                                    implicitWidth: 100
-                                    implicitHeight: 44
-                                    buttonRadius: 22
-                                    property bool isActive: root.cropW !== -1 && Math.abs((root.cropW/root.cropH) - ratioBtn.modelData.ratio) < 0.01 || (root.cropW === videoOutput.contentRect.width && ratioBtn.modelData.ratio === -1)
-                                    colBackground: isActive ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
-                                    contentItem: Item {
-                                        RowLayout {
-                                            anchors.centerIn: parent
-                                            spacing: 8
-                                            MaterialSymbol { text: ratioBtn.modelData.icon; iconSize: 18; color: ratioBtn.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface }
-                                            StyledText { text: ratioBtn.modelData.name; font.weight: Font.Medium; color: ratioBtn.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface }
-                                        }
-                                    }
-                                    onClicked: root.applyPreset(ratioBtn.modelData.ratio)
-                                }
-                            }
-                        }
-                    }
-
-                    Item { Layout.fillWidth: true }
-
+                    // Compress Tools
                     RowLayout {
-                        spacing: 12
-                        Layout.alignment: Qt.AlignBottom
+                        visible: root.isCompressMode
+                        Layout.fillWidth: true
+                        spacing: 24
                         
-                        RippleButton {
-                            implicitWidth: 180
-                            implicitHeight: 56
-                            buttonRadius: 28
-                            colBackground: Appearance.colors.colSurfaceContainerHighest
-                            contentItem: Item {
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 12
-                                    MaterialSymbol { text: "content_copy"; iconSize: 24; color: Appearance.colors.colOnSurface }
-                                    StyledText { text: Translation.tr("Save Copy"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnSurface }
-                                }
+                        ColumnLayout {
+                            spacing: 8
+                            StyledText { text: Translation.tr("Compression Quality"); font.weight: Font.Medium; color: Appearance.colors.colOnSurface }
+                            StyledSlider {
+                                id: compressSlider
+                                Layout.preferredWidth: 300
+                                from: 10
+                                to: 100
+                                value: root.compressionPercent
+                                onValueChanged: root.compressionPercent = value
                             }
-                            onClicked: root.save(false)
                         }
 
+                        ColumnLayout {
+                            spacing: 4
+                            Layout.alignment: Qt.AlignVCenter
+                            StyledText { 
+                                text: Translation.tr("Estimated Size")
+                                font.pixelSize: 12
+                                color: Appearance.colors.colOnSurfaceVariant
+                            }
+                            StyledText { 
+                                text: `${(root.currentFileSize / (1024*1024)).toFixed(1)} MB ➔ ${((root.currentFileSize * (root.compressionPercent/100)) / (1024*1024)).toFixed(1)} MB`
+                                font.pixelSize: 16
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colOnSurface
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
                         RippleButton {
-                            implicitWidth: 220
+                            implicitWidth: 160
                             implicitHeight: 56
                             buttonRadius: 28
                             colBackground: Appearance.colors.colPrimary
@@ -404,11 +518,108 @@ PanelWindow {
                                 RowLayout {
                                     anchors.centerIn: parent
                                     spacing: 12
-                                    MaterialSymbol { text: "check_circle"; iconSize: 24; color: Appearance.colors.colOnPrimary }
-                                    StyledText { text: Translation.tr("Save and Replace"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnPrimary }
+                                    MaterialSymbol { text: "done"; iconSize: 24; color: Appearance.colors.colOnPrimary }
+                                    StyledText { text: Translation.tr("Done"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnPrimary }
                                 }
                             }
-                            onClicked: root.save(true)
+                            onClicked: root.isCompressMode = false
+                        }
+                    }
+
+                    // Default Tools
+                    RowLayout {
+                        visible: !root.isCompressMode
+                        Layout.fillWidth: true
+                        spacing: 20
+
+                        ColumnLayout {
+                            spacing: 8
+                            StyledText { text: Translation.tr("Aspect Ratio"); font.weight: Font.Medium; color: Appearance.colors.colOnSurface }
+                            RowLayout {
+                                spacing: 8
+                                Repeater {
+                                    model: [
+                                        { name: "Free", ratio: -1, icon: "aspect_ratio" },
+                                        { name: "16:9", ratio: 1.7777777777777777, icon: "rectangle" },
+                                        { name: "9:16", ratio: 0.5625, icon: "smartphone" },
+                                        { name: "4:3", ratio: 1.3333333333333333, icon: "desktop_windows" },
+                                        { name: "1:1", ratio: 1, icon: "square" }
+                                    ]
+                                    delegate: RippleButton {
+                                        id: ratioBtn
+                                        required property var modelData
+                                        implicitWidth: 100
+                                        implicitHeight: 44
+                                        buttonRadius: 22
+                                        property bool isActive: root.cropW !== -1 && Math.abs((root.cropW/root.cropH) - ratioBtn.modelData.ratio) < 0.01 || (root.cropW === videoOutput.contentRect.width && ratioBtn.modelData.ratio === -1)
+                                        colBackground: isActive ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
+                                        contentItem: Item {
+                                            RowLayout {
+                                                anchors.centerIn: parent
+                                                spacing: 8
+                                                MaterialSymbol { text: ratioBtn.modelData.icon; iconSize: 18; color: ratioBtn.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface }
+                                                StyledText { text: ratioBtn.modelData.name; font.weight: Font.Medium; color: ratioBtn.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface }
+                                            }
+                                        }
+                                        onClicked: root.applyPreset(ratioBtn.modelData.ratio)
+                                    }
+                                }
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        RowLayout {
+                            spacing: 12
+                            Layout.alignment: Qt.AlignBottom
+                            
+                            RippleButton {
+                                implicitWidth: 160
+                                implicitHeight: 56
+                                buttonRadius: 28
+                                colBackground: Appearance.colors.colSurfaceContainerHighest
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 12
+                                        MaterialSymbol { text: "compress"; iconSize: 24; color: Appearance.colors.colOnSurface }
+                                        StyledText { text: Translation.tr("Compress"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnSurface }
+                                    }
+                                }
+                                onClicked: root.isCompressMode = true
+                            }
+
+                            RippleButton {
+                                implicitWidth: 180
+                                implicitHeight: 56
+                                buttonRadius: 28
+                                colBackground: Appearance.colors.colSurfaceContainerHighest
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 12
+                                        MaterialSymbol { text: "content_copy"; iconSize: 24; color: Appearance.colors.colOnSurface }
+                                        StyledText { text: Translation.tr("Save Copy"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnSurface }
+                                    }
+                                }
+                                onClicked: root.save(false)
+                            }
+
+                            RippleButton {
+                                implicitWidth: 220
+                                implicitHeight: 56
+                                buttonRadius: 28
+                                colBackground: Appearance.colors.colPrimary
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 12
+                                        MaterialSymbol { text: "check_circle"; iconSize: 24; color: Appearance.colors.colOnPrimary }
+                                        StyledText { text: Translation.tr("Save and Replace"); font.pixelSize: 16; font.weight: Font.Bold; color: Appearance.colors.colOnPrimary }
+                                    }
+                                }
+                                onClicked: root.save(true)
+                            }
                         }
                     }
                 }
