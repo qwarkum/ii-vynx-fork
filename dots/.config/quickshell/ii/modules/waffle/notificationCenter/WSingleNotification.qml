@@ -17,14 +17,24 @@ MouseArea {
     property string groupExpandControlMessage: ""
 
     readonly property bool isPopup: notification?.popup ?? false
+    property var draggedItem: contentItem
 
     signal groupExpandToggle
     hoverEnabled: true
 
-    function dismiss() {
+    function dismiss(left = undefined) {
+        if (left === undefined) {
+            const pos = Config?.options.notifications.position ?? "top_right";
+            if (pos.endsWith("left")) left = true;
+            else if (pos.endsWith("right")) left = false;
+            else left = contentItem.x < 0;
+        }
+        removeAnimation.left = left;
+        
         Qt.callLater(() => {
             Notifications.discardNotification(root.notification?.notificationId);
         });
+        contentItem.opacity = contentItem.opacity; // Break binding
         removeAnimation.start();
     }
 
@@ -44,12 +54,17 @@ MouseArea {
     drag {
         axis: Drag.XAxis
         target: contentItem
-        minimumX: 0
+        minimumX: (Config?.options.notifications.position ?? "top_right").endsWith("left") ? 0 : -Infinity
+        maximumX: (Config?.options.notifications.position ?? "top_right").endsWith("right") ? 0 : Infinity
         onActiveChanged: {
             if (drag.active)
                 return;
-            if (contentItem.x > root.dragDismissThreshold) {
-                root.dismiss();
+            
+            const threshold = root.dragDismissThreshold;
+            const value = contentItem.x;
+            
+            if (Math.abs(value) > threshold) {
+                root.dismiss(value < 0);
             } else {
                 contentItem.x = 0;
             }
@@ -59,6 +74,20 @@ MouseArea {
     Rectangle {
         id: contentItem
         width: parent.width
+
+        opacity: {
+            if (!root.drag.active) return 1.0;
+            var u = root.width > 0 ? Math.min(1.0, Math.abs(contentItem.x) / root.width) : 0.0;
+            return (1.0 - u * u * u) * (1.0 - u * u * u);
+        }
+        Behavior on opacity {
+            enabled: !root.drag.active
+            NumberAnimation {
+                duration: 250
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Looks.transition.easing.bezierCurve.easeIn
+            }
+        }
         color: root.isPopup ? Looks.colors.bg0 : Looks.colors.bgPanelBody
         radius: root.isPopup ? Looks.radius.large : Looks.radius.medium
         property real padding: 12

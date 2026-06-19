@@ -11,4 +11,5 @@ RectangularShadow {
     spread: 1
     color: Appearance.colors.colShadow
     cached: true
+    opacity: target ? target.opacity : 1.0
 }

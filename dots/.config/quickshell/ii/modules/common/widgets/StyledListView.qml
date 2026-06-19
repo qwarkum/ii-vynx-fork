@@ -15,6 +15,7 @@ ListView {
     property bool popin: true
     property bool animateAppearance: true
     property bool animateMovement: false
+    property bool dismissToLeft: false
     // Accumulated scroll destination so wheel deltas stack while animating
     property real scrollTargetY: 0
 
@@ -129,7 +130,7 @@ ListView {
         animations: animateAppearance ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "x",
-                to: root.width + root.removeOvershoot,
+                to: root.dismissToLeft ? -(root.width + root.removeOvershoot) : (root.width + root.removeOvershoot),
             }),
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "opacity",

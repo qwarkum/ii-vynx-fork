@@ -803,6 +803,7 @@ Singleton {
 
             property JsonObject notifications: JsonObject {
                 property int timeout: 7000
+                property string position: "top_right"
                 property JsonObject monitor: JsonObject {
                     property bool enable: false
                     property string name: "" // Name of the monitor to show notifications on, like "eDP-1". Find out with 'hyprctl monitors' command
@@ -1138,7 +1139,7 @@ Singleton {
 
             property JsonObject androidConnect: JsonObject {
                 property bool keepConnectedOnClose: false // Keep scrcpy running when sidebar closes
-                property string videoDevice: "/dev/video10" // V4L2 loopback device for embedded mirror
+                property string videoDevice: "" // V4L2 loopback device for embedded mirror
                 property string scrcpyExtraArgs: "" // Extra args appended to scrcpy command
                 property string wirelessAdbHost: "" // Default wireless ADB host
                 property string wirelessAdbPort: "" // Default wireless ADB port

@@ -387,22 +387,22 @@ Item {
             ConfigSwitch {
                 buttonIcon: "desktop_windows"
                 text: Translation.tr("Force specific monitor")
-                checked: Config.options.notifications.forceMonitor.enable
+                checked: Config.options.notifications.monitor.enable
                 onCheckedChanged: {
-                    Config.options.notifications.forceMonitor.enable = checked;
+                    Config.options.notifications.monitor.enable = checked;
                 }
             }
 
             ConfigTextField {
                 text: Translation.tr("Force monitor name")
                 icon: "desktop_windows"
-                visible: Config.options.notifications.forceMonitor.enable
+                visible: Config.options.notifications.monitor.enable
                 placeholderText: Translation.tr("Monitor Name (e.g. eDP-1)")
-                inputText: Config.options.notifications.forceMonitor.name
+                inputText: Config.options.notifications.monitor.name
                 
                 textField.onTextChanged: {
                     if (textField.activeFocus) {
-                        Config.options.notifications.forceMonitor.name = textField.text;
+                        Config.options.notifications.monitor.name = textField.text;
                     }
                 }
             }
@@ -426,6 +426,31 @@ Item {
                     options: [
                         { displayName: Translation.tr("Default"),    icon: "style",     value: "default" },
                         { displayName: Translation.tr("Expressive"), icon: "fluid_med", value: "expressive" }
+                    ]
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Notification position")
+                icon: "place"
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.notifications.position
+                    onSelected: newValue => { Config.options.notifications.position = newValue; }
+                    options: [
+                        { displayName: Translation.tr("Top Left"),     icon: "align_horizontal_left",   value: "top_left" },
+                        { displayName: Translation.tr("Top"),          icon: "align_horizontal_center", value: "top" },
+                        { displayName: Translation.tr("Top Right"),    icon: "align_horizontal_right",  value: "top_right" }
+                    ]
+                }
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.notifications.position
+                    onSelected: newValue => { Config.options.notifications.position = newValue; }
+                    options: [
+                        { displayName: Translation.tr("Bottom Left"),  icon: "align_horizontal_left",   value: "bottom_left" },
+                        { displayName: Translation.tr("Bottom"),       icon: "align_horizontal_center", value: "bottom" },
+                        { displayName: Translation.tr("Bottom Right"), icon: "align_horizontal_right",  value: "bottom_right" }
                     ]
                 }
             }

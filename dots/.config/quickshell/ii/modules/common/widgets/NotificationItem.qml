@@ -31,9 +31,16 @@ Item { // Notification item area
 
     implicitHeight: background.implicitHeight
 
-    function destroyWithAnimation(left = false) {
+    function destroyWithAnimation(left = undefined) {
+        if (left === undefined) {
+            const pos = Config?.options.notifications.position ?? "top_right";
+            if (pos.endsWith("left")) left = true;
+            else if (pos.endsWith("right")) left = false;
+            else left = false;
+        }
         root.qmlParent.resetDrag()
         background.anchors.leftMargin = background.anchors.leftMargin; // Break binding
+        background.opacity = background.opacity; // Break binding
         destroyAnimation.left = left;
         destroyAnimation.running = true;
     }
@@ -49,13 +56,23 @@ Item { // Notification item area
         property bool left: true
         running: false
 
-        NumberAnimation {
-            target: background.anchors
-            property: "leftMargin"
-            to: (root.width + root.dismissOvershoot) * (destroyAnimation.left ? -1 : 1)
-            duration: Appearance.animation.elementMove.duration
-            easing.type: Appearance.animation.elementMove.type
-            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+        ParallelAnimation {
+            NumberAnimation {
+                target: background.anchors
+                property: "leftMargin"
+                to: (root.width + root.dismissOvershoot) * (destroyAnimation.left ? -1 : 1)
+                duration: Appearance.animation.elementMove.duration
+                easing.type: Appearance.animation.elementMove.type
+                easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+            }
+            NumberAnimation {
+                target: background
+                property: "opacity"
+                to: 0.0
+                duration: Appearance.animation.elementMove.duration
+                easing.type: Appearance.animation.elementMove.type
+                easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+            }
         }
         onFinished: () => {
             Notifications.discardNotification(notificationObject.notificationId);
@@ -67,6 +84,14 @@ Item { // Notification item area
         anchors.fill: root
         anchors.leftMargin: root.expanded ? -notificationIcon.implicitWidth : 0
         interactive: expanded
+        minimumX: {
+            const pos = Config?.options.notifications.position ?? "top_right";
+            return pos.endsWith("left") ? 0 : -Infinity;
+        }
+        maximumX: {
+            const pos = Config?.options.notifications.position ?? "top_right";
+            return pos.endsWith("right") ? 0 : Infinity;
+        }
         automaticallyReset: false
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
 
@@ -87,10 +112,36 @@ Item { // Notification item area
         }
 
         onDragReleased: (diffX, diffY) => {
-            if (Math.abs(diffX) > root.dragConfirmThreshold)
-                root.destroyWithAnimation(diffX < 0);
-            else 
+            const pos = Config?.options.notifications.position ?? "top_right";
+            const isLeft = pos.endsWith("left");
+            const isRight = pos.endsWith("right");
+            const isCenter = !isLeft && !isRight;
+
+            let shouldDismiss = false;
+            let dismissLeft = false;
+
+            if (isCenter) {
+                if (Math.abs(diffX) > root.dragConfirmThreshold) {
+                    shouldDismiss = true;
+                    dismissLeft = (diffX < 0);
+                }
+            } else if (isLeft) {
+                if (diffX > root.dragConfirmThreshold) {
+                    shouldDismiss = true;
+                    dismissLeft = false;
+                }
+            } else if (isRight) {
+                if (diffX < -root.dragConfirmThreshold) {
+                    shouldDismiss = true;
+                    dismissLeft = true;
+                }
+            }
+
+            if (shouldDismiss) {
+                root.destroyWithAnimation(dismissLeft);
+            } else {
                 dragManager.resetDrag();
+            }
         }
     }
 
@@ -115,6 +166,20 @@ Item { // Notification item area
         anchors.left: parent.left
         radius: Appearance.rounding.small
         anchors.leftMargin: root.xOffset
+
+        opacity: {
+            if (!dragManager.dragging) return 1.0;
+            var u = root.width > 0 ? Math.min(1.0, Math.abs(root.xOffset) / root.width) : 0.0;
+            return (1.0 - u * u * u) * (1.0 - u * u * u);
+        }
+        Behavior on opacity {
+            enabled: !dragManager.dragging
+            NumberAnimation {
+                duration: Appearance.animation.elementMove.duration
+                easing.type: Appearance.animation.elementMove.type
+                easing.bezierCurve: Appearance.animationCurves.expressiveFastSpatial
+            }
+        }
 
         Behavior on anchors.leftMargin {
             enabled: !dragManager.dragging

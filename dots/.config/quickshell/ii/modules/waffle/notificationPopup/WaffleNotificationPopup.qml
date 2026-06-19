@@ -18,40 +18,116 @@ Scope {
         visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked
         screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
 
+        property string position: Config.options.notifications.position ?? "top_right"
+        property bool isTop: position.startsWith("top")
+        property bool isBottom: position.startsWith("bottom")
+        property bool isLeft: position.endsWith("left")
+        property bool isRight: position.endsWith("right")
+
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay
         exclusiveZone: 0
 
         anchors {
             top: true
-            right: true
             bottom: true
+            left: true
+            right: true
         }
 
         mask: Region {
-            item: listview.contentItem
+            item: listview
         }
 
         color: "transparent"
-        implicitWidth: listview.implicitWidth
 
         WListView {
             id: listview
-            anchors {
-                bottom: parent.bottom
-                right: parent.right
-                left: parent.left
-            }
-            leftMargin: 16
-            rightMargin: 16
-            topMargin: 16
-            bottomMargin: 16
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            anchors.topMargin: 16
+            anchors.bottomMargin: 16
 
-            height: Math.min(contentItem.height + topMargin + bottomMargin, parent.height)
-            width: parent.width - Appearance.sizes.elevationMargin * 2
-            
-            implicitWidth: 396
-            spacing:12
+            height: Math.min(contentItem.height + anchors.topMargin + anchors.bottomMargin, parent.height)
+            width: 396
+            spacing: 12
+
+            verticalLayoutDirection: root.isBottom ? ListView.BottomToTop : ListView.TopToBottom
+
+            states: [
+                State {
+                    name: "top_left"
+                    when: root.position === "top_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top"
+                    when: root.position === "top"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top_right"
+                    when: root.position === "top_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "bottom_left"
+                    when: root.position === "bottom_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom"
+                    when: root.position === "bottom"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom_right"
+                    when: root.position === "bottom_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                }
+            ]
 
             model: ScriptModel {
                 values: Notifications.popupList

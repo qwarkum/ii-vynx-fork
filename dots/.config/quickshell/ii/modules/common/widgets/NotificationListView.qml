@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
 import QtQuick
@@ -8,6 +9,7 @@ import Quickshell
 StyledListView { // Scrollable window
     id: root
     property bool popup: false
+    dismissToLeft: popup && (Config.options.notifications.position ?? "top_right").endsWith("left")
 
     spacing: 3
 
