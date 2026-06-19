@@ -169,7 +169,7 @@ Item { // Notification item area
 
         opacity: {
             if (!dragManager.dragging) return 1.0;
-            var u = Math.min(1.0, Math.abs(root.xOffset) / root.width);
+            var u = root.width > 0 ? Math.min(1.0, Math.abs(root.xOffset) / root.width) : 0.0;
             return (1.0 - u * u * u) * (1.0 - u * u * u);
         }
         Behavior on opacity {

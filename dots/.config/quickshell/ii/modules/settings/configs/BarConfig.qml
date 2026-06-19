@@ -387,22 +387,22 @@ Item {
             ConfigSwitch {
                 buttonIcon: "desktop_windows"
                 text: Translation.tr("Force specific monitor")
-                checked: Config.options.notifications.forceMonitor.enable
+                checked: Config.options.notifications.monitor.enable
                 onCheckedChanged: {
-                    Config.options.notifications.forceMonitor.enable = checked;
+                    Config.options.notifications.monitor.enable = checked;
                 }
             }
 
             ConfigTextField {
                 text: Translation.tr("Force monitor name")
                 icon: "desktop_windows"
-                visible: Config.options.notifications.forceMonitor.enable
+                visible: Config.options.notifications.monitor.enable
                 placeholderText: Translation.tr("Monitor Name (e.g. eDP-1)")
-                inputText: Config.options.notifications.forceMonitor.name
+                inputText: Config.options.notifications.monitor.name
                 
                 textField.onTextChanged: {
                     if (textField.activeFocus) {
-                        Config.options.notifications.forceMonitor.name = textField.text;
+                        Config.options.notifications.monitor.name = textField.text;
                     }
                 }
             }

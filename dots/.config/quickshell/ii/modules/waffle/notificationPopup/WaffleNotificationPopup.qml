@@ -43,23 +43,91 @@ Scope {
 
         WListView {
             id: listview
-            anchors {
-                left: root.isLeft ? parent.left : undefined
-                right: root.isRight ? parent.right : undefined
-                horizontalCenter: (!root.isLeft && !root.isRight) ? parent.horizontalCenter : undefined
-                top: root.isTop ? parent.top : undefined
-                bottom: root.isBottom ? parent.bottom : undefined
-            }
-            leftMargin: 16
-            rightMargin: 16
-            topMargin: 16
-            bottomMargin: 16
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            anchors.topMargin: 16
+            anchors.bottomMargin: 16
 
-            height: Math.min(contentItem.height + topMargin + bottomMargin, parent.height)
+            height: Math.min(contentItem.height + anchors.topMargin + anchors.bottomMargin, parent.height)
             width: 396
             spacing: 12
 
             verticalLayoutDirection: root.isBottom ? ListView.BottomToTop : ListView.TopToBottom
+
+            states: [
+                State {
+                    name: "top_left"
+                    when: root.position === "top_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top"
+                    when: root.position === "top"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top_right"
+                    when: root.position === "top_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "bottom_left"
+                    when: root.position === "bottom_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom"
+                    when: root.position === "bottom"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom_right"
+                    when: root.position === "bottom_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                }
+            ]
 
             model: ScriptModel {
                 values: Notifications.popupList

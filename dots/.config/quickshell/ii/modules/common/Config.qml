@@ -68,10 +68,7 @@ Singleton {
         watchChanges: true
         blockWrites: root.blockWrites
         onFileChanged: fileReloadTimer.restart()
-        onAdapterUpdated: {
-            if (root.ready)
-                fileWriteTimer.restart();
-        }
+        onAdapterUpdated: fileWriteTimer.restart()
         onLoaded: root.ready = true
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
@@ -90,6 +87,7 @@ Singleton {
                 property int wallpapers: 1 // 0: No | 1: Yes
                 property int translator: 1 // 0: No | 1: Default (illogical-impulse) | 2: Expressive (reworked)
                 property int player: 1 // 0: No | 1: Yes
+                property int androidConnect: 0 // 0: No | 1: Yes
             }
 
             property JsonObject localsend: JsonObject {
@@ -189,6 +187,15 @@ Singleton {
                 }
                 property list<string> customColorSchemes: []
                 property bool colorfulScrollbar: false
+                property bool scrollAnimations: true
+                property bool scrollFadeMask: false
+                property JsonObject openrgb: JsonObject {
+                    property bool enable: false
+                    property bool applyOnStartup: true
+                    property real fadeDuration: 0.5
+                    property real interpolationSteps: 100
+                    property list<var> devices: []
+                }
             }
 
             property JsonObject audio: JsonObject {
@@ -344,6 +351,7 @@ Singleton {
             property JsonObject bar: JsonObject {
                 property bool borderless: false
                 property JsonObject styles: JsonObject {
+                    property string activeWindow: "default"
                     property string clock: "expressive" // default, expressive
                     property string media: "expressive"
                     property string notification: "default"
@@ -363,6 +371,7 @@ Singleton {
 
                 property JsonObject activeWindow: JsonObject {
                     property bool fixedSize: false
+                    property int customSize: 225
                 }
 
                 property JsonObject autoHide: JsonObject {
@@ -871,6 +880,7 @@ Singleton {
                 }
                 property JsonObject annotation: JsonObject {
                     property bool useSatty: false
+                    property bool enableInlineEditor: false
                 }
             }
 
@@ -1125,6 +1135,14 @@ Singleton {
                     property string download: FileUtils.trimFileProtocol(`${Directories.home}/Pictures/Wallpapers`)
                     property string nsfw: FileUtils.trimFileProtocol(`${Directories.home}/Pictures/Wallpapers/NSFW`)
                 }
+            }
+
+            property JsonObject androidConnect: JsonObject {
+                property bool keepConnectedOnClose: false // Keep scrcpy running when sidebar closes
+                property string videoDevice: "" // V4L2 loopback device for embedded mirror
+                property string scrcpyExtraArgs: "" // Extra args appended to scrcpy command
+                property string wirelessAdbHost: "" // Default wireless ADB host
+                property string wirelessAdbPort: "" // Default wireless ADB port
             }
 
             property JsonObject waffles: JsonObject {

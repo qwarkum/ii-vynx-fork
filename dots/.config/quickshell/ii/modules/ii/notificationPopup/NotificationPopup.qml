@@ -41,22 +41,89 @@ Scope {
 
         NotificationListView {
             id: listview
-            anchors {
-                left: root.isLeft ? parent.left : undefined
-                right: root.isRight ? parent.right : undefined
-                horizontalCenter: (!root.isLeft && !root.isRight) ? parent.horizontalCenter : undefined
-                top: root.isTop ? parent.top : undefined
-                bottom: root.isBottom ? parent.bottom : undefined
-
-                leftMargin: root.isLeft ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
-                rightMargin: root.isRight ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
-                topMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
-                bottomMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
-            }
+            anchors.leftMargin: root.isLeft ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
+            anchors.rightMargin: root.isRight ? Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5) : 0
+            anchors.topMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
+            anchors.bottomMargin: Math.max(Appearance.sizes.hyprlandGapsOut, Appearance.rounding.windowRounding * 0.5)
             width: Appearance.sizes.notificationPopupWidth
             popup: true
-            height: Math.min(contentItem.height + topMargin + bottomMargin, parent.height)
+            height: Math.min(contentItem.height + anchors.topMargin + anchors.bottomMargin, parent.height)
             verticalLayoutDirection: root.isBottom ? ListView.BottomToTop : ListView.TopToBottom
+
+            states: [
+                State {
+                    name: "top_left"
+                    when: root.position === "top_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top"
+                    when: root.position === "top"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "top_right"
+                    when: root.position === "top_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: parent.top
+                        anchors.bottom: undefined
+                    }
+                },
+                State {
+                    name: "bottom_left"
+                    when: root.position === "bottom_left"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: parent.left
+                        anchors.right: undefined
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom"
+                    when: root.position === "bottom"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: undefined
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                },
+                State {
+                    name: "bottom_right"
+                    when: root.position === "bottom_right"
+                    AnchorChanges {
+                        target: listview
+                        anchors.left: undefined
+                        anchors.right: parent.right
+                        anchors.horizontalCenter: undefined
+                        anchors.top: undefined
+                        anchors.bottom: parent.bottom
+                    }
+                }
+            ]
         }
     }
 }
