@@ -351,6 +351,63 @@ def cmd_update_profile(slug: str, close_others_str: str) -> None:
     print("ok")
 
 
+def cmd_add_window(slug: str, class_name: str, workspace_str: str, autolaunch_str: str, launch_cmd: str) -> None:
+    profile = load_profile(slug)
+    windows = profile.get("windows", [])
+    try:
+        ws = int(workspace_str)
+    except ValueError:
+        ws = 1
+    autolaunch = autolaunch_str.lower() in ("true", "1", "yes")
+    windows.append({
+        "class": class_name.strip(),
+        "initialClass": class_name.strip(),
+        "workspaceId": ws,
+        "x": 100,
+        "y": 100,
+        "width": 1200,
+        "height": 800,
+        "floating": False,
+        "autolaunch": autolaunch,
+        "launchCmd": launch_cmd.strip()
+    })
+    write_profile(profile, slug)
+    print("ok")
+
+
+def cmd_delete_window(slug: str, idx_str: str) -> None:
+    profile = load_profile(slug)
+    windows = profile.get("windows", [])
+    try:
+        idx = int(idx_str)
+    except ValueError:
+        print("[error] invalid window index", file=sys.stderr)
+        sys.exit(1)
+    if idx < 0 or idx >= len(windows):
+        print("[error] window index out of range", file=sys.stderr)
+        sys.exit(1)
+    windows.pop(idx)
+    write_profile(profile, slug)
+    print("ok")
+
+
+def cmd_update_window_workspace(slug: str, idx_str: str, workspace_str: str) -> None:
+    profile = load_profile(slug)
+    windows = profile.get("windows", [])
+    try:
+        idx = int(idx_str)
+        ws = int(workspace_str)
+    except ValueError:
+        print("[error] invalid index or workspace", file=sys.stderr)
+        sys.exit(1)
+    if idx < 0 or idx >= len(windows):
+        print("[error] window index out of range", file=sys.stderr)
+        sys.exit(1)
+    windows[idx]["workspaceId"] = ws
+    write_profile(profile, slug)
+    print("ok")
+
+
 def cmd_rename(old_slug: str, new_name: str) -> None:
     profile = load_profile(old_slug)
     profile["name"] = new_name
@@ -392,6 +449,15 @@ def main() -> None:
 
     elif cmd == "update_profile" and len(sys.argv) >= 4:
         cmd_update_profile(sys.argv[2], sys.argv[3])
+
+    elif cmd == "add_window" and len(sys.argv) >= 7:
+        cmd_add_window(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+
+    elif cmd == "delete_window" and len(sys.argv) >= 4:
+        cmd_delete_window(sys.argv[2], sys.argv[3])
+
+    elif cmd == "update_window_workspace" and len(sys.argv) >= 5:
+        cmd_update_window_workspace(sys.argv[2], sys.argv[3], sys.argv[4])
 
     else:
         print(f"[error] unknown command or missing args: {sys.argv[1:]}",

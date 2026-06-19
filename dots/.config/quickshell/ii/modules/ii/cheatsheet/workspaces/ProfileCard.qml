@@ -36,6 +36,11 @@ Item {
     property bool isEditing: false
     property string editNameValue: root.name
     property bool expanded: false
+    property bool showAddAppForm: false
+    property string newAppClass: ""
+    property string newAppWorkspace: "1"
+    property bool newAppAutolaunch: true
+    property string newAppLaunchCmd: ""
 
     // ── signals ──────────────────────────────────────────────────────────────
     signal restoreRequested()
@@ -457,7 +462,7 @@ Item {
                 StyledText {
                     text: "Configure Windows & Autolaunch"
                     font {
-                        pixelSize: Appearance.font.pixelSize.smaller
+                        pixelSize: Appearance.font.pixelSize.small
                         weight: Font.Bold
                     }
                     color: root.colOnSurface
@@ -472,7 +477,7 @@ Item {
 
                     StyledText {
                         text: "Close all other windows on restore"
-                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.pixelSize: Appearance.font.pixelSize.small
                         color: root.colOnSurface
                         Layout.fillWidth: true
                     }
@@ -488,7 +493,7 @@ Item {
                 }
 
                 // Sub-divider or spacer
-                Item { Layout.preferredHeight: 2 }
+                Item { Layout.preferredHeight: 4 }
 
                 // Repeater of windows
                 Repeater {
@@ -498,18 +503,19 @@ Item {
                         required property int index
                         required property var modelData
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: 12
 
-                        // Window identification (class & workspace)
+                        // Window identification (class name)
                         ColumnLayout {
-                            spacing: 1
-                            Layout.preferredWidth: 120
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 2
+                            Layout.preferredWidth: 140
                             Layout.fillWidth: true
 
                             StyledText {
                                 text: modelData.class || "unknown"
                                 font {
-                                    pixelSize: Appearance.font.pixelSize.smaller
+                                    pixelSize: Appearance.font.pixelSize.small
                                     weight: Font.DemiBold
                                 }
                                 color: root.colOnSurface
@@ -517,18 +523,52 @@ Item {
                                 Layout.fillWidth: true
                             }
                             StyledText {
-                                text: `ws ${modelData.workspaceId}` + (modelData.floating ? " (float)" : "")
-                                font.pixelSize: Appearance.font.pixelSize.smaller - 1
+                                visible: modelData.floating
+                                text: "Floating"
+                                font.pixelSize: Appearance.font.pixelSize.smaller
                                 color: root.colSubtle
+                            }
+                        }
+
+                        // Target Workspace ID field
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 6
+                            StyledText {
+                                text: "WS"
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: root.colSubtle
+                            }
+                            MaterialTextField {
+                                implicitWidth: 55
+                                implicitHeight: 36
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                horizontalAlignment: TextInput.AlignHCenter
+                                verticalAlignment: TextInput.AlignVCenter
+                                topPadding: 0
+                                bottomPadding: 0
+                                text: modelData.workspaceId.toString()
+                                validator: IntValidator { bottom: 1; top: 20 }
+                                onEditingFinished: {
+                                    let val = parseInt(text);
+                                    if (!isNaN(val) && val !== modelData.workspaceId) {
+                                        WorkspaceProfileService.updateWindowWorkspace(
+                                            root.slug,
+                                            index,
+                                            val
+                                        );
+                                    }
+                                }
                             }
                         }
 
                         // Autolaunch switch
                         RowLayout {
-                            spacing: 4
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 6
                             StyledText {
                                 text: "Autolaunch"
-                                font.pixelSize: Appearance.font.pixelSize.smaller - 1
+                                font.pixelSize: Appearance.font.pixelSize.small
                                 color: root.colSubtle
                             }
                             StyledSwitch {
@@ -549,12 +589,16 @@ Item {
                         // Launch command text field
                         MaterialTextField {
                             id: cmdField
+                            Layout.alignment: Qt.AlignVCenter
                             Layout.fillWidth: true
-                            Layout.preferredWidth: 180
-                            implicitHeight: 28
-                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            Layout.preferredWidth: 200
+                            implicitHeight: 36
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            verticalAlignment: TextInput.AlignVCenter
+                            topPadding: 0
+                            bottomPadding: 0
                             text: modelData.launchCmd || ""
-                            placeholderText: "Custom command/args for " + root.cleanAppName(modelData.initialClass || modelData.class)
+                            placeholderText: activeFocus ? "" : ("Custom command/args for " + root.cleanAppName(modelData.initialClass || modelData.class))
                             enabled: modelData.autolaunch || false
 
                             onEditingFinished: {
@@ -565,6 +609,177 @@ Item {
                                         modelData.autolaunch || false,
                                         text
                                     )
+                                }
+                            }
+                        }
+
+                        // Delete window button
+                        RippleButton {
+                            id: delBtn
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: 36; implicitHeight: 36
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: "transparent"
+                            colBackgroundHover: Appearance.colors.colErrorContainer
+                            onClicked: {
+                                WorkspaceProfileService.deleteWindow(root.slug, index);
+                            }
+                            StyledToolTip { text: "Delete window entry" }
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "delete"
+                                iconSize: Appearance.font.pixelSize.normal
+                                color: delBtn.hovered ? Appearance.colors.colOnErrorContainer : root.colSubtle
+                            }
+                        }
+                    }
+                }
+
+                // Add App button / form
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    // The Add App button (shown when form is closed)
+                    RippleButtonWithIcon {
+                        visible: !root.showAddAppForm
+                        Layout.alignment: Qt.AlignLeft
+                        materialIcon: "add"
+                        mainText: "Add App"
+                        colText: root.colOnSurface
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        buttonRadius: Appearance.rounding.full
+                        implicitHeight: 34
+                        onClicked: {
+                            root.newAppClass = "";
+                            root.newAppWorkspace = "1";
+                            root.newAppAutolaunch = true;
+                            root.newAppLaunchCmd = "";
+                            root.showAddAppForm = true;
+                        }
+                    }
+
+                    // The inline form (shown when form is open)
+                    RowLayout {
+                        visible: root.showAddAppForm
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        // Class input
+                        MaterialTextField {
+                            id: newClassField
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 160
+                            implicitHeight: 36
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            verticalAlignment: TextInput.AlignVCenter
+                            topPadding: 0
+                            bottomPadding: 0
+                            placeholderText: activeFocus ? "" : "App class (e.g. kitty)"
+                            text: root.newAppClass
+                            onTextChanged: root.newAppClass = text
+                        }
+
+                        // Workspace input
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
+                            StyledText {
+                                text: "WS"
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: root.colSubtle
+                            }
+                            MaterialTextField {
+                                implicitWidth: 55
+                                implicitHeight: 36
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                horizontalAlignment: TextInput.AlignHCenter
+                                verticalAlignment: TextInput.AlignVCenter
+                                topPadding: 0
+                                bottomPadding: 0
+                                text: root.newAppWorkspace
+                                onTextChanged: root.newAppWorkspace = text
+                                validator: IntValidator { bottom: 1; top: 20 }
+                            }
+                        }
+
+                        // Autolaunch switch for the new app
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
+                            StyledText {
+                                text: "Auto"
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: root.colSubtle
+                            }
+                            StyledSwitch {
+                                checked: root.newAppAutolaunch
+                                onCheckedChanged: root.newAppAutolaunch = checked
+                            }
+                        }
+
+                        // Launch command text field
+                        MaterialTextField {
+                            id: newCmdField
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 160
+                            implicitHeight: 36
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            verticalAlignment: TextInput.AlignVCenter
+                            topPadding: 0
+                            bottomPadding: 0
+                            placeholderText: activeFocus ? "" : "Launch cmd (optional)"
+                            text: root.newAppLaunchCmd
+                            onTextChanged: root.newAppLaunchCmd = text
+                            enabled: root.newAppAutolaunch
+                        }
+
+                        // Action buttons
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 6
+
+                            // Confirm/Add button
+                            RippleButton {
+                                implicitWidth: 36; implicitHeight: 36
+                                buttonRadius: Appearance.rounding.full
+                                colBackground: Appearance.colors.colPrimary
+                                colBackgroundHover: Appearance.colors.colPrimaryHover
+                                enabled: root.newAppClass.trim().length > 0 && root.newAppWorkspace.trim().length > 0
+                                onClicked: {
+                                    let ws = parseInt(root.newAppWorkspace.trim());
+                                    if (isNaN(ws)) ws = 1;
+                                    WorkspaceProfileService.addWindow(
+                                        root.slug,
+                                        root.newAppClass.trim(),
+                                        ws,
+                                        root.newAppAutolaunch,
+                                        root.newAppLaunchCmd.trim()
+                                    );
+                                    root.showAddAppForm = false;
+                                }
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "check"
+                                    iconSize: Appearance.font.pixelSize.small
+                                    color: Appearance.colors.colOnPrimary
+                                }
+                            }
+
+                            // Cancel button
+                            RippleButton {
+                                implicitWidth: 36; implicitHeight: 36
+                                buttonRadius: Appearance.rounding.full
+                                colBackground: Appearance.colors.colLayer2
+                                onClicked: root.showAddAppForm = false
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "close"
+                                    iconSize: Appearance.font.pixelSize.small
+                                    color: root.colSubtle
                                 }
                             }
                         }

@@ -89,6 +89,30 @@ Singleton {
         updateProfileProc.running = true;
     }
 
+    function addWindow(slug, className, workspace, autolaunch, launchCmd) {
+        addWindowProc.command = [
+            "python3", root.scriptPath, "add_window",
+            slug, className, workspace.toString(), autolaunch ? "true" : "false", launchCmd || ""
+        ];
+        addWindowProc.running = true;
+    }
+
+    function deleteWindow(slug, index) {
+        deleteWindowProc.command = [
+            "python3", root.scriptPath, "delete_window",
+            slug, index.toString()
+        ];
+        deleteWindowProc.running = true;
+    }
+
+    function updateWindowWorkspace(slug, index, workspace) {
+        updateWindowWorkspaceProc.command = [
+            "python3", root.scriptPath, "update_window_workspace",
+            slug, index.toString(), workspace.toString()
+        ];
+        updateWindowWorkspaceProc.running = true;
+    }
+
     // ── internal processes ───────────────────────────────────────────────────
 
     // list
@@ -193,6 +217,45 @@ Singleton {
             id: updateProfileCollector
             onStreamFinished: {
                 const out = updateProfileCollector.text.trim();
+                if (out === "ok") {
+                    root.refresh();
+                }
+            }
+        }
+    }
+
+    Process {
+        id: addWindowProc
+        stdout: StdioCollector {
+            id: addWindowCollector
+            onStreamFinished: {
+                const out = addWindowCollector.text.trim();
+                if (out === "ok") {
+                    root.refresh();
+                }
+            }
+        }
+    }
+
+    Process {
+        id: deleteWindowProc
+        stdout: StdioCollector {
+            id: deleteWindowCollector
+            onStreamFinished: {
+                const out = deleteWindowCollector.text.trim();
+                if (out === "ok") {
+                    root.refresh();
+                }
+            }
+        }
+    }
+
+    Process {
+        id: updateWindowWorkspaceProc
+        stdout: StdioCollector {
+            id: updateWindowWorkspaceCollector
+            onStreamFinished: {
+                const out = updateWindowWorkspaceCollector.text.trim();
                 if (out === "ok") {
                     root.refresh();
                 }
