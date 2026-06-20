@@ -6,7 +6,6 @@ import Quickshell
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
-import Quickshell.Widgets
 
 /**
  * ProfileCard — a single saved workspace profile displayed in CheatsheetWorkspaces.
@@ -381,12 +380,12 @@ Item {
             }
 
             // ── workspace chips row + duplicate warning ───────────────────────
-            Flow {
+            RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
 
                 Repeater {
-                    model: root.windowsList
+                    model: root.workspaceIds
                     delegate: Item {
                         id: chipItem
                         required property var modelData
@@ -409,24 +408,15 @@ Item {
                             id: chipRect
                             radius: Appearance.rounding.full
                             color: root.colChipBg
-                            implicitWidth: chipRow.implicitWidth + 24
+                            implicitWidth: chipLabel.implicitWidth + 16
                             implicitHeight: 36
 
-                            RowLayout {
-                                id: chipRow
+                            StyledText {
+                                id: chipLabel
                                 anchors.centerIn: parent
-                                spacing: 6
-
-                                IconImage {
-                                    implicitWidth: 16; implicitHeight: 16
-                                    source: chipItem.modelData.initialClass || chipItem.modelData.class || ""
-                                }
-
-                                StyledText {
-                                    text: root.cleanAppName(chipItem.modelData.initialClass || chipItem.modelData.class)
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: root.colChipText
-                                }
+                                text: root.getWorkspaceApps(chipItem.modelData)
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: root.colChipText
                             }
                         }
                     }
@@ -590,7 +580,7 @@ Item {
                 }
 
                 MaterialLoadingIndicator {
-                    visible: WorkspaceProfileService.restoring
+                    visible: WorkspaceProfileService.restoringSlug === root.slug
                     implicitWidth: 24; implicitHeight: 24
                 }
 
@@ -600,7 +590,7 @@ Item {
                     materialIcon: "play_arrow"
                     materialIconFill: true
                     mainText: "Restore"
-                    enabled: !WorkspaceProfileService.restoring
+                    enabled: WorkspaceProfileService.restoringSlug !== root.slug
                     colText: Appearance.colors.colOnPrimary
                     colBackground: Appearance.colors.colPrimary
                     colBackgroundHover: Appearance.colors.colPrimaryHover
@@ -696,12 +686,19 @@ Item {
                                 spacing: 10
 
                                 // app avatar circle
-                                Item {
+                                Rectangle {
                                     implicitWidth: 24; implicitHeight: 24
+                                    radius: Appearance.rounding.full
+                                    color: Appearance.colors.colSecondaryContainer
 
-                                    IconImage {
-                                        anchors.fill: parent
-                                        source: windowRowItem.modelData.initialClass || windowRowItem.modelData.class || ""
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: (windowRowItem.modelData.class || "?").charAt(0).toUpperCase()
+                                        font {
+                                            pixelSize: Appearance.font.pixelSize.smaller
+                                            weight: Font.Bold
+                                        }
+                                        color: Appearance.colors.colOnSecondaryContainer
                                     }
                                 }
 

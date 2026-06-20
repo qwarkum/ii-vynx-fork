@@ -21,6 +21,7 @@ Singleton {
     property ListModel profilesModel: ListModel {}
     property bool loading:  false
     property bool restoring: false
+    property string restoringSlug: ""
 
     // ── signals ─────────────────────────────────────────────────────────────
     signal snapshotFinished(bool success, string slug)
@@ -51,6 +52,8 @@ Singleton {
     }
 
     function restoreProfile(slug) {
+        if (root.restoring) return;
+        
         // Find the name for the signal
         for (let i = 0; i < root.profilesModel.count; i++) {
             if (root.profilesModel.get(i).slug === slug) {
@@ -58,6 +61,7 @@ Singleton {
                 break;
             }
         }
+        root.restoringSlug = slug;
         root.restoring = true;
         restoreProc.command = ["python3", root.scriptPath, "restore", slug];
         restoreProc.running = true;
@@ -160,6 +164,7 @@ Singleton {
         stdout: StdioCollector {
             id: restoreCollector
             onStreamFinished: {
+                root.restoringSlug = "";
                 root.restoring = false;
                 const out = restoreCollector.text.trim();
                 if (out === "ok") {
