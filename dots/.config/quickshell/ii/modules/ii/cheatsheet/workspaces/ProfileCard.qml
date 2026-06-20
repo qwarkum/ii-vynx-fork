@@ -37,6 +37,7 @@ Item {
     property bool showDeleteConfirm: false
     property bool isEditing: false
     property string editNameValue: root.name
+    property string editEmojiValue: root.emoji
     property bool expanded: false
     property bool showAddAppForm: false
     property string newAppClass: ""
@@ -48,6 +49,7 @@ Item {
     signal restoreRequested()
     signal deleteRequested()
     signal renameRequested(string newName)
+    signal updateEmojiRequested(string newEmoji)
     signal toggleExpandedRequested()
 
     function requestDeleteAction() {
@@ -219,7 +221,7 @@ Item {
 
                     StyledText {
                         anchors.centerIn: parent
-                        text: root.emoji
+                        text: root.isEditing ? root.editEmojiValue : root.emoji
                         font.pixelSize: 20
                     }
                 }
@@ -294,7 +296,11 @@ Item {
                         buttonRadius: Appearance.rounding.full
                         colBackground: Appearance.colors.colSecondaryContainer
                         colBackgroundHover: Appearance.colors.colSecondaryContainerHover
-                        onClicked: { root.editNameValue = root.name; root.isEditing = true; }
+                        onClicked: {
+                            root.editNameValue = root.name;
+                            root.editEmojiValue = root.emoji;
+                            root.isEditing = true;
+                        }
                         StyledToolTip { text: "Rename" }
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -350,7 +356,12 @@ Item {
                         colBackgroundHover: Appearance.colors.colPrimaryHover
                         enabled: root.editNameValue.trim().length > 0
                         onClicked: {
-                            root.renameRequested(root.editNameValue.trim());
+                            if (root.editNameValue.trim() !== root.name) {
+                                root.renameRequested(root.editNameValue.trim());
+                            }
+                            if (root.editEmojiValue !== root.emoji) {
+                                root.updateEmojiRequested(root.editEmojiValue);
+                            }
                             root.isEditing = false;
                         }
                         MaterialSymbol {
@@ -370,6 +381,44 @@ Item {
                             text: "close"
                             iconSize: Appearance.font.pixelSize.small
                             color: root.colSubtle
+                        }
+                    }
+                }
+            }
+
+            // edit emoji picker
+            Flow {
+                visible: root.isEditing
+                Layout.fillWidth: true
+                spacing: 4
+
+                Repeater {
+                    model: [
+                        "🗂️","📚","💻","🎮","🎵","🎬","📝","🔬","🎨","🏋️",
+                        "☕","🌙","🚀","🏠","🌊","🔧","📊","✉️","🎓","🧠"
+                    ]
+                    delegate: RippleButton {
+                        required property var modelData
+                        implicitWidth: 30; implicitHeight: 30
+                        buttonRadius: Appearance.rounding.small
+                        toggled: root.editEmojiValue === modelData
+                        colBackgroundToggled: Appearance.colors.colPrimaryContainer
+
+                        scale: toggled ? 1.15 : 1.0
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                            }
+                        }
+
+                        onClicked: root.editEmojiValue = modelData
+
+                        StyledText {
+                            anchors.centerIn: parent
+                            text: parent.modelData
+                            font.pixelSize: 15
                         }
                     }
                 }

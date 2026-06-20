@@ -550,6 +550,13 @@ def cmd_rename(old_slug: str, new_name: str) -> None:
     print(new_slug)
 
 
+def cmd_update_emoji(slug: str, new_emoji: str) -> None:
+    profile = load_profile(slug)
+    profile["emoji"] = new_emoji
+    write_profile(profile, slug)
+    print("ok")
+
+
 # ─── entry point ──────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -573,6 +580,9 @@ def main() -> None:
 
     elif cmd == "rename" and len(sys.argv) >= 4:
         cmd_rename(sys.argv[2], sys.argv[3])
+
+    elif cmd == "update_emoji" and len(sys.argv) >= 4:
+        cmd_update_emoji(sys.argv[2], sys.argv[3])
 
     elif cmd == "update_window" and len(sys.argv) >= 6:
         cmd_update_window(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])

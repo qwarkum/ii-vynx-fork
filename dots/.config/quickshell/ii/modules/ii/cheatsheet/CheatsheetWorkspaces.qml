@@ -543,6 +543,8 @@ Item {
                             onDeleteRequested:   WorkspaceProfileService.deleteProfile(slug)
                             onRenameRequested: (newName) =>
                                 WorkspaceProfileService.renameProfile(slug, newName)
+                            onUpdateEmojiRequested: (newEmoji) =>
+                                WorkspaceProfileService.updateEmoji(slug, newEmoji)
                         }
                     }
 

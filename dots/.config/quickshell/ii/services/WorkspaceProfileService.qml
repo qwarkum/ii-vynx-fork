@@ -77,6 +77,11 @@ Singleton {
         renameProc.running = true;
     }
 
+    function updateEmoji(slug, newEmoji) {
+        updateEmojiProc.command = ["python3", root.scriptPath, "update_emoji", slug, newEmoji];
+        updateEmojiProc.running = true;
+    }
+
     function updateWindowOptions(slug, index, autolaunch, launchCmd) {
         updateWindowProc.command = [
             "python3", root.scriptPath, "update_window",
@@ -199,6 +204,20 @@ Singleton {
                 const ok = newSlug.length > 0 && !newSlug.startsWith("[error]");
                 root.renameFinished(ok, ok ? newSlug : "");
                 if (ok) root.refresh();
+            }
+        }
+    }
+
+    // update emoji
+    Process {
+        id: updateEmojiProc
+        stdout: StdioCollector {
+            id: updateEmojiCollector
+            onStreamFinished: {
+                const out = updateEmojiCollector.text.trim();
+                if (out === "ok") {
+                    root.refresh();
+                }
             }
         }
     }
