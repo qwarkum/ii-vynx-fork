@@ -164,6 +164,18 @@ def cmd_snapshot(meta_json: str) -> None:
             target_ws = ws_id
         cls = w.get("class", "")
         ov = overrides.get(cls, {})
+        launch_cmd = ov.get("launchCmd", "")
+        if not launch_cmd:
+            pid = w.get("pid")
+            if pid:
+                try:
+                    with open(f"/proc/{pid}/cmdline", "rb") as f:
+                        cmdline_parts = f.read().split(b'\0')
+                        if cmdline_parts and cmdline_parts[0]:
+                            launch_cmd = cmdline_parts[0].decode("utf-8")
+                except Exception:
+                    pass
+
         windows.append({
             "class":        cls,
             "initialClass": w.get("initialClass", cls),
@@ -174,7 +186,7 @@ def cmd_snapshot(meta_json: str) -> None:
             "height":       w["size"][1],
             "floating":     w.get("floating", False),
             "autolaunch":   ov.get("autolaunch", True),
-            "launchCmd":    ov.get("launchCmd", ""),
+            "launchCmd":    launch_cmd,
         })
 
     profile = {
@@ -239,7 +251,6 @@ def cmd_restore(slug: str) -> None:
                     launch_cmd = sw.get("launchCmd")
                     if not launch_cmd:
                         raw_cmd = sw.get("initialClass") or sw.get("class") or ""
-                        # Map common window classes to their correct binary/executable commands
                         class_mappings = {
                             "brave-browser": "brave",
                             "Brave-browser": "brave",
@@ -247,6 +258,7 @@ def cmd_restore(slug: str) -> None:
                             "firefox-esr": "firefox",
                             "google-chrome": "google-chrome-stable",
                             "chrome": "google-chrome-stable",
+                            "dev.zed.Zed": "zeditor",
                         }
                         launch_cmd = class_mappings.get(raw_cmd) or raw_cmd
                     if launch_cmd:

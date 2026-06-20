@@ -15,6 +15,9 @@ import "workspaces"
  *   - Snapshot the current layout as a new profile
  *   - Restore a profile (move running apps to saved workspaces)
  *   - Rename or delete profiles
+ *
+ * Layout: 2-column masonry grid. The new-snapshot form occupies slot 0
+ * as an inline card when open, shifting profile cards to the right.
  */
 Item {
     id: root
@@ -93,7 +96,6 @@ Item {
             Layout.bottomMargin: 14
             spacing: 10
 
-            // search field
             ToolbarTextField {
                 id: searchField
                 Layout.fillWidth: true
@@ -105,7 +107,7 @@ Item {
                 Keys.onEscapePressed: root.filter = ""
             }
 
-            // snapshot feedback tiny badge
+            // snapshot feedback badge
             Rectangle {
                 visible: root.snapSuccess || root.snapError
                 radius: Appearance.rounding.full
@@ -137,7 +139,7 @@ Item {
                 }
             }
 
-            // new snapshot button / cancel button
+            // new snapshot / cancel button
             RippleButtonWithIcon {
                 id: newSnapshotBtn
                 materialIcon: root.showNewForm ? "close" : "add_a_photo"
@@ -159,156 +161,28 @@ Item {
             }
         }
 
-        // ── new snapshot inline form ──────────────────────────────────────────
-        Item {
-            Layout.fillWidth: true
-            implicitHeight: root.showNewForm ? newFormLayout.implicitHeight + 20 : 0
-            clip: true
-            Layout.bottomMargin: root.showNewForm ? 14 : 0
-
-            Behavior on implicitHeight {
-                NumberAnimation {
-                    duration: Appearance.animation.elementMoveEnter.duration
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
-                }
-            }
-
-            Rectangle {
-                id: newFormBg
-                anchors.fill: parent
-                radius: Appearance.rounding.large
-                color: Appearance.colors.colSurfaceContainerHigh
-                border { width: 1; color: Appearance.colors.colOutlineVariant }
-            }
-
-            StyledRectangularShadow {
-                target: newFormBg
-                visible: root.showNewForm
-            }
-
-                ColumnLayout {
-                    id: newFormLayout
-                    anchors {
-                        left: parent.left; right: parent.right; top: parent.top
-                        margins: 14
-                    }
-                    spacing: 10
-
-                    // emoji picker + name field row
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        // emoji grid
-                        Flow {
-                            id: emojiFlow
-                            Layout.preferredWidth: 170
-                            spacing: 4
-
-                            Repeater {
-                                model: root.emojiList
-                                delegate: RippleButton {
-                                    id: emojiBtn
-                                    required property var modelData
-                                    implicitWidth: 28; implicitHeight: 28
-                                    buttonRadius: Appearance.rounding.small
-                                    toggled: root.newEmoji === modelData
-                                    colBackgroundToggled: Appearance.colors.colPrimaryContainer
-                                    onClicked: root.newEmoji = modelData
-
-                                    HoverHandler { id: emojiHover }
-
-                                    scale: emojiHover.hovered ? 1.15 : 1.0
-                                    Behavior on scale {
-                                        NumberAnimation {
-                                            duration: 100
-                                            easing.type: Easing.OutQuad
-                                        }
-                                    }
-
-                                    StyledText {
-                                        anchors.centerIn: parent
-                                        text: emojiBtn.modelData
-                                        font.pixelSize: 14
-                                    }
-                                }
-                            }
-                        }
-
-                        // name + description column
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            MaterialTextField {
-                                id: nameField
-                                Layout.fillWidth: true
-                                placeholderText: "Profile name (required)…"
-                                text: root.newName
-                                onTextChanged: root.newName = text
-                                Keys.onReturnPressed: if (root.newName.trim().length > 0) _doSnapshot()
-                                Keys.onEscapePressed: root.showNewForm = false
-                                Component.onCompleted: if (root.showNewForm) forceActiveFocus()
-                            }
-
-                            MaterialTextField {
-                                Layout.fillWidth: true
-                                placeholderText: "Description (optional)…"
-                                text: root.newDesc
-                                onTextChanged: root.newDesc = text
-                                Keys.onEscapePressed: root.showNewForm = false
-                            }
-                        }
-                    }
-
-                    // save row
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Item { Layout.fillWidth: true }
-
-                        MaterialLoadingIndicator {
-                            visible: root.snapBusy
-                            implicitWidth: 24; implicitHeight: 24
-                        }
-
-                        RippleButtonWithIcon {
-                            materialIcon: "save"
-                            mainText: "Save snapshot"
-                            enabled: root.newName.trim().length > 0 && !root.snapBusy
-                            colText: Appearance.colors.colOnPrimary
-                            colBackground: Appearance.colors.colPrimary
-                            colBackgroundHover: Appearance.colors.colPrimaryHover
-                            buttonRadius: Appearance.rounding.full
-                            implicitHeight: 34
-                            onClicked: _doSnapshot()
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── profile list ──────────────────────────────────────────────────────
+        // ── profile grid ──────────────────────────────────────────────────────
         Item {
             id: profileListItem
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            // empty state
+            // empty state (no profiles at all)
             PagePlaceholder {
                 shown: !WorkspaceProfileService.loading
                     && WorkspaceProfileService.profilesModel.count === 0
+                    && !root.showNewForm
                 icon: "dashboard"
                 title: "No profiles yet"
                 description: "Click \"New snapshot\" to save your current workspace layout."
             }
 
-            // filtered empty state — count visible children
-            property int visibleCardCount: 0
+            // filtered empty state
             PagePlaceholder {
                 shown: !WorkspaceProfileService.loading
                     && WorkspaceProfileService.profilesModel.count > 0
-                    && parent.visibleCardCount === 0
+                    && gridArea.visibleProfileCount === 0
+                    && root.filter !== ""
                 icon: "search_off"
                 title: "No matches"
                 description: "Try a different search term."
@@ -323,16 +197,265 @@ Item {
 
             StyledFlickable {
                 anchors.fill: parent
-                contentHeight: profileColumn.implicitHeight + 24
+                contentHeight: gridArea.implicitHeight
                 clip: true
 
-                ColumnLayout {
-                    id: profileColumn
-                    width: parent.width - 24
-                    x: 12
-                    y: 12
-                    spacing: 14
+                // ── 2-column masonry grid ─────────────────────────────────────
+                Item {
+                    id: gridArea
+                    width: parent.width
 
+                    readonly property real cardSpacing: 12
+                    readonly property real cardWidth: (width - cardSpacing) / 2
+                    property int layoutRevision: 0
+                    property int visibleProfileCount: 0
+
+                    implicitHeight: {
+                        var _rev = layoutRevision
+                        return _getTotalHeight()
+                    }
+
+                    // ── masonry helpers ───────────────────────────────────────
+
+                    // Returns the height of the form card (slot 0 when showNewForm)
+                    function formSlotHeight() {
+                        return root.showNewForm ? (formCard.implicitHeight + cardSpacing) : 0
+                    }
+
+                    // Returns {col, y} for profile card item `targetCard`
+                    function getLayout(targetCard) {
+                        // Left column starts seeded with form card height if open
+                        var heights = [formSlotHeight(), 0]
+                        for (var i = 0; i < profileRepeater.count; i++) {
+                            var card = profileRepeater.itemAt(i)
+                            if (!card || !card.visible) continue
+                            var minCol = (heights[0] <= heights[1]) ? 0 : 1
+                            if (card === targetCard) return { col: minCol, y: heights[minCol] }
+                            heights[minCol] += card.implicitHeight + cardSpacing
+                        }
+                        return { col: 0, y: 0 }
+                    }
+
+                    function _getTotalHeight() {
+                        var heights = [formSlotHeight(), 0]
+                        for (var i = 0; i < profileRepeater.count; i++) {
+                            var card = profileRepeater.itemAt(i)
+                            if (!card || !card.visible) continue
+                            var minCol = (heights[0] <= heights[1]) ? 0 : 1
+                            heights[minCol] += card.implicitHeight + cardSpacing
+                        }
+                        var maxH = Math.max(heights[0], heights[1])
+                        return (maxH > cardSpacing) ? maxH - cardSpacing : 0
+                    }
+
+                    function triggerLayout() {
+                        layoutTimer.restart()  // debounce — actual bump in onTriggered
+                    }
+
+                    function recountVisible() {
+                        var n = 0
+                        for (var i = 0; i < profileRepeater.count; i++) {
+                            var item = profileRepeater.itemAt(i)
+                            if (item && item.visible) n++
+                        }
+                        visibleProfileCount = n
+                    }
+
+                    // Re-lay when form visibility toggles
+                    Connections {
+                        target: root
+                        function onShowNewFormChanged() {
+                            gridArea.triggerLayout()
+                        }
+                    }
+
+                    // ── inline form card (slot 0) ─────────────────────────────
+                    Rectangle {
+                        id: formCard
+                        x: 0
+                        y: 0
+                        width: gridArea.cardWidth
+                        visible: root.showNewForm
+                        radius: Appearance.rounding.large
+                        color: Appearance.colors.colLayer4
+                        border { width: 1; color: Appearance.colors.colOutlineVariant }
+                        clip: true
+
+                        implicitHeight: formCardLayout.implicitHeight + 32
+
+                        onImplicitHeightChanged: gridArea.triggerLayout()
+
+                        // top accent gradient
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            gradient: Gradient {
+                                orientation: Gradient.Vertical
+                                GradientStop {
+                                    position: 0.0
+                                    color: Qt.rgba(
+                                        Appearance.colors.colPrimary.r,
+                                        Appearance.colors.colPrimary.g,
+                                        Appearance.colors.colPrimary.b,
+                                        0.08
+                                    )
+                                }
+                                GradientStop { position: 0.6; color: "transparent" }
+                            }
+                        }
+
+                        // entrance animation
+                        opacity: 0.0
+                        scale: 0.97
+                        onVisibleChanged: {
+                            if (visible) {
+                                formEnterOp.start()
+                                formEnterScale.start()
+                            }
+                        }
+                        NumberAnimation {
+                            id: formEnterOp; target: formCard; property: "opacity"
+                            from: 0.0; to: 1.0; duration: 300
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                        }
+                        NumberAnimation {
+                            id: formEnterScale; target: formCard; property: "scale"
+                            from: 0.97; to: 1.0; duration: 300
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                        }
+
+                        ColumnLayout {
+                            id: formCardLayout
+                            anchors {
+                                left: parent.left; right: parent.right; top: parent.top
+                                margins: 16
+                            }
+                            spacing: 12
+
+                            // form header
+                            RowLayout {
+                                spacing: 8
+
+                                MaterialSymbol {
+                                    text: "add_a_photo"
+                                    iconSize: Appearance.font.pixelSize.large
+                                    fill: 1
+                                    color: Appearance.colors.colPrimary
+                                }
+                                StyledText {
+                                    text: "New Workspace Snapshot"
+                                    font {
+                                        pixelSize: Appearance.font.pixelSize.large
+                                        weight: Font.Bold
+                                    }
+                                    color: Appearance.colors.colOnSurface
+                                }
+                            }
+
+                            // divider
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: Appearance.colors.colOutlineVariant
+                                opacity: 0.5
+                            }
+
+                            // emoji picker + name/desc column
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 12
+
+                                // emoji grid
+                                Flow {
+                                    id: emojiFlow
+                                    Layout.preferredWidth: 160
+                                    spacing: 4
+
+                                    Repeater {
+                                        model: root.emojiList
+                                        delegate: RippleButton {
+                                            required property var modelData
+                                            implicitWidth: 30; implicitHeight: 30
+                                            buttonRadius: Appearance.rounding.small
+                                            toggled: root.newEmoji === modelData
+                                            colBackgroundToggled: Appearance.colors.colPrimaryContainer
+
+                                            scale: toggled ? 1.15 : 1.0
+                                            Behavior on scale {
+                                                NumberAnimation {
+                                                    duration: 150
+                                                    easing.type: Easing.BezierSpline
+                                                    easing.bezierCurve: Appearance.animationCurves.emphasized
+                                                }
+                                            }
+
+                                            onClicked: root.newEmoji = modelData
+
+                                            StyledText {
+                                                anchors.centerIn: parent
+                                                text: parent.modelData
+                                                font.pixelSize: 15
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // name + description
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+
+                                    MaterialTextField {
+                                        id: nameField
+                                        Layout.fillWidth: true
+                                        hint: "Profile name (required)…"
+                                        text: root.newName
+                                        onTextChanged: root.newName = text
+                                        Keys.onReturnPressed: if (root.newName.trim().length > 0) _doSnapshot()
+                                        Keys.onEscapePressed: root.showNewForm = false
+                                        Component.onCompleted: if (root.showNewForm) forceActiveFocus()
+                                    }
+
+                                    MaterialTextField {
+                                        Layout.fillWidth: true
+                                        hint: "Description (optional)…"
+                                        text: root.newDesc
+                                        onTextChanged: root.newDesc = text
+                                        Keys.onEscapePressed: root.showNewForm = false
+                                    }
+                                }
+                            }
+
+                            // save row
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Item { Layout.fillWidth: true }
+
+                                MaterialLoadingIndicator {
+                                    visible: root.snapBusy
+                                    implicitWidth: 24; implicitHeight: 24
+                                }
+
+                                RippleButtonWithIcon {
+                                    materialIcon: "save"
+                                    materialIconFill: true
+                                    mainText: "Save snapshot"
+                                    enabled: root.newName.trim().length > 0 && !root.snapBusy
+                                    colText: Appearance.colors.colOnPrimary
+                                    colBackground: Appearance.colors.colPrimary
+                                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                                    buttonRadius: Appearance.rounding.full
+                                    implicitHeight: 40
+                                    leftPadding: 16; rightPadding: 16
+                                    onClicked: _doSnapshot()
+                                }
+                            }
+                        }
+                    }
+
+                    // ── profile card repeater ─────────────────────────────────
                     Repeater {
                         id: profileRepeater
                         model: WorkspaceProfileService.profilesModel
@@ -340,42 +463,78 @@ Item {
                         delegate: ProfileCard {
                             id: card
 
-                            // Filter visibility
+                            // ── filter ──────────────────────────────────────
                             visible: {
-                                const q = root.filter.toLowerCase().trim();
-                                if (!q) return true;
+                                const q = root.filter.toLowerCase().trim()
+                                if (!q) return true
                                 return name.toLowerCase().includes(q) ||
-                                       description.toLowerCase().includes(q);
-                            }
-                            onVisibleChanged: _updateVisibleCount()
-                            Component.onCompleted: _updateVisibleCount()
-                            Component.onDestruction: {
-                                if (visible) profileListItem.visibleCardCount--;
+                                       description.toLowerCase().includes(q)
                             }
 
-                            function _updateVisibleCount() {
-                                // recalculate from scratch to avoid drift
-                                let n = 0;
-                                for (let i = 0; i < profileRepeater.count; i++) {
-                                    const item = profileRepeater.itemAt(i);
-                                    if (item && item.visible) n++;
+                            // ── masonry positioning ─────────────────────────
+                            readonly property var _layout: {
+                                var _rev = gridArea.layoutRevision
+                                return gridArea.getLayout(card)
+                            }
+
+                            x: _layout.col * (gridArea.cardWidth + gridArea.cardSpacing)
+                            y: _layout.y
+                            width: gridArea.cardWidth
+
+                            Behavior on x {
+                                NumberAnimation {
+                                    duration: 220
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasized
                                 }
-                                profileListItem.visibleCardCount = n;
+                            }
+                            Behavior on y {
+                                NumberAnimation {
+                                    duration: 220
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasized
+                                }
                             }
 
-                            Layout.fillWidth: true
-                            width: profileColumn.width
+                            onImplicitHeightChanged: gridArea.triggerLayout()
+                            onVisibleChanged: {
+                                gridArea.triggerLayout()
+                                gridArea.recountVisible()
+                            }
+                            Component.onCompleted: gridArea.recountVisible()
+                            Component.onDestruction: Qt.callLater(gridArea.recountVisible)
 
+                            // ── expand state ────────────────────────────────
                             expanded: root.isProfileExpanded(slug)
                             onToggleExpandedRequested: {
-                                root.setProfileExpanded(slug, !root.isProfileExpanded(slug));
+                                root.setProfileExpanded(slug, !root.isProfileExpanded(slug))
                             }
 
+                            // ── actions ─────────────────────────────────────
                             onRestoreRequested:  WorkspaceProfileService.restoreProfile(slug)
                             onDeleteRequested:   WorkspaceProfileService.deleteProfile(slug)
                             onRenameRequested: (newName) =>
                                 WorkspaceProfileService.renameProfile(slug, newName)
                         }
+                    }
+
+                    // layout debounce timer
+                    Timer {
+                        id: layoutTimer
+                        interval: 80
+                        repeat: false
+                        onTriggered: gridArea.layoutRevision = gridArea.layoutRevision + 1
+                    }
+
+                    // initial settle
+                    Component.onCompleted: {
+                        settleTimer.start()
+                    }
+                    Timer {
+                        id: settleTimer
+                        interval: 400
+                        repeat: false
+                        onTriggered: gridArea.triggerLayout()
                     }
                 }
             }
@@ -385,9 +544,9 @@ Item {
     // ── helpers ───────────────────────────────────────────────────────────────
 
     function _doSnapshot() {
-        const name = root.newName.trim();
-        if (!name) return;
-        root.snapBusy = true;
-        WorkspaceProfileService.snapshot(name, root.newEmoji, root.newDesc, {});
+        const name = root.newName.trim()
+        if (!name) return
+        root.snapBusy = true
+        WorkspaceProfileService.snapshot(name, root.newEmoji, root.newDesc, {})
     }
 }

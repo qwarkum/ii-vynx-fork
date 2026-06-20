@@ -6,6 +6,7 @@ import Quickshell
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
+import Quickshell.Widgets
 
 /**
  * ProfileCard — a single saved workspace profile displayed in CheatsheetWorkspaces.
@@ -59,8 +60,26 @@ Item {
     // Height driven by content
     implicitHeight: cardBg.implicitHeight
 
+    // ── shape cycling — derived from slug hash so no model index needed ──────
+    readonly property var cardShapes: ["Circle", "Cookie9Sided", "Flower"]
+    readonly property string cardShape: {
+        var h = 0;
+        for (var i = 0; i < root.slug.length; i++) {
+            h = (h * 31 + root.slug.charCodeAt(i)) & 0xFFFF;
+        }
+        return cardShapes[h % cardShapes.length];
+    }
+    // stagger delay derived from same hash (0–3 steps of 45 ms)
+    readonly property int staggerDelay: {
+        var h = 0;
+        for (var i = 0; i < root.slug.length; i++) {
+            h = (h * 31 + root.slug.charCodeAt(i)) & 0xFFFF;
+        }
+        return (h % 4) * 45;
+    }
+
     // ── colours (from M3 tokens) ─────────────────────────────────────────────
-    readonly property color colBg:          Appearance.colors.colSurfaceContainer
+    readonly property color colBg:          Appearance.colors.colLayer4
     readonly property color colBgHover:     Appearance.colors.colSurfaceContainerHigh
     readonly property color colBorder:      Appearance.colors.colOutlineVariant
     readonly property color colOnSurface:   Appearance.colors.colOnSurface
@@ -74,8 +93,6 @@ Item {
     readonly property color colErrorBg:     Appearance.colors.colErrorContainer
     readonly property color colErrorText:   Appearance.colors.colOnErrorContainer
     readonly property color colSuccessBg:   Appearance.m3colors.m3primaryContainer
-
-
 
     // ── reset feedback state when signals arrive ─────────────────────────────
     Connections {
@@ -101,6 +118,33 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
+    // ── staggered entrance animation ─────────────────────────────────────────
+    opacity: 0.0
+    scale: 0.97
+    Component.onCompleted: entranceDelayTimer.start()
+
+    Timer {
+        id: entranceDelayTimer
+        interval: root.staggerDelay
+        onTriggered: { entranceOpacity.start(); entranceScale.start(); }
+    }
+    NumberAnimation {
+        id: entranceOpacity
+        target: root; property: "opacity"
+        from: 0.0; to: 1.0
+        duration: 320
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+    }
+    NumberAnimation {
+        id: entranceScale
+        target: root; property: "scale"
+        from: 0.97; to: 1.0
+        duration: 320
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+    }
+
     // ── card background ───────────────────────────────────────────────────────
     Rectangle {
         id: cardBg
@@ -109,28 +153,58 @@ Item {
         color: hoverHandler.hovered ? root.colBgHover : root.colBg
         border { width: 1; color: root.colBorder }
         implicitHeight: cardLayout.implicitHeight + 36
+        clip: true
 
         Behavior on color {
             ColorAnimation { duration: Appearance.animation.elementMoveFast.duration }
+        }
+
+        // ── left accent bar ──────────────────────────────────────────────────
+        Rectangle {
+            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+            width: 4
+            height: parent.height * 0.55
+            radius: Appearance.rounding.full
+            color: root.colPrimary
+            opacity: 0.55
+        }
+
+        // ── subtle gradient overlay (top tint → transparent) ─────────────────
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop {
+                    position: 0.0
+                    color: Qt.rgba(
+                        root.colPrimary.r,
+                        root.colPrimary.g,
+                        root.colPrimary.b,
+                        0.07
+                    )
+                }
+                GradientStop { position: 0.55; color: "transparent" }
+            }
         }
 
         ColumnLayout {
             id: cardLayout
             anchors {
                 left: parent.left; right: parent.right; top: parent.top
-                margins: 16
+                leftMargin: 20; rightMargin: 16; topMargin: 16
             }
             spacing: 10
 
             // ── header row ──────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 10
+                spacing: 12
 
-                // emoji badge
-                Rectangle {
-                    implicitWidth: 36; implicitHeight: 36
-                    radius: Appearance.rounding.normal
+                // MaterialShape cycling emoji badge
+                MaterialShape {
+                    shapeString: root.cardShape
+                    implicitSize: 40
                     color: Appearance.colors.colPrimaryContainer
 
                     StyledText {
@@ -140,7 +214,7 @@ Item {
                     }
                 }
 
-                // name display layout
+                // name display
                 ColumnLayout {
                     visible: !root.isEditing
                     Layout.fillWidth: true
@@ -149,8 +223,8 @@ Item {
                     StyledText {
                         text: root.name
                         font {
-                            pixelSize: Appearance.font.pixelSize.normal
-                            weight: Font.DemiBold
+                            pixelSize: Appearance.font.pixelSize.large
+                            weight: Font.Bold
                         }
                         color: root.colOnSurface
                         elide: Text.ElideRight
@@ -164,21 +238,15 @@ Item {
                     }
                 }
 
-                // Edit name text field
+                // edit name text field
                 MaterialTextField {
                     visible: root.isEditing
                     Layout.fillWidth: true
                     text: root.editNameValue
-                    placeholderText: "Profile name…"
+                    hint: "Profile name…"
                     onTextChanged: root.editNameValue = text
                     font.pixelSize: Appearance.font.pixelSize.normal
-                    implicitHeight: 36
-                    onVisibleChanged: {
-                        if (visible) {
-                            forceActiveFocus();
-                        }
-                    }
-
+                    onVisibleChanged: { if (visible) forceActiveFocus(); }
                     Keys.onReturnPressed: {
                         if (root.editNameValue.trim().length > 0) {
                             root.renameRequested(root.editNameValue.trim());
@@ -188,21 +256,17 @@ Item {
                     Keys.onEscapePressed: root.isEditing = false
                 }
 
-                // action buttons (always visible; hidden when editing)
+                // action buttons (rename / delete)
                 RowLayout {
                     spacing: 4
                     visible: !root.isEditing
 
-                    // rename button
                     RippleButton {
                         implicitWidth: 36; implicitHeight: 36
                         buttonRadius: Appearance.rounding.full
                         colBackground: Appearance.colors.colSecondaryContainer
                         colBackgroundHover: Appearance.colors.colSecondaryContainerHover
-                        onClicked: {
-                            root.editNameValue = root.name;
-                            root.isEditing = true;
-                        }
+                        onClicked: { root.editNameValue = root.name; root.isEditing = true; }
                         StyledToolTip { text: "Rename" }
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -212,7 +276,6 @@ Item {
                         }
                     }
 
-                    // delete button (shows confirm inline)
                     RippleButton {
                         implicitWidth: 36; implicitHeight: 36
                         buttonRadius: Appearance.rounding.full
@@ -239,7 +302,6 @@ Item {
                                 ? Appearance.colors.colOnError
                                 : Appearance.colors.colOnErrorContainer
                         }
-
                         Timer {
                             id: deleteConfirmResetTimer
                             interval: 3000
@@ -248,7 +310,7 @@ Item {
                     }
                 }
 
-                // confirm / cancel when editing name
+                // confirm / cancel when editing
                 RowLayout {
                     spacing: 4
                     visible: root.isEditing
@@ -285,37 +347,87 @@ Item {
                 }
             }
 
-            // ── description (optional) ───────────────────────────────────────
-            StyledText {
+            // ── description — quote-block style ──────────────────────────────
+            Item {
                 visible: root.description.length > 0 && !root.isEditing
                 Layout.fillWidth: true
-                Layout.leftMargin: 2
-                text: root.description
-                font.pixelSize: Appearance.font.pixelSize.small
-                color: root.colSubtle
-                wrapMode: Text.WordWrap
+                implicitHeight: descText.implicitHeight + 10
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Appearance.rounding.small
+                    color: root.colPrimary
+                    opacity: 0.07
+                }
+                Rectangle {
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: 3
+                    radius: Appearance.rounding.full
+                    color: root.colPrimary
+                    opacity: 0.55
+                }
+                StyledText {
+                    id: descText
+                    anchors {
+                        left: parent.left; right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 10; rightMargin: 6
+                    }
+                    text: root.description
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: root.colSubtle
+                    wrapMode: Text.WordWrap
+                }
             }
 
             // ── workspace chips row + duplicate warning ───────────────────────
-            RowLayout {
+            Flow {
                 Layout.fillWidth: true
                 spacing: 6
 
                 Repeater {
-                    model: root.workspaceIds
-                    delegate: Rectangle {
+                    model: root.windowsList
+                    delegate: Item {
+                        id: chipItem
                         required property var modelData
-                        radius: Appearance.rounding.full
-                        color: root.colChipBg
-                        implicitWidth: chipLabel.implicitWidth + 16
-                        implicitHeight: 36
 
-                        StyledText {
-                            id: chipLabel
-                            anchors.centerIn: parent
-                            text: root.getWorkspaceApps(modelData)
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: root.colChipText
+                        implicitWidth: chipRect.implicitWidth
+                        implicitHeight: chipRect.implicitHeight
+
+                        HoverHandler { id: chipHover }
+
+                        scale: chipHover.hovered ? 1.07 : 1.0
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                            }
+                        }
+
+                        Rectangle {
+                            id: chipRect
+                            radius: Appearance.rounding.full
+                            color: root.colChipBg
+                            implicitWidth: chipRow.implicitWidth + 24
+                            implicitHeight: 36
+
+                            RowLayout {
+                                id: chipRow
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                IconImage {
+                                    implicitWidth: 16; implicitHeight: 16
+                                    source: chipItem.modelData.initialClass || chipItem.modelData.class || ""
+                                }
+
+                                StyledText {
+                                    text: root.cleanAppName(chipItem.modelData.initialClass || chipItem.modelData.class)
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: root.colChipText
+                                }
+                            }
                         }
                     }
                 }
@@ -356,18 +468,39 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                // window count chip
-                StyledText {
-                    text: `${root.windowCount} window${root.windowCount !== 1 ? "s" : ""}`
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: root.colSubtle
+                // window count badge
+                Rectangle {
+                    radius: Appearance.rounding.full
+                    color: Appearance.colors.colLayer2
+                    implicitWidth: winCountText.implicitWidth + 12
+                    implicitHeight: 24
+                    opacity: 0.85
+
+                    StyledText {
+                        id: winCountText
+                        anchors.centerIn: parent
+                        text: `${root.windowCount} win${root.windowCount !== 1 ? "dows" : "dow"}`
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.colSubtle
+                    }
                 }
 
-                // age
-                StyledText {
-                    text: root.createdAt > 0 ? _ageString(root.createdAt) : ""
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: root.colSubtle
+                // age badge
+                Rectangle {
+                    visible: root.createdAt > 0
+                    radius: Appearance.rounding.full
+                    color: Appearance.colors.colLayer2
+                    implicitWidth: ageText.implicitWidth + 12
+                    implicitHeight: 24
+                    opacity: 0.85
+
+                    StyledText {
+                        id: ageText
+                        anchors.centerIn: parent
+                        text: root.createdAt > 0 ? _ageString(root.createdAt) : ""
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.colSubtle
+                    }
                 }
             }
 
@@ -376,7 +509,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                // settings button to expand
+                // tune button — rotates 180° on expand
                 RippleButton {
                     implicitWidth: 36; implicitHeight: 36
                     buttonRadius: Appearance.rounding.full
@@ -384,16 +517,33 @@ Item {
                         ? Appearance.colors.colSecondaryContainer
                         : Appearance.colors.colLayer2
                     onClicked: root.toggleExpandedRequested()
-                    StyledToolTip { text: root.expanded ? "Collapse details" : "Configure autolaunch & windows" }
+                    StyledToolTip {
+                        text: root.expanded ? "Collapse details" : "Configure autolaunch & windows"
+                    }
+
                     MaterialSymbol {
                         anchors.centerIn: parent
-                        text: root.expanded ? "expand_less" : "settings"
+                        text: "tune"
                         iconSize: Appearance.font.pixelSize.normal
-                        color: root.colOnSurface
+                        color: root.expanded
+                            ? Appearance.colors.colOnSecondaryContainer
+                            : root.colOnSurface
+
+                        rotation: root.expanded ? 180 : 0
+                        Behavior on rotation {
+                            NumberAnimation {
+                                duration: 280
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
+                        }
                     }
                 }
 
-                // Close other windows switch (visible even when collapsed)
+                // Close other windows switch
                 RowLayout {
                     spacing: 8
                     Layout.leftMargin: 4
@@ -406,7 +556,6 @@ Item {
                             }
                         }
                     }
-
                     StyledText {
                         text: "Close all other windows on restore"
                         font.pixelSize: Appearance.font.pixelSize.small
@@ -416,7 +565,7 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                // feedback states
+                // feedback
                 RowLayout {
                     spacing: 6
                     visible: root.restoreSuccess || root.restorePartial
@@ -432,9 +581,7 @@ Item {
                         fill: 1
                     }
                     StyledText {
-                        text: root.restoreSuccess
-                            ? "Restored"
-                            : "Partially restored"
+                        text: root.restoreSuccess ? "Restored" : "Partially restored"
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: root.restoreSuccess
                             ? Appearance.m3colors.m3primary
@@ -442,13 +589,12 @@ Item {
                     }
                 }
 
-                // loading indicator while restoring
                 MaterialLoadingIndicator {
                     visible: WorkspaceProfileService.restoring
                     implicitWidth: 24; implicitHeight: 24
                 }
 
-                // restore button
+                // restore button — larger for prominence
                 RippleButtonWithIcon {
                     id: restoreBtn
                     materialIcon: "play_arrow"
@@ -459,355 +605,415 @@ Item {
                     colBackground: Appearance.colors.colPrimary
                     colBackgroundHover: Appearance.colors.colPrimaryHover
                     buttonRadius: Appearance.rounding.full
-                    implicitHeight: 36
+                    implicitHeight: 40
+                    leftPadding: 18
+                    rightPadding: 18
 
                     onClicked: root.restoreRequested()
                 }
             }
 
             // ── expanded window settings section ──────────────────────────────
-            ColumnLayout {
-                visible: root.expanded
+            // Animated slide + fade on expand/collapse
+            Item {
+                id: expandWrapper
                 Layout.fillWidth: true
-                spacing: 8
-                Layout.topMargin: 4
-                Layout.bottomMargin: 4
+                implicitHeight: root.expanded ? expandedContent.implicitHeight : 0
+                opacity: root.expanded ? 1.0 : 0.0
+                clip: true
 
-                // Section divider line
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: root.colBorder
-                }
-
-                StyledText {
-                    text: "Configure Windows & Autolaunch"
-                    font {
-                        pixelSize: Appearance.font.pixelSize.small
-                        weight: Font.Bold
+                Behavior on implicitHeight {
+                    NumberAnimation {
+                        duration: 380
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }
-                    color: root.colOnSurface
-                    Layout.leftMargin: 2
+                }
+                Behavior on opacity {
+                    NumberAnimation { duration: 220 }
                 }
 
+                ColumnLayout {
+                    id: expandedContent
+                    width: parent.width
+                    spacing: 6
+                    // top breathing room
+                    Item { Layout.fillWidth: true; implicitHeight: 4 }
 
-
-                // Repeater of windows
-                Repeater {
-                    model: root.windowsList
-                    delegate: RowLayout {
-                        id: windowRow
-                        required property int index
-                        required property var modelData
+                    // divider + section header
+                    Rectangle {
                         Layout.fillWidth: true
-                        spacing: 12
+                        height: 1
+                        color: root.colBorder
+                        opacity: 0.6
+                    }
 
-                        // Window identification (class name)
-                        ColumnLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 2
-                            Layout.preferredWidth: 140
-                            Layout.fillWidth: true
+                    RowLayout {
+                        spacing: 6
+                        Layout.topMargin: 2
 
-                            StyledText {
-                                text: modelData.class || "unknown"
-                                font {
-                                    pixelSize: Appearance.font.pixelSize.small
-                                    weight: Font.DemiBold
-                                }
-                                color: root.colOnSurface
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                            }
-                            StyledText {
-                                visible: modelData.floating
-                                text: "Floating"
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: root.colSubtle
-                            }
+                        MaterialSymbol {
+                            text: "tune"
+                            iconSize: Appearance.font.pixelSize.small
+                            color: root.colPrimary
+                            fill: 1
                         }
-
-                        // Target Workspace ID field
-                        RowLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 6
-                            StyledText {
-                                text: "WS"
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: root.colSubtle
+                        StyledText {
+                            text: "Configure Windows & Autolaunch"
+                            font {
+                                pixelSize: Appearance.font.pixelSize.small
+                                weight: Font.Bold
                             }
-                            MaterialTextField {
-                                implicitWidth: 55
-                                implicitHeight: 36
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                horizontalAlignment: TextInput.AlignHCenter
-                                verticalAlignment: TextInput.AlignVCenter
-                                topPadding: 0
-                                bottomPadding: 0
-                                text: {
-                                    let ws = modelData.workspaceId;
-                                    if (typeof ws === "string" && ws.startsWith("special")) {
-                                        return "sp";
-                                    }
-                                    if (typeof ws === "number" && ws < 0) {
-                                        return "sp";
-                                    }
-                                    return ws.toString();
+                            color: root.colOnSurface
+                        }
+                    }
+
+                    // Window rows
+                    Repeater {
+                        model: root.windowsList
+                        delegate: Item {
+                            id: windowRowItem
+                            required property int index
+                            required property var modelData
+                            Layout.fillWidth: true
+                            implicitHeight: windowRow.implicitHeight + 40
+
+                            // alternating row tint
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Appearance.rounding.small
+                                color: Appearance.colors.colLayer2
+                                opacity: windowRowItem.index % 2 === 0 ? 0.45 : 0.0
+                            }
+
+                            RowLayout {
+                                id: windowRow
+                                anchors {
+                                    left: parent.left; right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: 6; rightMargin: 4
                                 }
-                                validator: RegularExpressionValidator {
-                                    regularExpression: /^(SP|sp|[1-9]|1[0-9]|20)$/
+                                spacing: 10
+
+                                // app avatar circle
+                                Item {
+                                    implicitWidth: 24; implicitHeight: 24
+
+                                    IconImage {
+                                        anchors.fill: parent
+                                        source: windowRowItem.modelData.initialClass || windowRowItem.modelData.class || ""
+                                    }
                                 }
-                                onEditingFinished: {
-                                    let val = text.trim();
-                                    if (val.toLowerCase() === "sp" || val.toLowerCase() === "special") {
-                                        val = "special:special";
-                                    } else {
-                                        let parsed = parseInt(val);
-                                        if (!isNaN(parsed)) {
-                                            val = parsed;
+
+                                // class name + floating label
+                                ColumnLayout {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 2
+                                    Layout.preferredWidth: 110
+                                    Layout.fillWidth: true
+
+                                    StyledText {
+                                        text: windowRowItem.modelData.class || "unknown"
+                                        font {
+                                            pixelSize: Appearance.font.pixelSize.small
+                                            weight: Font.DemiBold
+                                        }
+                                        color: root.colOnSurface
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    StyledText {
+                                        visible: windowRowItem.modelData.floating
+                                        text: "Floating"
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        color: root.colSubtle
+                                    }
+                                }
+
+                                // Workspace ID field
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 6
+                                    StyledText {
+                                        text: "WS"
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        color: root.colSubtle
+                                    }
+                                    MaterialTextField {
+                                        implicitWidth: 55
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        horizontalAlignment: TextInput.AlignHCenter
+                                        verticalAlignment: TextInput.AlignVCenter
+                                        topPadding: 0
+                                        bottomPadding: 0
+                                        text: {
+                                            let ws = windowRowItem.modelData.workspaceId;
+                                            if (typeof ws === "string" && ws.startsWith("special")) return "sp";
+                                            if (typeof ws === "number" && ws < 0) return "sp";
+                                            return ws.toString();
+                                        }
+                                        validator: RegularExpressionValidator {
+                                            regularExpression: /^(SP|sp|[1-9]|1[0-9]|20)$/
+                                        }
+                                        onEditingFinished: {
+                                            let val = text.trim();
+                                            if (val.toLowerCase() === "sp" || val.toLowerCase() === "special") {
+                                                val = "special:special";
+                                            } else {
+                                                let parsed = parseInt(val);
+                                                if (!isNaN(parsed)) val = parsed;
+                                            }
+                                            if (val !== windowRowItem.modelData.workspaceId) {
+                                                WorkspaceProfileService.updateWindowWorkspace(
+                                                    root.slug,
+                                                    windowRowItem.index,
+                                                    val
+                                                );
+                                            }
                                         }
                                     }
-                                    if (val !== modelData.workspaceId) {
-                                        WorkspaceProfileService.updateWindowWorkspace(
-                                            root.slug,
-                                            index,
-                                            val
-                                        );
+                                }
+
+                                // Autolaunch switch
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 6
+                                    StyledText {
+                                        text: "Autolaunch"
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        color: root.colSubtle
+                                    }
+                                    StyledSwitch {
+                                        checked: windowRowItem.modelData.autolaunch || false
+                                        onCheckedChanged: {
+                                            if (checked !== (windowRowItem.modelData.autolaunch || false)) {
+                                                WorkspaceProfileService.updateWindowOptions(
+                                                    root.slug,
+                                                    windowRowItem.index,
+                                                    checked,
+                                                    cmdField.text
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Launch command
+                                MaterialTextField {
+                                    id: cmdField
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.fillWidth: true
+                                    Layout.preferredWidth: 180
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    text: windowRowItem.modelData.launchCmd || ""
+                                    hint: "Add arguments..."
+                                    enabled: windowRowItem.modelData.autolaunch || false
+
+                                    StyledText {
+                                        text: "Arguments for " + root.cleanAppName(windowRowItem.modelData.initialClass || windowRowItem.modelData.class)
+                                        font.pixelSize: Appearance.font.pixelSize.small - 3
+                                        font.weight: Font.DemiBold
+                                        color: Appearance.m3colors.m3primary
+                                        anchors.bottom: parent.top
+                                        anchors.bottomMargin: 4
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 8
+                                        anchors.right: parent.right
+                                        elide: Text.ElideRight
+                                    }
+
+                                    onEditingFinished: {
+                                        if (text !== (windowRowItem.modelData.launchCmd || "")) {
+                                            WorkspaceProfileService.updateWindowOptions(
+                                                root.slug,
+                                                windowRowItem.index,
+                                                windowRowItem.modelData.autolaunch || false,
+                                                text
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Delete window button
+                                RippleButton {
+                                    id: delBtn
+                                    Layout.alignment: Qt.AlignVCenter
+                                    implicitWidth: 36; implicitHeight: 36
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: "transparent"
+                                    colBackgroundHover: Appearance.colors.colErrorContainer
+                                    onClicked: WorkspaceProfileService.deleteWindow(root.slug, windowRowItem.index)
+                                    StyledToolTip { text: "Delete window entry" }
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "delete"
+                                        iconSize: Appearance.font.pixelSize.normal
+                                        color: delBtn.hovered ? Appearance.colors.colOnErrorContainer : root.colSubtle
                                     }
                                 }
                             }
                         }
-
-                        // Autolaunch switch
-                        RowLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 6
-                            StyledText {
-                                text: "Autolaunch"
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: root.colSubtle
-                            }
-                            StyledSwitch {
-                                checked: modelData.autolaunch || false
-                                onCheckedChanged: {
-                                    if (checked !== (modelData.autolaunch || false)) {
-                                        WorkspaceProfileService.updateWindowOptions(
-                                            root.slug,
-                                            index,
-                                            checked,
-                                            cmdField.text
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // Launch command text field
-                        MaterialTextField {
-                            id: cmdField
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 200
-                            implicitHeight: 36
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            verticalAlignment: TextInput.AlignVCenter
-                            topPadding: 0
-                            bottomPadding: 0
-                            text: modelData.launchCmd || ""
-                            placeholderText: "Arguments for " + root.cleanAppName(modelData.initialClass || modelData.class)
-                            enabled: modelData.autolaunch || false
-
-                            onEditingFinished: {
-                                if (text !== (modelData.launchCmd || "")) {
-                                    WorkspaceProfileService.updateWindowOptions(
-                                        root.slug,
-                                        index,
-                                        modelData.autolaunch || false,
-                                        text
-                                    )
-                                }
-                            }
-                        }
-
-                        // Delete window button
-                        RippleButton {
-                            id: delBtn
-                            Layout.alignment: Qt.AlignVCenter
-                            implicitWidth: 36; implicitHeight: 36
-                            buttonRadius: Appearance.rounding.full
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colErrorContainer
-                            onClicked: {
-                                WorkspaceProfileService.deleteWindow(root.slug, index);
-                            }
-                            StyledToolTip { text: "Delete window entry" }
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "delete"
-                                iconSize: Appearance.font.pixelSize.normal
-                                color: delBtn.hovered ? Appearance.colors.colOnErrorContainer : root.colSubtle
-                            }
-                        }
-                    }
-                }
-
-                // Add App button / form
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    // The Add App button (shown when form is closed)
-                    RippleButtonWithIcon {
-                        visible: !root.showAddAppForm
-                        Layout.alignment: Qt.AlignLeft
-                        materialIcon: "add"
-                        mainText: "Add App"
-                        colText: root.colOnSurface
-                        colBackground: Appearance.colors.colLayer2
-                        colBackgroundHover: Appearance.colors.colLayer2Hover
-                        buttonRadius: Appearance.rounding.full
-                        implicitHeight: 36
-                        onClicked: {
-                            root.newAppClass = "";
-                            root.newAppWorkspace = "1";
-                            root.newAppAutolaunch = true;
-                            root.newAppLaunchCmd = "";
-                            root.showAddAppForm = true;
-                        }
                     }
 
-                    // The inline form (shown when form is open)
-                    RowLayout {
-                        visible: root.showAddAppForm
+                    // Add App button / inline form
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: 8
+                        Layout.topMargin: 16
 
-                        // Class input
-                        MaterialTextField {
-                            id: newClassField
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 160
+                        // Add App button (form closed)
+                        RippleButtonWithIcon {
+                            visible: !root.showAddAppForm
+                            Layout.alignment: Qt.AlignLeft
+                            materialIcon: "add_circle"
+                            materialIconFill: true
+                            mainText: "Add App"
+                            colText: Appearance.colors.colOnPrimaryContainer
+                            colBackground: Appearance.colors.colPrimaryContainer
+                            colBackgroundHover: Qt.lighter(Appearance.colors.colPrimaryContainer, 1.08)
+                            buttonRadius: Appearance.rounding.full
                             implicitHeight: 36
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            verticalAlignment: TextInput.AlignVCenter
-                            topPadding: 0
-                            bottomPadding: 0
-                            placeholderText: "App class (e.g. kitty)"
-                            text: root.newAppClass
-                            onTextChanged: root.newAppClass = text
+                            onClicked: {
+                                root.newAppClass = "";
+                                root.newAppWorkspace = "1";
+                                root.newAppAutolaunch = true;
+                                root.newAppLaunchCmd = "";
+                                root.showAddAppForm = true;
+                            }
                         }
 
-                        // Workspace input
+                        // Inline form (form open)
                         RowLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 4
-                            StyledText {
-                                text: "WS"
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: root.colSubtle
-                            }
+                            visible: root.showAddAppForm
+                            Layout.fillWidth: true
+                            spacing: 10
+
                             MaterialTextField {
-                                implicitWidth: 55
-                                implicitHeight: 36
+                                id: newClassField
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 150
                                 font.pixelSize: Appearance.font.pixelSize.small
-                                horizontalAlignment: TextInput.AlignHCenter
                                 verticalAlignment: TextInput.AlignVCenter
-                                topPadding: 0
-                                bottomPadding: 0
-                                text: root.newAppWorkspace
-                                onTextChanged: root.newAppWorkspace = text
-                                validator: RegularExpressionValidator {
-                                    regularExpression: /^(SP|sp|[1-9]|1[0-9]|20)$/
-                                }
-                            }
-                        }
-
-                        // Autolaunch switch for the new app
-                        RowLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 4
-                            StyledText {
-                                text: "Auto"
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: root.colSubtle
-                            }
-                            StyledSwitch {
-                                checked: root.newAppAutolaunch
-                                onCheckedChanged: root.newAppAutolaunch = checked
-                            }
-                        }
-
-                        // Launch command text field
-                        MaterialTextField {
-                            id: newCmdField
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 160
-                            implicitHeight: 36
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            verticalAlignment: TextInput.AlignVCenter
-                            topPadding: 0
-                            bottomPadding: 0
-                            placeholderText: "Arguments (optional)"
-                            text: root.newAppLaunchCmd
-                            onTextChanged: root.newAppLaunchCmd = text
-                            enabled: root.newAppAutolaunch
-                        }
-
-                        // Action buttons
-                        RowLayout {
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 6
-
-                            // Confirm/Add button
-                            RippleButton {
-                                implicitWidth: 36; implicitHeight: 36
-                                buttonRadius: Appearance.rounding.full
-                                colBackground: Appearance.colors.colPrimary
-                                colBackgroundHover: Appearance.colors.colPrimaryHover
-                                enabled: root.newAppClass.trim().length > 0 && root.newAppWorkspace.trim().length > 0
-                                onClicked: {
-                                    let ws = root.newAppWorkspace.trim();
-                                    if (ws.toLowerCase() === "sp" || ws.toLowerCase() === "special") {
-                                        ws = "special:special";
-                                    } else {
-                                        let parsed = parseInt(ws);
-                                        if (!isNaN(parsed)) ws = parsed;
-                                        else ws = 1;
-                                    }
-                                    WorkspaceProfileService.addWindow(
-                                        root.slug,
-                                        root.newAppClass.trim(),
-                                        ws,
-                                        root.newAppAutolaunch,
-                                        root.newAppLaunchCmd.trim()
-                                    );
-                                    root.showAddAppForm = false;
-                                }
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "check"
-                                    iconSize: Appearance.font.pixelSize.small
-                                    color: Appearance.colors.colOnPrimary
-                                }
+                                topPadding: 0; bottomPadding: 0
+                                hint: "App class (e.g. kitty)"
+                                text: root.newAppClass
+                                onTextChanged: root.newAppClass = text
                             }
 
-                            // Cancel button
-                            RippleButton {
-                                implicitWidth: 36; implicitHeight: 36
-                                buttonRadius: Appearance.rounding.full
-                                colBackground: Appearance.colors.colLayer2
-                                onClicked: root.showAddAppForm = false
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "close"
-                                    iconSize: Appearance.font.pixelSize.small
+                            RowLayout {
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 4
+                                StyledText {
+                                    text: "WS"
+                                    font.pixelSize: Appearance.font.pixelSize.small
                                     color: root.colSubtle
                                 }
+                                MaterialTextField {
+                                    implicitWidth: 55
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    horizontalAlignment: TextInput.AlignHCenter
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    topPadding: 0; bottomPadding: 0
+                                    text: root.newAppWorkspace
+                                    onTextChanged: root.newAppWorkspace = text
+                                    validator: RegularExpressionValidator {
+                                        regularExpression: /^(SP|sp|[1-9]|1[0-9]|20)$/
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 4
+                                StyledText {
+                                    text: "Auto"
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: root.colSubtle
+                                }
+                                StyledSwitch {
+                                    checked: root.newAppAutolaunch
+                                    onCheckedChanged: root.newAppAutolaunch = checked
+                                }
+                            }
+
+                            MaterialTextField {
+                                id: newCmdField
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 150
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                hint: "(Optional)"
+                                text: root.newAppLaunchCmd
+                                onTextChanged: root.newAppLaunchCmd = text
+                                enabled: root.newAppAutolaunch
+
+                                StyledText {
+                                    text: "Arguments"
+                                    font.pixelSize: Appearance.font.pixelSize.small - 3
+                                    font.weight: Font.DemiBold
+                                    color: Appearance.m3colors.m3primary
+                                    anchors.bottom: parent.top
+                                    anchors.bottomMargin: 4
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 8
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 6
+
+                                RippleButton {
+                                    implicitWidth: 36; implicitHeight: 36
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: Appearance.colors.colPrimary
+                                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                                    enabled: root.newAppClass.trim().length > 0 && root.newAppWorkspace.trim().length > 0
+                                    onClicked: {
+                                        let ws = root.newAppWorkspace.trim();
+                                        if (ws.toLowerCase() === "sp" || ws.toLowerCase() === "special") {
+                                            ws = "special:special";
+                                        } else {
+                                            let parsed = parseInt(ws);
+                                            if (!isNaN(parsed)) ws = parsed;
+                                            else ws = 1;
+                                        }
+                                        WorkspaceProfileService.addWindow(
+                                            root.slug,
+                                            root.newAppClass.trim(),
+                                            ws,
+                                            root.newAppAutolaunch,
+                                            root.newAppLaunchCmd.trim()
+                                        );
+                                        root.showAddAppForm = false;
+                                    }
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "check"
+                                        iconSize: Appearance.font.pixelSize.small
+                                        color: Appearance.colors.colOnPrimary
+                                    }
+                                }
+
+                                RippleButton {
+                                    implicitWidth: 36; implicitHeight: 36
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: Appearance.colors.colLayer2
+                                    onClicked: root.showAddAppForm = false
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "close"
+                                        iconSize: Appearance.font.pixelSize.small
+                                        color: root.colSubtle
+                                    }
+                                }
                             }
                         }
                     }
+
+                    // bottom breathing room
+                    Item { Layout.fillWidth: true; implicitHeight: 4 }
                 }
             }
         }
@@ -837,7 +1043,6 @@ Item {
         if (name === "inkscape") return "Inkscape";
         if (name === "libreoffice-writer") return "Writer";
         if (name === "libreoffice-calc") return "Calc";
-
         name = name.replace(/[-_]/g, " ");
         return name.charAt(0).toUpperCase() + name.slice(1);
     }
@@ -847,12 +1052,14 @@ Item {
         for (const w of root.windowsList) {
             if (w.workspaceId === wsId) {
                 let cleanName = cleanAppName(w.class || w.initialClass);
-                if (cleanName && !apps.includes(cleanName)) {
-                    apps.push(cleanName);
-                }
+                if (cleanName && !apps.includes(cleanName)) apps.push(cleanName);
             }
         }
-        return apps.length > 0 ? apps.join(", ") : ((typeof wsId === "string" && wsId.startsWith("special")) || (typeof wsId === "number" && wsId < 0) ? "scratchpad" : `ws ${wsId}`);
+        return apps.length > 0
+            ? apps.join(", ")
+            : ((typeof wsId === "string" && wsId.startsWith("special")) || (typeof wsId === "number" && wsId < 0)
+                ? "scratchpad"
+                : `ws ${wsId}`);
     }
 
     function getDefaultLaunchCmd(cls) {
