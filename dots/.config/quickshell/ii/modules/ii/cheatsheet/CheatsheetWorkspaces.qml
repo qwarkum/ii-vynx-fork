@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls
 import qs.modules.common
 import qs.modules.common.widgets
@@ -104,14 +105,6 @@ Item {
                 placeholderText: "Search profiles…"
                 text: root.filter
                 onTextChanged: root.filter = text
-                Keys.onEscapePressed: (event) => {
-                    if (root.filter !== "") {
-                        root.filter = "";
-                        event.accepted = true;
-                    } else {
-                        event.accepted = false;
-                    }
-                }
             }
 
             // snapshot feedback badge
@@ -422,10 +415,6 @@ Item {
                                         text: root.newName
                                         onTextChanged: root.newName = text
                                         Keys.onReturnPressed: if (root.newName.trim().length > 0) _doSnapshot()
-                                        Keys.onEscapePressed: (event) => {
-                                            root.showNewForm = false;
-                                            event.accepted = true;
-                                        }
                                         Component.onCompleted: if (root.showNewForm) forceActiveFocus()
                                     }
 
@@ -434,10 +423,6 @@ Item {
                                         hint: "Description (optional)…"
                                         text: root.newDesc
                                         onTextChanged: root.newDesc = text
-                                        Keys.onEscapePressed: (event) => {
-                                            root.showNewForm = false;
-                                            event.accepted = true;
-                                        }
                                     }
                                 }
                             }
@@ -638,5 +623,24 @@ Item {
         if (!name) return
         root.snapBusy = true
         WorkspaceProfileService.snapshot(name, root.newEmoji, root.newDesc, {})
+    }
+
+    Shortcut {
+        sequence: "Escape"
+        onActivated: {
+            if (root.filter !== "") {
+                root.filter = "";
+                searchField.forceActiveFocus();
+            } else if (root.showNewForm) {
+                root.showNewForm = false;
+            } else {
+                let win = root.Window.window;
+                if (win && typeof win.hide === "function") {
+                    win.hide();
+                } else {
+                    GlobalStates.cheatsheetOpen = false;
+                }
+            }
+        }
     }
 }
