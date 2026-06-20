@@ -13,6 +13,7 @@ Commands:
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -172,9 +173,25 @@ def cmd_snapshot(meta_json: str) -> None:
                     with open(f"/proc/{pid}/cmdline", "rb") as f:
                         cmdline_parts = f.read().split(b'\0')
                         if cmdline_parts and cmdline_parts[0]:
-                            launch_cmd = cmdline_parts[0].decode("utf-8")
+                            detected_cmd = cmdline_parts[0].decode("utf-8")
+                            if not detected_cmd.startswith("/tmp/"):
+                                launch_cmd = detected_cmd
                 except Exception:
                     pass
+
+        if not launch_cmd:
+            raw_cmd = w.get("initialClass") or w.get("class") or ""
+            cls_lower = raw_cmd.lower()
+            guesses = [
+                raw_cmd,
+                cls_lower.replace(' ', '-'),
+                cls_lower.replace(' ', ''),
+                cls_lower.split()[0] if cls_lower else ""
+            ]
+            for guess in guesses:
+                if guess and shutil.which(guess):
+                    launch_cmd = guess
+                    break
 
         windows.append({
             "class":        cls,
@@ -256,7 +273,23 @@ def cmd_restore(slug: str) -> None:
                             "chrome": "google-chrome-stable",
                             "dev.zed.Zed": "zeditor",
                         }
-                        launch_cmd = class_mappings.get(raw_cmd) or raw_cmd
+                        launch_cmd = class_mappings.get(raw_cmd)
+                        
+                        if not launch_cmd:
+                            cls_lower = raw_cmd.lower()
+                            guesses = [
+                                raw_cmd,
+                                cls_lower.replace(' ', '-'),
+                                cls_lower.replace(' ', ''),
+                                cls_lower.split()[0] if cls_lower else ""
+                            ]
+                            for guess in guesses:
+                                if guess and shutil.which(guess):
+                                    launch_cmd = guess
+                                    break
+                                    
+                        if not launch_cmd:
+                            launch_cmd = raw_cmd
                     
                     if launch_cmd:
                         missing_to_launch.append(launch_cmd)
