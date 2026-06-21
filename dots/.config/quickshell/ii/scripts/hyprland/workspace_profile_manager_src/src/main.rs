@@ -260,8 +260,17 @@ fn cmd_snapshot(meta_json: &str) {
                     let parts: Vec<&[u8]> = cmdline.split(|&b| b == 0).collect();
                     if !parts.is_empty() && !parts[0].is_empty() {
                         let detected = String::from_utf8_lossy(parts[0]).to_string();
-                        if !detected.starts_with("/tmp/") {
-                            launch_cmd = detected;
+                        let file_name = Path::new(&detected).file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        let is_interpreter = matches!(file_name, "python" | "python3" | "node" | "java" | "ruby" | "bash" | "sh" | "zsh" | "electron");
+                        
+                        if !detected.starts_with("/tmp/") && !detected.starts_with("./") && !is_interpreter {
+                            if detected.starts_with('/') {
+                                if Path::new(&detected).exists() {
+                                    launch_cmd = detected;
+                                }
+                            } else if which(&detected).is_ok() {
+                                launch_cmd = detected;
+                            }
                         }
                     }
                 }
