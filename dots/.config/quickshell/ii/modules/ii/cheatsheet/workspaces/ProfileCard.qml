@@ -670,6 +670,11 @@ Item {
                     spacing: 8
                     Layout.leftMargin: 4
 
+                    StyledText {
+                        text: "Kill all other windows on restore"
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: root.colOnSurface
+                    }
                     StyledSwitch {
                         checked: root.killOthers
                         onCheckedChanged: {
@@ -681,11 +686,6 @@ Item {
                             }
                         }
                     }
-                    StyledText {
-                        text: "Kill all other windows on restore"
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: root.colOnSurface
-                    }
                 }
 
                 // Close other windows switch
@@ -693,6 +693,11 @@ Item {
                     spacing: 8
                     Layout.leftMargin: 4
 
+                    StyledText {
+                        text: "Close all other windows on restore"
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: root.colOnSurface
+                    }
                     StyledSwitch {
                         checked: root.closeOthers
                         onCheckedChanged: {
@@ -703,11 +708,6 @@ Item {
                                 WorkspaceProfileService.updateProfileOptions(root.slug, newClose, newKill)
                             }
                         }
-                    }
-                    StyledText {
-                        text: "Close all other windows on restore"
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: root.colOnSurface
                     }
                 }
 
