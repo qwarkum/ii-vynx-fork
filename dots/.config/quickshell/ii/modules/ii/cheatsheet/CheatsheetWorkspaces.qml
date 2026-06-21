@@ -533,6 +533,8 @@ Item {
                                 WorkspaceProfileService.renameProfile(slug, newName)
                             onUpdateEmojiRequested: (newEmoji) =>
                                 WorkspaceProfileService.updateEmoji(slug, newEmoji)
+                            onUpdateDescriptionRequested: (newDesc) =>
+                                WorkspaceProfileService.updateDescription(slug, newDesc)
                             onTogglePinRequested:
                                 WorkspaceProfileService.togglePin(slug)
                         }

@@ -637,6 +637,14 @@ fn cmd_toggle_pin(slug: &str) {
     }
 }
 
+fn cmd_update_description(slug: &str, new_description: &str) {
+    if let Some(mut profile) = load_profile(slug) {
+        profile.description = new_description.trim().to_string();
+        write_profile(&profile, slug);
+        println!("ok");
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 { std::process::exit(1); }
@@ -648,6 +656,7 @@ fn main() {
         "delete" if args.len() >= 3 => cmd_delete(&args[2]),
         "rename" if args.len() >= 4 => cmd_rename(&args[2], &args[3]),
         "update_emoji" if args.len() >= 4 => cmd_update_emoji(&args[2], &args[3]),
+        "update_description" if args.len() >= 4 => cmd_update_description(&args[2], &args[3]),
         "update_window" if args.len() >= 6 => cmd_update_window(&args[2], &args[3], &args[4], &args[5]),
         "update_profile" if args.len() >= 4 => cmd_update_profile(&args[2], &args[3]),
         "add_window" if args.len() >= 7 => cmd_add_window(&args[2], &args[3], &args[4], &args[5], &args[6]),

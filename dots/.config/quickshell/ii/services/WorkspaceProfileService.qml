@@ -28,6 +28,7 @@ Singleton {
     signal restoreStarted(string profileName)
     signal restoreFinished(bool success, int errors)
     signal renameFinished(bool success, string newSlug)
+    signal updateDescriptionFinished(bool success)
     signal deleteFinished(bool success)
 
     // ── paths ────────────────────────────────────────────────────────────────
@@ -80,6 +81,22 @@ Singleton {
     function updateEmoji(slug, newEmoji) {
         updateEmojiProc.command = [root.scriptPath, "update_emoji", slug, newEmoji];
         updateEmojiProc.running = true;
+    }
+
+    function updateDescription(slug, newDescription) {
+        let updateDescProc = Qt.createQmlObject('import Quickshell.Io; Process {}', root, "updateDescProc");
+        updateDescProc.command = [scriptPath, "update_description", slug, newDescription];
+        let ok = false;
+        updateDescProc.stdout = Qt.createQmlObject('import Quickshell.Io; StdioCollector {}', updateDescProc);
+        updateDescProc.stdout.onStreamFinished.connect(() => {
+            if (updateDescProc.stdout.text.trim() === "ok") {
+                ok = true;
+                refresh(); // refresh UI
+            }
+            root.updateDescriptionFinished(ok);
+            updateDescProc.destroy();
+        });
+        updateDescProc.start();
     }
 
     function updateWindowOptions(slug, index, autolaunch, launchCmd) {

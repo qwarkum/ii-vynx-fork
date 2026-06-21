@@ -39,6 +39,7 @@ Item {
     property bool isEditing: false
     property string editNameValue: root.name
     property string editEmojiValue: root.emoji
+    property string editDescriptionValue: root.description
     property bool expanded: false
     property bool showAddAppForm: false
     property string newAppClass: ""
@@ -53,6 +54,7 @@ Item {
     signal updateEmojiRequested(string newEmoji)
     signal toggleExpandedRequested()
     signal togglePinRequested()
+    signal updateDescriptionRequested(string newDescription)
 
     function requestDeleteAction() {
         if (root.showDeleteConfirm) {
@@ -317,6 +319,7 @@ Item {
                         onClicked: {
                             root.editNameValue = root.name;
                             root.editEmojiValue = root.emoji;
+                            root.editDescriptionValue = root.description || "";
                             root.isEditing = true;
                         }
                         StyledToolTip { text: "Rename" }
@@ -380,6 +383,9 @@ Item {
                             if (root.editEmojiValue !== root.emoji) {
                                 root.updateEmojiRequested(root.editEmojiValue);
                             }
+                            if (root.editDescriptionValue.trim() !== (root.description || "")) {
+                                root.updateDescriptionRequested(root.editDescriptionValue.trim());
+                            }
                             root.isEditing = false;
                         }
                         MaterialSymbol {
@@ -440,6 +446,16 @@ Item {
                         }
                     }
                 }
+            }
+
+            // edit description text field
+            MaterialTextField {
+                visible: root.isEditing
+                Layout.fillWidth: true
+                text: root.editDescriptionValue
+                hint: "Add a description... (optional)"
+                onTextChanged: root.editDescriptionValue = text
+                font.pixelSize: Appearance.font.pixelSize.small
             }
 
             // ── description — quote-block style ──────────────────────────────

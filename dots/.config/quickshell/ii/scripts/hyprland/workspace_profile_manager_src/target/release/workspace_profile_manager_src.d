@@ -1,0 +1,1 @@
+/home/scrimas/Projects/ii-p3drovfx-fork/dots/.config/quickshell/ii/scripts/hyprland/workspace_profile_manager_src/target/release/workspace_profile_manager_src: /home/scrimas/Projects/ii-p3drovfx-fork/dots/.config/quickshell/ii/scripts/hyprland/workspace_profile_manager_src/src/main.rs
