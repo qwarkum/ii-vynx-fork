@@ -43,7 +43,12 @@ MouseArea {
 
         const configDirs = Config.options.wallpaperSelector.directories || [];
         for (let i = 0; i < configDirs.length; i++) {
-            base.push(configDirs[i]);
+            const entry = configDirs[i];
+            base.push({
+                icon: entry.icon || "folder",
+                name: entry.name || entry.path.split('/').pop() || "Dir",
+                path: entry.path
+            });
         }
 
         if (Config.options.policies.weeb === 1) {
@@ -93,7 +98,8 @@ MouseArea {
             // we need a better way instead of these 'mode' properties
             wallpaperSelectorContent.favMode = false;
             wallpaperSelectorContent.browserMode = false;
-            wallpaperSelectorContent.updateThumbnails()
+            wallpaperSelectorContent.updateThumbnails();
+            grid.currentIndex = 0;
         }
     }
 
@@ -677,8 +683,15 @@ MouseArea {
                         }
 
                         function activateCurrent() {
-                            const item = wallpaperSelectorContent.browserMode ? grid.model[currentIndex] : grid.model.get(currentIndex)
-                            wallpaperSelectorContent.selectWallpaperPath(item.actualPath || item.filePath);
+                            let filePath;
+                            if (wallpaperSelectorContent.browserMode) {
+                                filePath = grid.model[currentIndex].filePath;
+                            } else if (wallpaperSelectorContent.favMode || wallpaperSelectorContent.activeColorFilter) {
+                                filePath = grid.model.get(currentIndex).filePath;
+                            } else {
+                                filePath = grid.model.get(currentIndex, "filePath");
+                            }
+                            wallpaperSelectorContent.selectWallpaperPath(filePath);
                         }
 
                         property int loadedCount: 0
