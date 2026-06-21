@@ -107,10 +107,10 @@ Singleton {
         updateWindowProc.running = true;
     }
 
-    function updateProfileOptions(slug, closeOthers) {
+    function updateProfileOptions(slug, closeOthers, killOthers) {
         updateProfileProc.command = [
             root.scriptPath, "update_profile",
-            slug, closeOthers ? "true" : "false"
+            slug, closeOthers ? "true" : "false", killOthers ? "true" : "false"
         ];
         updateProfileProc.running = true;
     }

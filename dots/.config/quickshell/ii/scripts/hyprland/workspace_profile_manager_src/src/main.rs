@@ -54,6 +54,8 @@ struct Profile {
     #[serde(default)]
     close_others: bool,
     #[serde(default)]
+    kill_others: bool,
+    #[serde(default)]
     pinned: bool,
     #[serde(default)]
     windows: Vec<SavedWindow>,
@@ -202,6 +204,7 @@ fn cmd_list() {
                             "description": profile.description,
                             "createdAt": profile.created_at,
                             "closeOthers": profile.close_others,
+                            "killOthers": profile.kill_others,
                             "pinned": profile.pinned,
                             "windowCount": profile.windows.len(),
                             "workspaceIdsJson": serde_json::to_string(&ws_ids).unwrap(),
@@ -320,6 +323,7 @@ fn cmd_snapshot(meta_json: &str) {
         description: meta.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
         created_at: now,
         close_others: meta.get("closeOthers").and_then(|v| v.as_bool()).unwrap_or(false),
+        kill_others: meta.get("killOthers").and_then(|v| v.as_bool()).unwrap_or(false),
         pinned: false,
         windows,
     };
@@ -531,7 +535,7 @@ fn cmd_restore(slug: &str) {
         }
     }
     
-    if profile.close_others {
+    if profile.close_others || profile.kill_others {
         let final_clients = live_clients();
         let assigned_clean: HashSet<String> = assigned.into_iter().map(|a| if a.starts_with("0x") { a } else { format!("0x{}", a) }).collect();
         for c in final_clients {
@@ -540,7 +544,13 @@ fn cmd_restore(slug: &str) {
                 if !assigned_clean.contains(&addr_clean) {
                     if let Some(ws_id) = c.get("workspace").and_then(|w| w.get("id")).and_then(|v| v.as_i64()) {
                         if ws_id >= 1 {
-                            hyprctl(&["dispatch", &format!("hl.dsp.window.close({{ window = \"address:{}\" }})", addr_clean)]);
+                            if profile.kill_others {
+                                if let Some(pid) = c.get("pid").and_then(|v| v.as_i64()) {
+                                    Command::new("kill").arg("-9").arg(pid.to_string()).spawn().ok();
+                                }
+                            } else {
+                                hyprctl(&["dispatch", &format!("hl.dsp.window.close({{ window = \"address:{}\" }})", addr_clean)]);
+                            }
                             thread::sleep(Duration::from_millis(20));
                         }
                     }
@@ -572,9 +582,10 @@ fn cmd_update_window(slug: &str, idx_str: &str, autolaunch_str: &str, launch_cmd
     std::process::exit(1);
 }
 
-fn cmd_update_profile(slug: &str, close_others_str: &str) {
+fn cmd_update_profile(slug: &str, close_others_str: &str, kill_others_str: &str) {
     if let Some(mut profile) = load_profile(slug) {
         profile.close_others = ["true", "1", "yes"].contains(&close_others_str.to_lowercase().as_str());
+        profile.kill_others = ["true", "1", "yes"].contains(&kill_others_str.to_lowercase().as_str());
         write_profile(&profile, slug);
         println!("ok");
     }
@@ -674,7 +685,7 @@ fn main() {
         "update_emoji" if args.len() >= 4 => cmd_update_emoji(&args[2], &args[3]),
         "update_description" if args.len() >= 4 => cmd_update_description(&args[2], &args[3]),
         "update_window" if args.len() >= 6 => cmd_update_window(&args[2], &args[3], &args[4], &args[5]),
-        "update_profile" if args.len() >= 4 => cmd_update_profile(&args[2], &args[3]),
+        "update_profile" if args.len() >= 5 => cmd_update_profile(&args[2], &args[3], &args[4]),
         "add_window" if args.len() >= 7 => cmd_add_window(&args[2], &args[3], &args[4], &args[5], &args[6]),
         "delete_window" if args.len() >= 4 => cmd_delete_window(&args[2], &args[3]),
         "update_window_workspace" if args.len() >= 5 => cmd_update_window_workspace(&args[2], &args[3], &args[4]),

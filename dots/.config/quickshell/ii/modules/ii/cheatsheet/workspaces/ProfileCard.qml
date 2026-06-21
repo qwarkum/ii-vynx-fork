@@ -27,6 +27,7 @@ Item {
     required property string windowsJson
     required property bool   hasDuplicateClasses
     required property bool   closeOthers
+    required property bool   killOthers
     required property bool   pinned
 
     // ── internal state ──────────────────────────────────────────────────────
@@ -654,12 +655,38 @@ Item {
                         checked: root.closeOthers
                         onCheckedChanged: {
                             if (checked !== root.closeOthers) {
-                                WorkspaceProfileService.updateProfileOptions(root.slug, checked)
+                                let newClose = checked;
+                                let newKill = root.killOthers;
+                                if (newClose) newKill = false;
+                                WorkspaceProfileService.updateProfileOptions(root.slug, newClose, newKill)
                             }
                         }
                     }
                     StyledText {
                         text: "Close all other windows on restore"
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: root.colOnSurface
+                    }
+                }
+
+                // Kill other windows switch
+                RowLayout {
+                    spacing: 8
+                    Layout.leftMargin: 4
+
+                    StyledSwitch {
+                        checked: root.killOthers
+                        onCheckedChanged: {
+                            if (checked !== root.killOthers) {
+                                let newKill = checked;
+                                let newClose = root.closeOthers;
+                                if (newKill) newClose = false;
+                                WorkspaceProfileService.updateProfileOptions(root.slug, newClose, newKill)
+                            }
+                        }
+                    }
+                    StyledText {
+                        text: "Kill all other windows on restore"
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: root.colOnSurface
                     }
