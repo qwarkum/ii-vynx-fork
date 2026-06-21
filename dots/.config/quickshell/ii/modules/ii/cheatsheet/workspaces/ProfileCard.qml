@@ -691,7 +691,7 @@ Item {
                 // Close other windows switch
                 RowLayout {
                     spacing: 8
-                    Layout.leftMargin: 4
+                    Layout.leftMargin: 20
 
                     StyledText {
                         text: "Close all other windows on restore"
