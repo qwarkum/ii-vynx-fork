@@ -94,12 +94,16 @@ fn get_dispatcher_workspace(ws_val: &Value, clients: &[Value]) -> String {
                 if let Some(ws) = c.get("workspace") {
                     if ws.get("id").and_then(|i| i.as_i64()) == Some(n) {
                         if let Some(name) = ws.get("name").and_then(|n| n.as_str()) {
-                            return format!("\"{}\"", name);
+                            let mut out_name = name;
+                            if out_name == "special:special" {
+                                out_name = "special";
+                            }
+                            return format!("\"{}\"", out_name);
                         }
                     }
                 }
             }
-            return "\"special:special\"".to_string();
+            return "\"special\"".to_string();
         }
         n.to_string()
     } else if let Some(s) = ws_val.as_str() {
@@ -436,11 +440,7 @@ fn cmd_watch(class: &str, target_ws_str: &str, width: i32, height: i32, x: i32, 
             let mut batch = Vec::new();
             let ws_param = get_dispatcher_workspace(&target_ws, &clients);
             
-            if is_special_workspace(&target_ws) {
-                batch.push(format!("dispatch movetoworkspacesilent {},{}", ws_param.trim_matches('"'), addr_sel));
-            } else {
-                batch.push(format!("dispatch hl.dsp.window.move({{ workspace = {}, window = \"{}\", follow = false }})", ws_param, addr_sel));
-            }
+            batch.push(format!("dispatch hl.dsp.window.move({{ workspace = {}, window = \"{}\", follow = false }})", ws_param, addr_sel));
             
             let float_action = if is_floating { "set" } else { "disable" };
             batch.push(format!("dispatch hl.dsp.window.float({{ action = \"{}\", window = \"{}\" }})", float_action, addr_sel));
@@ -650,11 +650,7 @@ fn cmd_restore(slug: &str) {
         let addr_sel = format!("address:{}", addr_clean);
         let ws_param = get_dispatcher_workspace(&sw.workspace_id, &clients);
         
-        if is_special_workspace(&sw.workspace_id) {
-            batch_commands.push(format!("dispatch movetoworkspacesilent {},{}", ws_param.trim_matches('"'), addr_sel));
-        } else {
-            batch_commands.push(format!("dispatch hl.dsp.window.move({{ workspace = {}, window = \"{}\", follow = false }})", ws_param, addr_sel));
-        }
+        batch_commands.push(format!("dispatch hl.dsp.window.move({{ workspace = {}, window = \"{}\", follow = false }})", ws_param, addr_sel));
         
         let float_action = if sw.floating { "set" } else { "disable" };
         batch_commands.push(format!("dispatch hl.dsp.window.float({{ action = \"{}\", window = \"{}\" }})", float_action, addr_sel));
