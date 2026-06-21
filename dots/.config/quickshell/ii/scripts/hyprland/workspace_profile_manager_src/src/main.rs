@@ -332,6 +332,44 @@ fn cmd_snapshot(meta_json: &str) {
     println!("{}", slug);
 }
 
+fn get_app_root_pid(mut pid: i64) -> i64 {
+    let mut top_pid = pid;
+    loop {
+        let stat_path = format!("/proc/{}/stat", pid);
+        if let Ok(stat) = std::fs::read_to_string(&stat_path) {
+            let parts: Vec<&str> = stat.split_whitespace().collect();
+            if parts.len() > 3 {
+                let ppid = parts[3].parse::<i64>().unwrap_or(0);
+                if ppid <= 1 { break; }
+                
+                if let Ok(exe_path) = std::fs::read_link(format!("/proc/{}/exe", ppid)) {
+                    let exe_str = exe_path.to_string_lossy();
+                    if exe_str.contains("systemd") || 
+                       exe_str.ends_with("/bash") || 
+                       exe_str.ends_with("/fish") || 
+                       exe_str.ends_with("/zsh") || 
+                       exe_str.ends_with("kitty") ||
+                       exe_str.ends_with("gnome-terminal") ||
+                       exe_str.ends_with("konsole") ||
+                       exe_str.ends_with("Hyprland") {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+                
+                pid = ppid;
+                top_pid = pid;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    top_pid
+}
+
 fn cmd_restore(slug: &str) {
     let profile = match load_profile(slug) {
         Some(p) => p,
@@ -546,7 +584,9 @@ fn cmd_restore(slug: &str) {
                         if ws_id >= 1 {
                             if profile.kill_others {
                                 if let Some(pid) = c.get("pid").and_then(|v| v.as_i64()) {
-                                    Command::new("kill").arg("-9").arg(pid.to_string()).spawn().ok();
+                                    let top_pid = get_app_root_pid(pid);
+                                    let kill_cmd = format!("kill -9 {} 2>/dev/null; for p in $(pstree -p {} | grep -o '([0-9]*)' | tr -d '()'); do kill -9 $p 2>/dev/null; done", top_pid, top_pid);
+                                    Command::new("sh").arg("-c").arg(kill_cmd).spawn().ok();
                                 }
                             } else {
                                 hyprctl(&["dispatch", &format!("hl.dsp.window.close({{ window = \"address:{}\" }})", addr_clean)]);
