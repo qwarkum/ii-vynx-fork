@@ -394,7 +394,9 @@ fn get_app_root_pid(mut pid: i64) -> i64 {
                        exe_str.ends_with("kitty") ||
                        exe_str.ends_with("gnome-terminal") ||
                        exe_str.ends_with("konsole") ||
-                       exe_str.ends_with("Hyprland") {
+                       exe_str.ends_with("Hyprland") ||
+                       exe_str.ends_with("/quickshell") ||
+                       exe_str.ends_with("/qs") {
                         break;
                     }
                 } else {
