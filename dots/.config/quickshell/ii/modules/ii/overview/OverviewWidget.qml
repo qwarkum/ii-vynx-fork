@@ -552,7 +552,7 @@ Item {
                 width: root.hyprscrollingEnabled ? root.activeWindowData?.width ?? 0 : root.workspaceImplicitWidth + 4
                 height: root.hyprscrollingEnabled ? root.activeWindowData?.height ?? 0 : root.workspaceImplicitHeight
 
-                radius: Appearance.rounding.normal
+                radius: Appearance.rounding.small
                 color: "transparent"
                 border.width: 2
                 border.color: root.activeBorderColor

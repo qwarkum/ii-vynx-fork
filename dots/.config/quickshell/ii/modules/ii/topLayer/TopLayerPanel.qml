@@ -783,28 +783,27 @@ PanelWindow {
         visible: searchDropLoader.active
                  && searchDropLoader.item
                  && searchDropLoader.item.isWidgetActive
-        x: searchDropLoader.item ? searchDropLoader.item.x + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.x : 0) : 0
-        y: searchDropLoader.item ? searchDropLoader.item.y + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.y : 0) : 0
-        width: searchDropLoader.item ? (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.width : 0) : 0
-        height: searchDropLoader.item ? (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.height : 0) : 0
+        x: {
+            if (searchDropLoader.item && searchDropLoader.item.isOverviewVisible)
+                return 0;
+            return searchDropLoader.item ? searchDropLoader.item.x + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.x : 0) : 0;
+        }
+        y: {
+            if (searchDropLoader.item && searchDropLoader.item.isOverviewVisible)
+                return 0;
+            return searchDropLoader.item ? searchDropLoader.item.y + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.y : 0) : 0;
+        }
+        width: {
+            if (searchDropLoader.item && searchDropLoader.item.isOverviewVisible)
+                return topPanel.width;
+            return searchDropLoader.item ? (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.width : 0) : 0;
+        }
+        height: {
+            if (searchDropLoader.item && searchDropLoader.item.isOverviewVisible)
+                return topPanel.height;
+            return searchDropLoader.item ? (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.height : 0) : 0;
+        }
     }
-
-    // Static mask item for search drop float media bubble
-    Item {
-        id: searchDropBubbleMaskItem
-        visible: searchDropLoader.active
-                 && searchDropLoader.item
-                 && searchDropLoader.item.isWidgetActive
-                 && searchDropLoader.item.searchWidgetRef
-                 && searchDropLoader.item.nowPlayingBubble
-                 && searchDropLoader.item.nowPlayingBubble.bubbleActive
-        x: searchDropLoader.item ? searchDropLoader.item.x + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.x : 0) + (searchDropLoader.item.nowPlayingBubble ? searchDropLoader.item.nowPlayingBubble.x : 0) : 0
-        y: searchDropLoader.item ? searchDropLoader.item.y + (searchDropLoader.item.maskItem ? searchDropLoader.item.maskItem.y : 0) + (searchDropLoader.item.nowPlayingBubble ? searchDropLoader.item.nowPlayingBubble.y : 0) : 0
-        width: searchDropLoader.item && searchDropLoader.item.nowPlayingBubble ? searchDropLoader.item.nowPlayingBubble.width : 0
-        height: searchDropLoader.item && searchDropLoader.item.nowPlayingBubble ? searchDropLoader.item.nowPlayingBubble.height : 0
-    }
-
-
 
     // Mask region definitions
     mask: Region {
@@ -844,11 +843,6 @@ PanelWindow {
             // Search drop
             item: searchDropMaskItem
         }
-        Region {
-            // Search drop bubble
-            item: searchDropBubbleMaskItem
-        }
-
     }
 
     Connections {

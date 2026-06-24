@@ -254,6 +254,7 @@ Singleton {
                 property string globalRounding: "large" // Options: "sharp", "normal", "large", "verylarge"
                 property int defaultBorderRadius: 18
                 property bool toggleWindowRounding: true // Changes Hyprland window rounding to 0 if sharpMode is true
+                property real iconTintPercentage: 0.6
                 property JsonObject fonts: JsonObject {
                     property bool enableCustom: false
                     property string main: "Google Sans Flex"
@@ -1100,8 +1101,8 @@ Singleton {
                         property bool multiline: true
                     }
                 }
-                property bool showNowPlayingBubble: true
                 property string connectStyle: "connect"  // Search rendered as embedded drop in Connect Mode
+                property int baseWidth: 500
             }
 
             property JsonObject sidebar: JsonObject {

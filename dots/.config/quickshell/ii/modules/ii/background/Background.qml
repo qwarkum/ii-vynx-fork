@@ -472,25 +472,29 @@ Scope {
                             Behavior on x {
                                 NumberAnimation {
                                     duration: 400
-                                    easing.type: Easing.OutCubic
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
                             }
                             Behavior on y {
                                 NumberAnimation {
                                     duration: 400
-                                    easing.type: Easing.OutCubic
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
                             }
                             Behavior on width {
                                 NumberAnimation {
                                     duration: 500
-                                    easing.type: Easing.OutCubic
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
                             }
                             Behavior on height {
                                 NumberAnimation {
                                     duration: 500
-                                    easing.type: Easing.OutCubic
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
                             }
 
@@ -557,25 +561,29 @@ Scope {
                                 Behavior on x {
                                     NumberAnimation {
                                         duration: 400
-                                        easing.type: Easing.OutCubic
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                     }
                                 }
                                 Behavior on y {
                                     NumberAnimation {
                                         duration: 400
-                                        easing.type: Easing.OutCubic
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                     }
                                 }
                                 Behavior on width {
                                     NumberAnimation {
                                         duration: 500
-                                        easing.type: Easing.OutCubic
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                     }
                                 }
                                 Behavior on height {
                                     NumberAnimation {
                                         duration: 500
-                                        easing.type: Easing.OutCubic
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                     }
                                 }
                             }
@@ -879,8 +887,45 @@ Scope {
             readonly property int wbTop: Math.max(baseMargin, (barEffective && !barVertical && !barBottom) ? barSize : 0)
             readonly property int wbBottom: Math.max(baseMargin, (barEffective && !barVertical && barBottom) ? barSize : 0)
 
+            // Search drop exclusion: merge exclusion region into the mask
+            // to prevent compositor blur from covering the SearchDrop.
+            readonly property real _sx: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionX : overlayDimRect.x + overlayDimRect.width + 1
+            readonly property real _sy: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionY : overlayDimRect.y + overlayDimRect.height + 1
+            readonly property real _sw: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionWidth : 0
+            readonly property real _sh: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionHeight : 0
+
+            // Mask region items — invisible, purely geometric for the mask
+            Item {
+                id: dimMaskLeft
+                x: overlayDimRect.x
+                y: overlayDimRect.y
+                width: Math.max(0, _sx - overlayDimRect.x)
+                height: overlayDimRect.height
+                visible: false
+            }
+            Item {
+                id: dimMaskRight
+                x: Math.max(overlayDimRect.x, _sx + _sw)
+                y: overlayDimRect.y
+                width: Math.max(0, overlayDimRect.x + overlayDimRect.width - Math.max(overlayDimRect.x, _sx + _sw))
+                height: overlayDimRect.height
+                visible: false
+            }
+            Item {
+                id: dimMaskBottom
+                x: overlayDimRect.x
+                y: Math.max(overlayDimRect.y, _sy + _sh)
+                width: overlayDimRect.width
+                height: Math.max(0, overlayDimRect.y + overlayDimRect.height - Math.max(overlayDimRect.y, _sy + _sh))
+                visible: false
+            }
+
             mask: Region {
-                item: overlayDimRect
+                regions: [
+                    Region { item: dimMaskLeft },
+                    Region { item: dimMaskRight },
+                    Region { item: dimMaskBottom }
+                ]
             }
 
             readonly property bool animEnabled: Config.options.background.zoomOutEnabled

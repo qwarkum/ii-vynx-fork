@@ -8,13 +8,17 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.overview
 
-// ── Animation constants ─────────────────────────────────────────────────────
-// Single source of truth for all SearchDrop timing/easing.
-// Change _animDuration / _animBezier in the Item to tune every animation at once.
+// ── Animation strategy ──────────────────────────────────────────────────────
+// Caestelia-inspired: uses expressiveFastSpatial (spring overshoot y1=1.67)
+// for open, emphasizedAccel for close. The spring curve makes the drop feel
+// physical and alive. The Notch shape renders at full target size from the
+// start; the clip + corner radius scaling handles the visual reveal cleanly.
 
 Item {
     id: root
     focus: true
+    width: screenWidth
+    height: screenHeight
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
@@ -63,7 +67,14 @@ Item {
     readonly property real screenHeight: screen ? screen.height : 1080
 
     property var searchWidgetRef: null
-    readonly property var nowPlayingBubble: searchWidgetRef ? searchWidgetRef.nowPlayingBubble : null
+
+    readonly property bool isOverviewVisible: root.isOpen
+        && (root.searchWidgetRef ? root.searchWidgetRef.searchingText === "" : true)
+        && !GlobalStates.searchOnlyMode
+        && !Config.options.search.alwaysListApps
+        && (Config?.options.overview.enable ?? true)
+
+    readonly property bool isScrollingLayout: Persistent.states.hyprland.layout === "scrolling"
     readonly property real launcherContentWidth: searchWidgetRef ? searchWidgetRef.implicitWidth : 0
     readonly property real launcherContentHeight: searchWidgetRef ? searchWidgetRef.implicitHeight : 0
 
@@ -121,12 +132,18 @@ Item {
         }
     }
 
-    // ── Shared animation spec (used by all Behaviors below) ─────────────────
-    readonly property int _animDuration: 250
-    readonly property int _animEasingType: Easing.BezierSpline
-    readonly property var _animBezier: Appearance.animationCurves.emphasizedDecel
+    // ── Shared animation spec ────────────────────────────────────────────────
+    // Open:  emphasizedDecel [0.05,0.7,0.1,1] — fast-start, slow-settle (EaseOut).
+    // Close: same curve but shorter — panel snaps shut quickly then eases out.
+    readonly property int _animDurationOpen: 450
+    readonly property int _animDurationClose: 280
+    readonly property var _openBezier: Appearance.animationCurves.emphasizedDecel
+    readonly property var _closeBezier: Appearance.animationCurves.emphasizedDecel
 
+    // openProgress: 0 = fully closed, 1 = fully open
     property real openProgress: 0.0
+
+    // animHeight: the visible reveal height — drives both the clip and the Notch radii
     readonly property real animHeight: openProgress * dropState.targetH
 
     state: isOpen ? "open" : "closed"
@@ -155,9 +172,9 @@ Item {
             NumberAnimation {
                 target: root
                 property: "openProgress"
-                duration: root._animDuration
-                easing.type: root._animEasingType
-                easing.bezierCurve: root._animBezier
+                duration: root._animDurationOpen
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: root._openBezier
             }
         },
         Transition {
@@ -166,9 +183,9 @@ Item {
             NumberAnimation {
                 target: root
                 property: "openProgress"
-                duration: root._animDuration
-                easing.type: root._animEasingType
-                easing.bezierCurve: root._animBezier
+                duration: root._animDurationClose
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: root._closeBezier
             }
         }
     ]
@@ -181,30 +198,89 @@ Item {
         height: root.animHeight
         visible: root.animHeight > 0.001
 
+        // Publish drop bounds to GlobalStates for background blur exclusion
+        onXChanged: root._updateBlurExclusion()
+        onYChanged: root._updateBlurExclusion()
+        onWidthChanged: root._updateBlurExclusion()
+        onHeightChanged: root._updateBlurExclusion()
+
         // ── Notch background (unclipped) ─────────────────────────────────────
-        // Lives outside clippingClip so its convex bottom corners are NEVER
-        // cropped by the reveal mask. Height tracks animHeight directly
-        // (already a smooth value) so corners are always fully rounded.
-        // Flipped for barBottom so the concave attachment edge faces the bar.
         Notch {
             id: dropNotch
             width: dropContainer.width
             height: dropContainer.height   // = animHeight, always matches clip edge
             y: barBottom ? (dropContainer.height - height) : 0
             disableBehaviors: true
-            // Scale corners proportionally, but delay the concave topRadius until
-            // the body height is tall enough to avoid rendering empty gaps outside the curves.
-            // When animHeight is below 30px, topRadius is kept at 0 (flat attachment).
             readonly property real _wr: Appearance.rounding.windowRounding
-            topRadius: root.animHeight < 30 ? 0 : Math.min(_wr, root.animHeight - 30)
+            // Grow topRadius from 0 immediately — no dead zone threshold.
+            // animHeight * 0.8 reaches windowRounding quickly without overshoot.
+            topRadius: Math.min(_wr, root.animHeight * 0.8)
             bottomRadius: Math.min(_wr, root.animHeight)
             fillColor: Appearance.colors.colBackgroundSurfaceContainer
-            // Mirror vertically for bottom-bar so concave is at bar attachment
             transform: Scale {
                 xScale: 1
                 yScale: barBottom ? -1 : 1
                 origin.y: dropNotch.height / 2
             }
+        }
+
+        // ── Concave corners at bar attachment edge ────────────────────────────
+        // RoundCorners flush at the TOP of dropContainer, outside its left/right edges,
+        // painting colLayer0 (bar background) to create a smooth concave curve where
+        // the bar bottom meets the drop panel. Grow from radius 0 with animHeight.
+        //
+        // Corner enum semantics for "drop below bar" layout:
+        //   Left side:  BottomRight fills bottom-right quadrant → arc faces inward → concave ✓
+        //   Right side: BottomLeft  fills bottom-left  quadrant → arc faces inward → concave ✓
+        readonly property real _cornerRadius: Math.min(
+            Appearance.rounding.windowRounding,
+            root.animHeight
+        )
+        readonly property bool _showCorners: !root.barVertical && root.animHeight > 0.5
+
+        RoundCorner {
+            id: topLeftCorner
+            visible: false
+            implicitSize: dropContainer._cornerRadius
+            color: Appearance.colors.colLayer0
+            corner: RoundCorner.CornerEnum.BottomRight
+            anchors.right: parent.left
+            anchors.top: parent.top
+        }
+
+        RoundCorner {
+            id: topRightCorner
+            visible: false
+            implicitSize: dropContainer._cornerRadius
+            color: Appearance.colors.colLayer0
+            corner: RoundCorner.CornerEnum.BottomLeft
+            anchors.left: parent.right
+            anchors.top: parent.top
+        }
+
+        // barBottom variant: corners at the BOTTOM edge (drop grows upward)
+        RoundCorner {
+            id: bottomLeftCorner
+            visible: dropContainer._showCorners && root.barBottom
+            implicitSize: dropContainer._cornerRadius
+            color: Appearance.colors.colLayer0
+            corner: RoundCorner.CornerEnum.TopRight
+            extendHorizontal: true
+            extendVertical: true
+            anchors.right: parent.left
+            anchors.bottom: parent.bottom
+        }
+
+        RoundCorner {
+            id: bottomRightCorner
+            visible: dropContainer._showCorners && root.barBottom
+            implicitSize: dropContainer._cornerRadius
+            color: Appearance.colors.colLayer0
+            corner: RoundCorner.CornerEnum.TopLeft
+            extendHorizontal: true
+            extendVertical: true
+            anchors.left: parent.right
+            anchors.bottom: parent.bottom
         }
 
         // ── Content (clipped to growing height) ──────────────────────────────
@@ -296,5 +372,104 @@ Item {
         }
     }
 
+    Loader { // Classic overview
+        id: overviewLoader
+        anchors.top: dropContainer.bottom
+        anchors.topMargin: 10
+        anchors.horizontalCenter: parent.horizontalCenter
+        active: root.isWidgetActive && !root.isScrollingLayout
+        visible: opacity > 0.01
+
+        opacity: root.isOverviewVisible ? 1.0 : 0.0
+        transform: Translate {
+            y: root.isOverviewVisible ? 0 : 30
+            Behavior on y {
+                NumberAnimation {
+                    duration: root.isOverviewVisible ? root._animDurationOpen : root._animDurationClose
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
+                }
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: root.isOverviewVisible ? root._animDurationOpen : 60
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
+            }
+        }
+
+        sourceComponent: OverviewWidget {
+            panelWindow: root.panelWindow
+            monitorIndex: root.monitorIndex
+        }
+    }
+
+    Loader { // Scrolling overview
+        id: scrollingOverviewLoader
+        anchors.top: dropContainer.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        active: root.isWidgetActive && root.isScrollingLayout
+        visible: opacity > 0.01
+
+        opacity: root.isOverviewVisible ? 1.0 : 0.0
+        transform: Translate {
+            y: root.isOverviewVisible ? 0 : 30
+            Behavior on y {
+                NumberAnimation {
+                    duration: root.isOverviewVisible ? root._animDurationOpen : root._animDurationClose
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
+                }
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: root.isOverviewVisible ? root._animDurationOpen : 120
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
+            }
+        }
+
+        sourceComponent: ScrollingOverviewWidget {
+            anchors.fill: parent
+            panelWindow: root.panelWindow
+            monitorIndex: root.monitorIndex
+        }
+    }
+
     readonly property var maskItem: dropContainer
+
+    function _updateBlurExclusion() {
+        var active = root.isOpen && dropContainer.width > 0 && dropContainer.height > 0;
+        var sx = dropContainer.x;
+        var sy = dropContainer.y;
+        var sw = dropContainer.width;
+        var sh = dropContainer.height;
+
+        // When the drop fills the screen (overview visible), no exclusion needed
+        if (root.isOverviewVisible) {
+            active = false;
+        }
+
+        if (GlobalStates.searchDropActive !== active
+            || GlobalStates.searchDropExclusionX !== sx
+            || GlobalStates.searchDropExclusionY !== sy
+            || GlobalStates.searchDropExclusionWidth !== sw
+            || GlobalStates.searchDropExclusionHeight !== sh) {
+            GlobalStates.searchDropActive = active;
+            GlobalStates.searchDropExclusionX = sx;
+            GlobalStates.searchDropExclusionY = sy;
+            GlobalStates.searchDropExclusionWidth = sw;
+            GlobalStates.searchDropExclusionHeight = sh;
+        }
+    }
+
+    onIsOpenChanged: Qt.callLater(_updateBlurExclusion)
+    onIsOverviewVisibleChanged: Qt.callLater(_updateBlurExclusion)
+    Component.onCompleted: Qt.callLater(_updateBlurExclusion)
 }

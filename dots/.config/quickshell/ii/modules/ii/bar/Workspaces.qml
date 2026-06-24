@@ -76,11 +76,14 @@ Item {
     }
     readonly property int workspaceGroup: {
         let activeId = monitor?.activeWorkspace?.id;
-        if (!activeId) return 0;
-        if (activeId <= workspaceOffset) return 0;
+        if (!activeId)
+            return 0;
+        if (activeId <= workspaceOffset)
+            return 0;
         if (useWorkspaceMap && workspaceMap.length > monitorIndex + 1) {
             let nextMonitorStart = workspaceMap[monitorIndex + 1];
-            if (activeId > nextMonitorStart) return 0;
+            if (activeId > nextMonitorStart)
+                return 0;
         }
         let group = Math.floor((activeId - workspaceOffset - 1) / workspacesShown);
         return Math.max(0, group);
@@ -88,7 +91,8 @@ Item {
     property list<bool> workspaceOccupied: []
     property int workspaceIndexInGroup: {
         let activeId = monitor?.activeWorkspace?.id;
-        if (!activeId) return -1;
+        if (!activeId)
+            return -1;
         let startWs = workspaceOffset + workspaceGroup * workspacesShown + 1;
         let endWs = workspaceOffset + (workspaceGroup + 1) * workspacesShown;
         if (activeId >= startWs && activeId <= endWs) {
@@ -735,7 +739,7 @@ Item {
                                         ColorOverlay {
                                             anchors.fill: desaturatedIcon
                                             source: desaturatedIcon
-                                            color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.6)
+                                            color: ColorUtils.transparentize(Appearance.colors.colPrimary, Config.options.appearance.iconTintPercentage)
                                         }
                                     }
                                 }

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import qs
 import qs.services
@@ -25,34 +26,56 @@ RowLayout {
         }
     }
 
-    signal navigateUp()
-    signal navigateDown()
-    signal navigateLeft()
-    signal navigateRight()
-    signal activate()
-    signal deleteSelected()
-    signal ctrlKPressed()
+    signal navigateUp
+    signal navigateDown
+    signal navigateLeft
+    signal navigateRight
+    signal activate
+    signal deleteSelected
+    signal ctrlKPressed
 
     function forceFocus() {
         searchInput.forceActiveFocus();
     }
 
-    enum SearchPrefixType { Action, App, Clipboard, Emojis, Math, ShellCommand, WebSearch, WindowSearch, FileBrowser, Translator, DefaultSearch }
+    enum SearchPrefixType {
+        Action,
+        App,
+        Clipboard,
+        Emojis,
+        Math,
+        ShellCommand,
+        WebSearch,
+        WindowSearch,
+        FileBrowser,
+        Translator,
+        DefaultSearch
+    }
 
     property var searchPrefixType: {
-        if (root.searchingText.startsWith(Config.options.search.prefix.action)) return SearchBar.SearchPrefixType.Action;
-        if (root.searchingText.startsWith(Config.options.search.prefix.app) || (Config.options.search.alwaysListApps && root.searchingText === "")) return SearchBar.SearchPrefixType.App;
-        if (root.searchingText.startsWith(Config.options.search.prefix.clipboard)) return SearchBar.SearchPrefixType.Clipboard;
-        if (root.searchingText.startsWith(Config.options.search.prefix.emojis)) return SearchBar.SearchPrefixType.Emojis;
-        if (root.searchingText.startsWith(Config.options.search.prefix.math)) return SearchBar.SearchPrefixType.Math;
-        if (root.searchingText.startsWith(Config.options.search.prefix.shellCommand)) return SearchBar.SearchPrefixType.ShellCommand;
-        if (root.searchingText.startsWith(Config.options.search.prefix.webSearch)) return SearchBar.SearchPrefixType.WebSearch;
-        if (root.searchingText.startsWith(Config.options.search.prefix.windowSearch)) return SearchBar.SearchPrefixType.WindowSearch;
-        if (root.searchingText.startsWith(Config.options.search.prefix.fileBrowser)) return SearchBar.SearchPrefixType.FileBrowser;
-        if (root.searchingText.startsWith(Config.options.search.prefix.translator)) return SearchBar.SearchPrefixType.Translator;
+        if (root.searchingText.startsWith(Config.options.search.prefix.action))
+            return SearchBar.SearchPrefixType.Action;
+        if (root.searchingText.startsWith(Config.options.search.prefix.app) || (Config.options.search.alwaysListApps && root.searchingText === ""))
+            return SearchBar.SearchPrefixType.App;
+        if (root.searchingText.startsWith(Config.options.search.prefix.clipboard))
+            return SearchBar.SearchPrefixType.Clipboard;
+        if (root.searchingText.startsWith(Config.options.search.prefix.emojis))
+            return SearchBar.SearchPrefixType.Emojis;
+        if (root.searchingText.startsWith(Config.options.search.prefix.math))
+            return SearchBar.SearchPrefixType.Math;
+        if (root.searchingText.startsWith(Config.options.search.prefix.shellCommand))
+            return SearchBar.SearchPrefixType.ShellCommand;
+        if (root.searchingText.startsWith(Config.options.search.prefix.webSearch))
+            return SearchBar.SearchPrefixType.WebSearch;
+        if (root.searchingText.startsWith(Config.options.search.prefix.windowSearch))
+            return SearchBar.SearchPrefixType.WindowSearch;
+        if (root.searchingText.startsWith(Config.options.search.prefix.fileBrowser))
+            return SearchBar.SearchPrefixType.FileBrowser;
+        if (root.searchingText.startsWith(Config.options.search.prefix.translator))
+            return SearchBar.SearchPrefixType.Translator;
         return SearchBar.SearchPrefixType.DefaultSearch;
     }
-    
+
     MaterialShapeWrappedMaterialSymbol {
         id: searchIcon
         Layout.alignment: Qt.AlignVCenter
@@ -66,18 +89,29 @@ RowLayout {
         property bool _initialized: false
 
         readonly property real symmetryAngle: {
-            switch(searchIcon._prefixType) {
-                case SearchBar.SearchPrefixType.Action: return 180;        // Pill
-                case SearchBar.SearchPrefixType.App: return 90;            // Clover4Leaf
-                case SearchBar.SearchPrefixType.Clipboard: return 90;      // Gem
-                case SearchBar.SearchPrefixType.Emojis: return 45;         // Sunny
-                case SearchBar.SearchPrefixType.Math: return 90;           // PuffyDiamond
-                case SearchBar.SearchPrefixType.ShellCommand: return 90;   // PixelCircle
-                case SearchBar.SearchPrefixType.WebSearch: return 45;      // SoftBurst
-                case SearchBar.SearchPrefixType.WindowSearch: return 360;  // Arch
-                case SearchBar.SearchPrefixType.FileBrowser: return 90;    // Square
-                case SearchBar.SearchPrefixType.Translator: return 60;     // Cookie6Sided
-                default: return 360 / 7;                                   // Cookie7Sided
+            switch (searchIcon._prefixType) {
+            case SearchBar.SearchPrefixType.Action:
+                return 180;        // Pill
+            case SearchBar.SearchPrefixType.App:
+                return 90;            // Clover4Leaf
+            case SearchBar.SearchPrefixType.Clipboard:
+                return 90;      // Gem
+            case SearchBar.SearchPrefixType.Emojis:
+                return 45;         // Sunny
+            case SearchBar.SearchPrefixType.Math:
+                return 90;           // PuffyDiamond
+            case SearchBar.SearchPrefixType.ShellCommand:
+                return 90;   // PixelCircle
+            case SearchBar.SearchPrefixType.WebSearch:
+                return 45;      // SoftBurst
+            case SearchBar.SearchPrefixType.WindowSearch:
+                return 360;  // Arch
+            case SearchBar.SearchPrefixType.FileBrowser:
+                return 90;    // Square
+            case SearchBar.SearchPrefixType.Translator:
+                return 60;     // Cookie6Sided
+            default:
+                return 360 / 7;                                   // Cookie7Sided
             }
         }
 
@@ -165,71 +199,85 @@ RowLayout {
             }
         }
 
-        shape: switch(searchIcon._prefixType) {
-            case SearchBar.SearchPrefixType.Action: return MaterialShape.Shape.Pill;
-            case SearchBar.SearchPrefixType.App: return MaterialShape.Shape.Clover4Leaf;
-            case SearchBar.SearchPrefixType.Clipboard: return MaterialShape.Shape.Gem;
-            case SearchBar.SearchPrefixType.Emojis: return MaterialShape.Shape.Sunny;
-            case SearchBar.SearchPrefixType.Math: return MaterialShape.Shape.PuffyDiamond;
-            case SearchBar.SearchPrefixType.ShellCommand: return MaterialShape.Shape.PixelCircle;
-            case SearchBar.SearchPrefixType.WebSearch: return MaterialShape.Shape.SoftBurst;
-            case SearchBar.SearchPrefixType.WindowSearch: return MaterialShape.Shape.Arch;
-            case SearchBar.SearchPrefixType.FileBrowser: return MaterialShape.Shape.Square;
-            case SearchBar.SearchPrefixType.Translator: return MaterialShape.Shape.Cookie6Sided;
-            default: return MaterialShape.Shape.Cookie7Sided;
+        shape: switch (searchIcon._prefixType) {
+        case SearchBar.SearchPrefixType.Action:
+            return MaterialShape.Shape.Pill;
+        case SearchBar.SearchPrefixType.App:
+            return MaterialShape.Shape.Clover4Leaf;
+        case SearchBar.SearchPrefixType.Clipboard:
+            return MaterialShape.Shape.Gem;
+        case SearchBar.SearchPrefixType.Emojis:
+            return MaterialShape.Shape.Sunny;
+        case SearchBar.SearchPrefixType.Math:
+            return MaterialShape.Shape.PuffyDiamond;
+        case SearchBar.SearchPrefixType.ShellCommand:
+            return MaterialShape.Shape.PixelCircle;
+        case SearchBar.SearchPrefixType.WebSearch:
+            return MaterialShape.Shape.SoftBurst;
+        case SearchBar.SearchPrefixType.WindowSearch:
+            return MaterialShape.Shape.Arch;
+        case SearchBar.SearchPrefixType.FileBrowser:
+            return MaterialShape.Shape.Square;
+        case SearchBar.SearchPrefixType.Translator:
+            return MaterialShape.Shape.Cookie6Sided;
+        default:
+            return MaterialShape.Shape.Cookie7Sided;
         }
         text: switch (searchIcon._prefixType) {
-            case SearchBar.SearchPrefixType.Action: return "settings_suggest";
-            case SearchBar.SearchPrefixType.App: return "apps";
-            case SearchBar.SearchPrefixType.Clipboard: return "content_paste_search";
-            case SearchBar.SearchPrefixType.Emojis: return "add_reaction";
-            case SearchBar.SearchPrefixType.Math: return "calculate";
-            case SearchBar.SearchPrefixType.ShellCommand: return "terminal";
-            case SearchBar.SearchPrefixType.WebSearch: return "travel_explore";
-            case SearchBar.SearchPrefixType.WindowSearch: return "select_window";
-            case SearchBar.SearchPrefixType.FileBrowser: return "folder_open";
-            case SearchBar.SearchPrefixType.Translator: return "translate";
-            case SearchBar.SearchPrefixType.DefaultSearch: return "search";
-            default: return "search";
+        case SearchBar.SearchPrefixType.Action:
+            return "settings_suggest";
+        case SearchBar.SearchPrefixType.App:
+            return "apps";
+        case SearchBar.SearchPrefixType.Clipboard:
+            return "content_paste_search";
+        case SearchBar.SearchPrefixType.Emojis:
+            return "add_reaction";
+        case SearchBar.SearchPrefixType.Math:
+            return "calculate";
+        case SearchBar.SearchPrefixType.ShellCommand:
+            return "terminal";
+        case SearchBar.SearchPrefixType.WebSearch:
+            return "travel_explore";
+        case SearchBar.SearchPrefixType.WindowSearch:
+            return "select_window";
+        case SearchBar.SearchPrefixType.FileBrowser:
+            return "folder_open";
+        case SearchBar.SearchPrefixType.Translator:
+            return "translate";
+        case SearchBar.SearchPrefixType.DefaultSearch:
+            return "search";
+        default:
+            return "search";
         }
     }
     ToolbarTextField { // Search box
         id: searchInput
         Layout.topMargin: 4
         Layout.bottomMargin: 4
-        Layout.rightMargin: 4
+        Layout.rightMargin: 0
         Layout.fillWidth: true
         implicitHeight: 40
-        implicitWidth: root.clipboardMode
-            ? root.clipboardWidth
-            : ((root.searchingText === "" && !Config.options.search.alwaysListApps) ? Appearance.sizes.searchWidthCollapsed : Appearance.sizes.searchWidth)
+        implicitWidth: root.clipboardMode ? root.clipboardWidth : ((root.searchingText === "" && !Config.options.search.alwaysListApps) ? Appearance.sizes.searchWidthCollapsed : Appearance.sizes.searchWidth)
         focus: GlobalStates.overviewOpen
         font.pixelSize: Appearance.font.pixelSize.small
         placeholderText: Translation.tr("Search, calculate or run")
 
         // Placeholder fades smoothly when text is entered or mode changes
-        placeholderTextColor: (root.searchingText === "" && !root.clipboardMode)
-            ? Appearance.colors.colSubtext
-            : Qt.rgba(
-                Appearance.colors.colSubtext.r,
-                Appearance.colors.colSubtext.g,
-                Appearance.colors.colSubtext.b,
-                0
-              )
+        placeholderTextColor: (root.searchingText === "" && !root.clipboardMode) ? Appearance.colors.colSubtext : Qt.rgba(Appearance.colors.colSubtext.r, Appearance.colors.colSubtext.g, Appearance.colors.colSubtext.b, 0)
 
         Behavior on placeholderTextColor {
             ColorAnimation {
-                duration: 250
+                duration: Appearance.animationCurves.expressiveEffectsDuration + 100
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                easing.bezierCurve: Appearance.animationCurves.expressiveEffects
             }
         }
 
         Behavior on implicitHeight {
             NumberAnimation {
-                duration: 250
+                duration: Appearance.animationCurves.expressiveEffectsDuration + 100
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                easing.bezierCurve: Appearance.animationCurves.expressiveEffects
             }
         }
 
@@ -285,17 +333,17 @@ RowLayout {
                     return;
                 }
             }
-             if (event.key === Qt.Key_Tab || (event.key === Qt.Key_Right && searchInput.cursorPosition === searchInput.text.length)) {
-                if (LauncherSearch.results.length === 0) return;
-                
+            if (event.key === Qt.Key_Tab) {
+                if (LauncherSearch.results.length === 0)
+                    return;
+
                 // Get the result at the active keyboard-navigated index
-                const activeIndex = (root.currentResultIndex >= 0 && root.currentResultIndex < LauncherSearch.results.length) 
-                    ? root.currentResultIndex 
-                    : 0;
+                const activeIndex = (root.currentResultIndex >= 0 && root.currentResultIndex < LauncherSearch.results.length) ? root.currentResultIndex : 0;
                 const activeResult = LauncherSearch.results[activeIndex];
-                if (!activeResult) return;
+                if (!activeResult)
+                    return;
                 const prefix = Config.options.search.prefix.fileBrowser;
-                
+
                 let newText = "";
                 if (activeResult.key && activeResult.key.startsWith("alias:") && (activeResult.type === Translation.tr("Folder Alias") || activeResult.verb === Translation.tr("Browse"))) {
                     const target = activeResult.comment || "";
@@ -310,7 +358,7 @@ RowLayout {
                 } else {
                     newText = activeResult.name;
                 }
-                
+
                 if (newText !== "") {
                     LauncherSearch.query = newText;
                     searchInput.text = newText;
@@ -319,5 +367,6 @@ RowLayout {
             }
         }
     }
+
 
 }

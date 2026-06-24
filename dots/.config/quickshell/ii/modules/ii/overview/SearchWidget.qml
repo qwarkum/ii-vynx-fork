@@ -34,48 +34,6 @@ Item {
 
     property int loadedResultsCount: 50
 
-    readonly property string artUrl: MprisController.artUrl || ""
-    readonly property bool isLocalArt: artUrl.startsWith("file://")
-    property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
-    property string artFilePath: `${artDownloadLocation}/${artFileName}`
-    property bool artDownloaded: false
-
-    readonly property string artSource: {
-        if (!artUrl)
-            return "";
-        if (isLocalArt)
-            return artUrl;
-        return artDownloaded ? Qt.resolvedUrl(artFilePath) : "";
-    }
-
-    onArtFilePathChanged: {
-        if (!artUrl || artUrl.length === 0) {
-            artDownloaded = false;
-            return;
-        }
-        if (isLocalArt) {
-            artDownloaded = true;
-            return;
-        }
-        artDownloader.targetFile = artUrl;
-        artDownloader.artFilePath = artFilePath;
-        artDownloader.artTempPath = artFilePath + ".tmp";
-        artDownloaded = false;
-        artDownloader.running = true;
-    }
-
-    Process {
-        id: artDownloader
-        property string targetFile: root.artUrl
-        property string artFilePath: root.artFilePath
-        property string artTempPath: root.artFilePath + ".tmp"
-        command: ["bash", "-c", `[ -f ${artFilePath} ] || (curl -4 -sSL '${targetFile}' -o '${artTempPath}' && mv '${artTempPath}' '${artFilePath}')`]
-        onExited: {
-            artDownloaded = true;
-        }
-    }
-
     function getFilteredResultsCount() {
         const results = LauncherSearch.results;
         const q = LauncherSearch.query.trim().toLowerCase();
@@ -104,9 +62,6 @@ Item {
     readonly property bool alwaysListAppsMode: Config.options.search.alwaysListApps && !root.isAnySpecialMode
     property bool showResults: searchingText != "" || isAnySpecialMode || alwaysListAppsMode || (searchingText === "" && LauncherSearch.results.length > 0)
     property string overviewPosition: Config.options.overview?.position ?? ""
-    property bool isNowPlayingFocused: false
-    readonly property alias nowPlayingBubble: nowPlayingFloatingBubble
-
     Connections {
         target: GlobalStates
         function onOverviewOpenChanged() {
@@ -123,7 +78,6 @@ Item {
                     });
                 }
             } else {
-                root.isNowPlayingFocused = false;
                 resultsDebounce.stop();
             }
         }
@@ -183,19 +137,6 @@ Item {
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Left) {
-            if (nowPlayingFloatingBubble.bubbleActive) {
-                if (searchBar.searchInput.activeFocus && searchBar.searchInput.cursorPosition > 0) {
-                    // Let cursor move left in input
-                    return;
-                }
-                root.isNowPlayingFocused = true;
-                nowPlayingFloatingBubble.forceActiveFocus();
-                event.accepted = true;
-                return;
-            }
-        }
-
         if (event.key === Qt.Key_K && (event.modifiers & Qt.ControlModifier)) {
             if (appResults.visible) {
                 root.requestToggleActions();
@@ -280,7 +221,7 @@ Item {
             else if (root.isTranslatorMode)
                 baseW = Config.options.search.clipboard.panelWidth ?? 860;
             else
-                baseW = gridLayout.implicitWidth;
+                baseW = Math.max(Config.options.search.baseWidth, gridLayout.implicitWidth);
 
             if (GlobalStates.searchConnectActive)
                 return baseW + 48;
@@ -302,7 +243,7 @@ Item {
         Behavior on implicitWidth {
             id: searchWidthBehavior
             NumberAnimation {
-                duration: 250
+                duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
             }
@@ -311,7 +252,7 @@ Item {
         Behavior on implicitHeight {
             id: searchHeightBehavior
             NumberAnimation {
-                duration: 250
+                duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
             }
@@ -332,7 +273,7 @@ Item {
                 property real verticalPadding: 4
                 Layout.fillWidth: true
                 Layout.leftMargin: 10
-                Layout.rightMargin: 4
+                Layout.rightMargin: 10
                 Layout.topMargin: verticalPadding
                 Layout.bottomMargin: verticalPadding
                 Layout.row: root.overviewPosition == "bottom" ? 1 : 0
@@ -433,7 +374,7 @@ Item {
                     // while the user is still typing rapidly
                     enabled: !resultsDebounce.running
                     NumberAnimation {
-                        duration: 250
+                        duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }
@@ -446,9 +387,9 @@ Item {
                     opacity: root.showSkeletons ? 0.0 : 1.0
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: 250
+                            duration: Appearance.animationCurves.expressiveEffectsDuration
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                            easing.bezierCurve: Appearance.animationCurves.expressiveEffects
                         }
                     }
                     clip: true
@@ -458,21 +399,41 @@ Item {
                     KeyNavigation.up: searchBar
                     highlightMoveDuration: 100
 
-                    layer.enabled: true
+                    layer.enabled: root.searchingText != "" && appResults.count > 0
                     layer.effect: OpacityMask {
                         maskSource: Item {
                             id: maskRoot
                             width: appResults.width
                             height: appResults.height
 
-                            property color topFadeColor: !appResults.atYBeginning ? "transparent" : "white"
-                            property color bottomFadeColor: !appResults.atYEnd ? "transparent" : "white"
+                            property color topFadeColor: {
+                                if (appResults.currentItem) {
+                                    const visY = appResults.currentItem.y - appResults.contentY;
+                                    if (visY <= appResults.topMargin + 36) return "white";
+                                }
+                                return appResults.atYBeginning ? "white" : "transparent";
+                            }
+                            property color bottomFadeColor: {
+                                if (appResults.currentItem) {
+                                    const visBottom = appResults.currentItem.y - appResults.contentY + appResults.currentItem.height;
+                                    if (visBottom >= appResults.height - appResults.bottomMargin - 36) return "white";
+                                }
+                                return appResults.atYEnd ? "white" : "transparent";
+                            }
 
                             Behavior on topFadeColor {
-                                ColorAnimation { duration: 250; easing.type: Easing.BezierSpline; easing.bezierCurve: Appearance.animationCurves.emphasizedDecel }
+                                ColorAnimation {
+                                    duration: 250
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                                }
                             }
                             Behavior on bottomFadeColor {
-                                ColorAnimation { duration: 250; easing.type: Easing.BezierSpline; easing.bezierCurve: Appearance.animationCurves.emphasizedDecel }
+                                ColorAnimation {
+                                    duration: 250
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                                }
                             }
 
                             Column {
@@ -481,27 +442,39 @@ Item {
 
                                 Rectangle {
                                     width: parent.width
-                                    height: Math.min(36, parent.height / 2)
+                                    height: Math.min(46, parent.height / 2)
                                     color: "transparent"
                                     gradient: Gradient {
-                                        GradientStop { position: 0.0; color: maskRoot.topFadeColor }
-                                        GradientStop { position: 1.0; color: "white" }
+                                        GradientStop {
+                                            position: 0.0
+                                            color: maskRoot.topFadeColor
+                                        }
+                                        GradientStop {
+                                            position: 1.0
+                                            color: "white"
+                                        }
                                     }
                                 }
 
                                 Rectangle {
                                     width: parent.width
-                                    height: Math.max(0, parent.height - Math.min(36, parent.height / 2) * 2)
+                                    height: Math.max(0, parent.height - Math.min(46, parent.height / 2) - Math.min(56, parent.height / 2))
                                     color: "white"
                                 }
 
                                 Rectangle {
                                     width: parent.width
-                                    height: Math.min(36, parent.height / 2)
+                                    height: Math.min(56, parent.height / 2)
                                     color: "transparent"
                                     gradient: Gradient {
-                                        GradientStop { position: 0.0; color: "white" }
-                                        GradientStop { position: 1.0; color: maskRoot.bottomFadeColor }
+                                        GradientStop {
+                                            position: 0.0
+                                            color: "white"
+                                        }
+                                        GradientStop {
+                                            position: 1.0
+                                            color: maskRoot.bottomFadeColor
+                                        }
                                     }
                                 }
                             }
@@ -826,171 +799,4 @@ Item {
             }
         }
     }
-
-    // Now Playing Floating Bubble (Expressive Spinning Vinyl)
-    Rectangle {
-        id: nowPlayingFloatingBubble
-
-        readonly property bool bubbleActive: (root.alwaysListAppsMode || root.searchingText !== "") && MprisController.activePlayer !== null
-
-        anchors.right: searchWidgetContent.left
-        anchors.rightMargin: -10
-        y: searchWidgetContent.y + searchBar.y + (searchBar.height - height) / 2
-
-        width: bubbleActive ? 96 : 0
-        height: 48
-        radius: 24
-        visible: width > 0
-        clip: true
-
-        color: root.isNowPlayingFocused ? Appearance.colors.colSurfaceContainerHigh : Appearance.colors.colBackgroundSurfaceContainer
-
-        border.width: 0
-
-        focus: root.isNowPlayingFocused
-        activeFocusOnTab: false
-
-        Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(nowPlayingFloatingBubble)
-        }
-
-        Behavior on width {
-            NumberAnimation {
-                duration: 050
-                easing.type: GlobalStates.overviewOpen ? Easing.OutCubic : Easing.InOutCubic
-            }
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 6
-            spacing: 6
-            opacity: nowPlayingFloatingBubble.width >= 80 ? 1.0 : 0.0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 150
-                }
-            }
-
-            // Album art circle (Expressive Spinning Vinyl)
-            Rectangle {
-                id: artContainer
-                Layout.preferredWidth: 36
-                Layout.preferredHeight: 36
-                radius: 18
-                color: Appearance.colors.colSurfaceContainerHighest
-
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: artContainer.width
-                        height: artContainer.height
-                        radius: artContainer.radius
-                    }
-                }
-
-                Image {
-                    id: albumArtImage
-                    anchors.fill: parent
-                    source: root.artSource
-                    fillMode: Image.PreserveAspectCrop
-                    visible: root.artSource !== ""
-
-                    property real currentRotation: 0
-                    property real targetSpeed: MprisController.isPlaying ? 30 : 0
-                    property real currentSpeed: 0
-                    property var lastTime: 0
-
-                    Behavior on currentSpeed {
-                        NumberAnimation {
-                            duration: 2000
-                            easing.type: Easing.OutQuad
-                        }
-                    }
-
-                    Timer {
-                        id: spinTimer
-                        interval: 16
-                        repeat: true
-                        running: MprisController.isPlaying || albumArtImage.currentSpeed > 0.1
-                        onTriggered: {
-                            let now = Date.now();
-                            if (albumArtImage.lastTime > 0) {
-                                let dt = (now - albumArtImage.lastTime) / 1000.0;
-                                albumArtImage.currentRotation = (albumArtImage.currentRotation + albumArtImage.currentSpeed * dt) % 360;
-                            }
-                            albumArtImage.lastTime = now;
-                        }
-                        onRunningChanged: {
-                            if (running) {
-                                albumArtImage.lastTime = Date.now();
-                            } else {
-                                albumArtImage.lastTime = 0;
-                            }
-                        }
-                    }
-
-                    rotation: currentRotation
-                }
-
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: "music_note"
-                    iconSize: 18
-                    color: Appearance.colors.colOnSurfaceVariant
-                    visible: root.artSource === ""
-                }
-            }
-
-            // Play/pause button inside dynamic MaterialShape
-            MaterialShape {
-                id: playPauseShape
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: 36
-                Layout.preferredHeight: 36
-                shape: root.isNowPlayingFocused ? MaterialShape.Shape.Cookie4Sided : MaterialShape.Shape.Cookie7Sided
-                color: root.isNowPlayingFocused ? Appearance.colors.colPrimary : Appearance.colors.colSurfaceContainerHighest
-
-                Behavior on color {
-                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(playPauseShape)
-                }
-
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: MprisController.isPlaying ? "pause" : "play_arrow"
-                    iconSize: 18
-                    color: root.isNowPlayingFocused ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurfaceVariant
-                    fill: root.isNowPlayingFocused ? 1 : 0
-                    Behavior on fill {
-                        NumberAnimation {
-                            duration: 200
-                        }
-                    }
-                }
-            }
-        }
-
-        PointingHandInteraction {
-            id: bubbleMouseArea
-            anchors.fill: parent
-            onClicked: {
-                root.isNowPlayingFocused = true;
-                nowPlayingFloatingBubble.forceActiveFocus();
-                MprisController.togglePlaying();
-            }
-        }
-
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Right || event.key === Qt.Key_Escape) {
-                root.isNowPlayingFocused = false;
-                searchBar.forceFocus();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                MprisController.togglePlaying();
-                event.accepted = true;
-            }
-        }
-    }
-
 }

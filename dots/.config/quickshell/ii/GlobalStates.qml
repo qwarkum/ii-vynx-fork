@@ -52,6 +52,11 @@ Singleton {
     property string activeRightSidebarMonitor: ""
     property string activeSearchMonitor: ""
     property string activeSearchQuery: ""
+    property bool searchDropActive: false
+    property real searchDropExclusionX: 0
+    property real searchDropExclusionY: 0
+    property real searchDropExclusionWidth: 0
+    property real searchDropExclusionHeight: 0
     property bool policiesExtended: false
     property bool policiesPinned: false
     property bool policiesDetached: false

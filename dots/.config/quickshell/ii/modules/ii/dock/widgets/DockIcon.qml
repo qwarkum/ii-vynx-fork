@@ -24,16 +24,19 @@ Item {
     // Detect if the icon is truly from the active system theme dynamically
     readonly property bool isThemedIcon: {
         const path = iconPath.toString();
-        
+
         // 1. If it's a generic fallback or missing icon, it's NOT themed
-        if (path.includes("image-missing") || path.includes("application-x-executable") || path.includes("application-octet-stream")) return false;
-        
+        if (path.includes("image-missing") || path.includes("application-x-executable") || path.includes("application-octet-stream"))
+            return false;
+
         // 2. If it's in a known fallback directory, it's NOT themed
-        if (path.includes("/hicolor/") || path.includes("/pixmaps/")) return false;
-        
+        if (path.includes("/hicolor/") || path.includes("/pixmaps/"))
+            return false;
+
         // 3. Dynamic check: if the path contains "Mkos-Big-Sur" (the known active theme)
         // This is more reliable as themed icons for this pack are stored in that specific path.
-        if (path.includes("Mkos-Big-Sur")) return true;
+        if (path.includes("Mkos-Big-Sur"))
+            return true;
 
         return false;
     }
@@ -49,7 +52,9 @@ Item {
         color: Appearance.colors.colPrimaryContainer
 
         Behavior on color {
-            ColorAnimation { duration: 200 }
+            ColorAnimation {
+                duration: 200
+            }
         }
     }
 
@@ -103,7 +108,7 @@ Item {
             ColorOverlay {
                 anchors.fill: parent
                 source: monoDesat
-                color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.6)
+                color: ColorUtils.transparentize(Appearance.colors.colPrimary, Config.options.appearance.iconTintPercentage)
             }
         }
     }
