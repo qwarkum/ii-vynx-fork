@@ -1101,6 +1101,7 @@ Singleton {
                         property bool multiline: true
                     }
                 }
+                property bool showNowPlayingBubble: true
                 property string connectStyle: "connect"  // Search rendered as embedded drop in Connect Mode
                 property int baseWidth: 500
             }

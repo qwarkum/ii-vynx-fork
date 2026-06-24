@@ -100,6 +100,18 @@ ContentPage {
                 }
             }
 
+            ConfigSwitch {
+                buttonIcon: "music_note"
+                text: Translation.tr("Show now playing media bubble")
+                checked: Config.options.search.showNowPlayingBubble
+                onCheckedChanged: {
+                    Config.options.search.showNowPlayingBubble = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Shows a floating media player bubble in the search launcher when media is playing")
+                }
+            }
+
             ConfigSlider {
                 buttonIcon: "search"
                 text: Translation.tr("Search base width (px)")

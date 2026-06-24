@@ -40,7 +40,7 @@ Item {
         let count = 0;
         for (let i = 0; i < results.length; i++) {
             const item = results[i];
-            if (item && (!(Config.options.search.alwaysListApps || q !== "") || item.key !== "mpris:now-playing"))
+            if (item && (!(Config.options.search.alwaysListApps || q !== "" || !Config.options.search.showNowPlayingBubble) || item.key !== "mpris:now-playing"))
                 count++;
         }
         return count;
@@ -125,7 +125,7 @@ Item {
 
     function processResults(results) {
         const q = LauncherSearch.query.trim().toLowerCase();
-        const excludeMpris = Config.options.search.alwaysListApps || q !== "";
+        const excludeMpris = Config.options.search.alwaysListApps || q !== "" || !Config.options.search.showNowPlayingBubble;
         const out = [];
         const limit = root.loadedResultsCount;
         for (let i = 0; i < results.length && out.length < limit; i++) {
