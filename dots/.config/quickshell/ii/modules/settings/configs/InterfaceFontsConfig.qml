@@ -243,7 +243,7 @@ ContentPage {
                 text: Translation.tr("Applies monochrome tint to workspaces icons. Turn on show workspace icons to see this")
             }
         }
-        
+
         ConfigSlider {
             buttonIcon: "humidity_percentage"
             text: Translation.tr("Tint percentage")
