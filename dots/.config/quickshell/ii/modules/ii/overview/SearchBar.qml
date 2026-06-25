@@ -117,7 +117,7 @@ RowLayout {
 
         Behavior on rotation {
             NumberAnimation {
-                duration: 200
+                duration: Appearance.animation.elementMoveFast.duration
                 easing.type: Easing.OutBack
             }
         }
@@ -267,7 +267,7 @@ RowLayout {
 
         Behavior on placeholderTextColor {
             ColorAnimation {
-                duration: Appearance.animationCurves.expressiveEffectsDuration + 100
+                duration: Appearance.animation.elementMoveFast.duration + Math.round(100 * Appearance.animMultiplier)
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.expressiveEffects
             }
@@ -275,7 +275,7 @@ RowLayout {
 
         Behavior on implicitHeight {
             NumberAnimation {
-                duration: Appearance.animationCurves.expressiveEffectsDuration + 100
+                duration: Appearance.animation.elementMoveFast.duration + Math.round(100 * Appearance.animMultiplier)
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.expressiveEffects
             }

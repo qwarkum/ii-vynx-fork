@@ -135,8 +135,8 @@ Item {
     // ── Shared animation spec ────────────────────────────────────────────────
     // Open:  emphasizedDecel [0.05,0.7,0.1,1] — fast-start, slow-settle (EaseOut).
     // Close: same curve but shorter — panel snaps shut quickly then eases out.
-    readonly property int _animDurationOpen: 450
-    readonly property int _animDurationClose: 280
+    readonly property int _animDurationOpen: Math.round(450 * Appearance.animMultiplier)
+    readonly property int _animDurationClose: Math.round(280 * Appearance.animMultiplier)
     readonly property var _openBezier: Appearance.animationCurves.emphasizedDecel
     readonly property var _closeBezier: Appearance.animationCurves.emphasizedDecel
 
@@ -394,7 +394,7 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: root.isOverviewVisible ? root._animDurationOpen : 60
+                duration: root.isOverviewVisible ? root._animDurationOpen : Math.round(60 * Appearance.animMultiplier)
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
             }
@@ -429,7 +429,7 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: root.isOverviewVisible ? root._animDurationOpen : 120
+                duration: root.isOverviewVisible ? root._animDurationOpen : Math.round(120 * Appearance.animMultiplier)
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: root.isOverviewVisible ? root._openBezier : root._closeBezier
             }
@@ -451,21 +451,22 @@ Item {
         var sw = dropContainer.width;
         var sh = dropContainer.height;
 
-        // When the drop fills the screen (overview visible), no exclusion needed
-        if (root.isOverviewVisible) {
-            active = false;
-        }
-
+        const topR = dropNotch.topRadius;
+        const bottomR = dropNotch.bottomRadius;
         if (GlobalStates.searchDropActive !== active
             || GlobalStates.searchDropExclusionX !== sx
             || GlobalStates.searchDropExclusionY !== sy
             || GlobalStates.searchDropExclusionWidth !== sw
-            || GlobalStates.searchDropExclusionHeight !== sh) {
+            || GlobalStates.searchDropExclusionHeight !== sh
+            || GlobalStates.searchDropTopRadius !== topR
+            || GlobalStates.searchDropBottomRadius !== bottomR) {
             GlobalStates.searchDropActive = active;
             GlobalStates.searchDropExclusionX = sx;
             GlobalStates.searchDropExclusionY = sy;
             GlobalStates.searchDropExclusionWidth = sw;
             GlobalStates.searchDropExclusionHeight = sh;
+            GlobalStates.searchDropTopRadius = topR;
+            GlobalStates.searchDropBottomRadius = bottomR;
         }
     }
 

@@ -304,6 +304,7 @@ Singleton {
                     property string accentColor: ""
                 }
                 property list<string> customColorSchemes: []
+                property real animationMultiplier: 1.0 // 0.25 = fast, 1.0 = default, 2.0 = slow
                 property bool colorfulScrollbar: false
                 property bool scrollAnimations: true
                 property bool scrollFadeMask: false

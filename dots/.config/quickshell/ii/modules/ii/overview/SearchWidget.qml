@@ -243,7 +243,7 @@ Item {
         Behavior on implicitWidth {
             id: searchWidthBehavior
             NumberAnimation {
-                duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
+                duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
             }
@@ -252,7 +252,7 @@ Item {
         Behavior on implicitHeight {
             id: searchHeightBehavior
             NumberAnimation {
-                duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
+                duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
             }
@@ -374,7 +374,7 @@ Item {
                     // while the user is still typing rapidly
                     enabled: !resultsDebounce.running
                     NumberAnimation {
-                        duration: Appearance.animationCurves.expressiveDefaultSpatialDuration
+                        duration: Appearance.animation.elementMove.duration
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }
@@ -387,7 +387,7 @@ Item {
                     opacity: root.showSkeletons ? 0.0 : 1.0
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: Appearance.animationCurves.expressiveEffectsDuration
+                            duration: Appearance.animation.elementMoveFast.duration
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: Appearance.animationCurves.expressiveEffects
                         }
@@ -423,14 +423,14 @@ Item {
 
                             Behavior on topFadeColor {
                                 ColorAnimation {
-                                    duration: 250
+                                    duration: Appearance.animation.elementMoveFast.duration
                                     easing.type: Easing.BezierSpline
                                     easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
                             }
                             Behavior on bottomFadeColor {
                                 ColorAnimation {
-                                    duration: 250
+                                    duration: Appearance.animation.elementMoveFast.duration
                                     easing.type: Easing.BezierSpline
                                     easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                                 }
@@ -640,7 +640,7 @@ Item {
                     opacity: root.showSkeletons ? 1.0 : 0.0
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: 250
+                            duration: Appearance.animation.elementMoveFast.duration
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                         }
@@ -723,7 +723,7 @@ Item {
                 opacity: root.isClipboardMode ? 1.0 : 0.0
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 250
+                        duration: Appearance.animation.elementMoveFast.duration
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }
@@ -748,7 +748,7 @@ Item {
                 opacity: root.isBluetoothMode ? 1.0 : 0.0
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 250
+                        duration: Appearance.animation.elementMoveFast.duration
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }
@@ -773,7 +773,7 @@ Item {
                 opacity: root.isTranslatorMode ? 1.0 : 0.0
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 250
+                        duration: Appearance.animation.elementMoveFast.duration
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
                     }

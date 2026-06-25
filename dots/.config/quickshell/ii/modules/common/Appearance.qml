@@ -409,6 +409,9 @@ Singleton {
         }
     }
 
+    // Global animation speed multiplier — driven by Config.options.appearance.animationMultiplier
+    readonly property real animMultiplier: Config.options?.appearance?.animationMultiplier ?? 1.0
+
     animationCurves: QtObject {
         readonly property list<real> expressiveFastSpatial: [0.42, 1.67, 0.21, 0.90, 1, 1] // Default, 350ms
         readonly property list<real> expressiveDefaultSpatial: [0.38, 1.21, 0.22, 1.00, 1, 1] // Default, 500ms
@@ -430,7 +433,7 @@ Singleton {
 
     animation: QtObject {
         property QtObject elementMove: QtObject {
-            property int duration: animationCurves.expressiveDefaultSpatialDuration
+            property int duration: Math.round(animationCurves.expressiveDefaultSpatialDuration * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveDefaultSpatial
             property int velocity: 650
@@ -444,7 +447,7 @@ Singleton {
         }
 
         property QtObject elementMoveSmall: QtObject {
-            property int duration: animationCurves.expressiveFastSpatialDuration
+            property int duration: Math.round(animationCurves.expressiveFastSpatialDuration * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveFastSpatial
             property int velocity: 650
@@ -458,7 +461,7 @@ Singleton {
         }
 
         property QtObject elementMoveEnter: QtObject {
-            property int duration: 400
+            property int duration: Math.round(400 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasizedDecel
             property int velocity: 650
@@ -473,7 +476,7 @@ Singleton {
         }
 
         property QtObject elementMoveExit: QtObject {
-            property int duration: 200
+            property int duration: Math.round(200 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasizedAccel
             property int velocity: 650
@@ -488,7 +491,7 @@ Singleton {
         }
 
         property QtObject elementMoveSlow: QtObject {
-            property int duration: animationCurves.expressiveEffectsDuration * 2.5
+            property int duration: Math.round(animationCurves.expressiveEffectsDuration * 2.5 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveEffects
             property int velocity: 850
@@ -510,7 +513,7 @@ Singleton {
         }
 
         property QtObject elementMoveFast: QtObject {
-            property int duration: animationCurves.expressiveEffectsDuration
+            property int duration: Math.round(animationCurves.expressiveEffectsDuration * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveEffects
             property int velocity: 850
@@ -532,7 +535,7 @@ Singleton {
         }
 
         property QtObject elementResize: QtObject {
-            property int duration: 300
+            property int duration: Math.round(300 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasized
             property int velocity: 650
@@ -547,7 +550,7 @@ Singleton {
         }
 
         property QtObject clickBounce: QtObject {
-            property int duration: 400
+            property int duration: Math.round(400 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveDefaultSpatial
             property int velocity: 850
@@ -562,13 +565,13 @@ Singleton {
         }
 
         property QtObject scroll: QtObject {
-            property int duration: 200
+            property int duration: Math.round(200 * root.animMultiplier)
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: root.animationCurves.standardDecel
         }
 
         property QtObject menuDecel: QtObject {
-            property int duration: 350
+            property int duration: Math.round(350 * root.animMultiplier)
             property int type: Easing.OutExpo
         }
     }

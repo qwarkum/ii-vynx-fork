@@ -887,74 +887,112 @@ Scope {
             readonly property int wbTop: Math.max(baseMargin, (barEffective && !barVertical && !barBottom) ? barSize : 0)
             readonly property int wbBottom: Math.max(baseMargin, (barEffective && !barVertical && barBottom) ? barSize : 0)
 
-            // Search drop exclusion: merge exclusion region into the mask
-            // to prevent compositor blur from covering the SearchDrop.
-            readonly property real _sx: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionX : overlayDimRect.x + overlayDimRect.width + 1
-            readonly property real _sy: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionY : overlayDimRect.y + overlayDimRect.height + 1
-            readonly property real _sw: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionWidth : 0
-            readonly property real _sh: GlobalStates.searchDropActive ? GlobalStates.searchDropExclusionHeight : 0
-
-            // Mask region items — invisible, purely geometric for the mask
-            Item {
-                id: dimMaskLeft
-                x: overlayDimRect.x
-                y: overlayDimRect.y
-                width: Math.max(0, _sx - overlayDimRect.x)
-                height: overlayDimRect.height
-                visible: false
-            }
-            Item {
-                id: dimMaskRight
-                x: Math.max(overlayDimRect.x, _sx + _sw)
-                y: overlayDimRect.y
-                width: Math.max(0, overlayDimRect.x + overlayDimRect.width - Math.max(overlayDimRect.x, _sx + _sw))
-                height: overlayDimRect.height
-                visible: false
-            }
-            Item {
-                id: dimMaskBottom
-                x: overlayDimRect.x
-                y: Math.max(overlayDimRect.y, _sy + _sh)
-                width: overlayDimRect.width
-                height: Math.max(0, overlayDimRect.y + overlayDimRect.height - Math.max(overlayDimRect.y, _sy + _sh))
-                visible: false
-            }
-
-            mask: Region {
-                regions: [
-                    Region { item: dimMaskLeft },
-                    Region { item: dimMaskRight },
-                    Region { item: dimMaskBottom }
-                ]
-            }
 
             readonly property bool animEnabled: Config.options.background.zoomOutEnabled
             readonly property bool isMirroredStyle: Config.options.background.zoomOutStyle === 1
-            readonly property bool isActive: animEnabled && isMirroredStyle && (GlobalStates.cheatsheetOpen || GlobalStates.overviewOpen) && (Hyprland.focusedMonitor?.name == Hyprland.monitorFor(modelData)?.name)
+            readonly property bool isActive: animEnabled && isMirroredStyle && (GlobalStates.cheatsheetOpen || GlobalStates.overviewOpen) && !GlobalStates.searchConnectActive && (Hyprland.focusedMonitor?.name == Hyprland.monitorFor(modelData)?.name)
 
-            visible: isActive || overlayDimRect.opacity > 0.01
+            // SearchDrop exclusion geometry (in PanelWindow coordinates)
+            readonly property bool hasExclusion: GlobalStates.searchDropActive
+            readonly property real ex: hasExclusion ? GlobalStates.searchDropExclusionX : 0
+            readonly property real ey: hasExclusion ? GlobalStates.searchDropExclusionY : 0
+            readonly property real ew: hasExclusion ? GlobalStates.searchDropExclusionWidth : 0
+            readonly property real eh: hasExclusion ? GlobalStates.searchDropExclusionHeight : 0
+            readonly property real searchDropTopRadius: hasExclusion ? GlobalStates.searchDropTopRadius : 0
+            readonly property real searchDropBottomRadius: hasExclusion ? GlobalStates.searchDropBottomRadius : 0
 
-            // Performance: use a simple Rectangle for dimming
+            // Overlay dim bounds (same as before)
+            readonly property real dimX: wbLeft
+            readonly property real dimY: wbTop
+            readonly property real dimW: width - wbLeft - wbRight
+            readonly property real dimH: height - wbTop - wbBottom
+            readonly property real dimR: Config.options.appearance.fakeScreenRounding > 0 ? Appearance.rounding.screenRounding : 0
+
+            visible: isActive || dimTop.opacity > 0.01
+
+            readonly property real dimOpacity: isActive ? 1.0 : 0.0
+            readonly property color dimColor: Qt.rgba(0, 0, 0, 0.25)
+
+            // Top strip: full width, from dimY to top of SearchDrop (or full height if no exclusion).
+            // Only the screen-edge (top) corners are rounded; the drop-edge (bottom) corners stay
+            // square so the dim overlay flushes against the SearchDrop without leaving concave
+            // gaps that match the Notch's concave top corners.
             Rectangle {
-                id: overlayDimRect
-                x: blurOverlayWindow.wbLeft
-                y: blurOverlayWindow.wbTop
-                width: parent.width - blurOverlayWindow.wbLeft - blurOverlayWindow.wbRight
-                height: parent.height - blurOverlayWindow.wbTop - blurOverlayWindow.wbBottom
-                color: Qt.rgba(0, 0, 0, 0.25)
-                opacity: blurOverlayWindow.isActive ? 1.0 : 0.0
-                radius: {
-                    if (Config.options.appearance.fakeScreenRounding > 0)
-                        return Appearance.rounding.screenRounding;
-                    return 0;
-                }
+                id: dimTop
+                x: blurOverlayWindow.dimX
+                y: blurOverlayWindow.dimY
+                width: blurOverlayWindow.dimW
+                height: blurOverlayWindow.hasExclusion
+                    ? Math.max(0, blurOverlayWindow.ey - blurOverlayWindow.dimY)
+                    : blurOverlayWindow.dimH
+                color: blurOverlayWindow.dimColor
+                topLeftRadius: blurOverlayWindow.dimR
+                topRightRadius: blurOverlayWindow.dimR
+                bottomLeftRadius: blurOverlayWindow.hasExclusion ? 0 : blurOverlayWindow.dimR
+                bottomRightRadius: blurOverlayWindow.hasExclusion ? 0 : blurOverlayWindow.dimR
+                opacity: blurOverlayWindow.dimOpacity
+                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
 
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutCubic
-                    }
-                }
+            // Bottom strip: full width, from bottom of SearchDrop to dimY+dimH.
+            // Only the screen-edge (bottom) corners are rounded; the drop-edge (top) corners stay
+            // square so the dim overlay flushes against the SearchDrop without leaving convex
+            // gaps that match the Notch's convex bottom corners.
+            Rectangle {
+                id: dimBottom
+                visible: blurOverlayWindow.hasExclusion
+                x: blurOverlayWindow.dimX
+                y: blurOverlayWindow.ey + blurOverlayWindow.eh
+                width: blurOverlayWindow.dimW
+                height: Math.max(0, blurOverlayWindow.dimY + blurOverlayWindow.dimH - (blurOverlayWindow.ey + blurOverlayWindow.eh))
+                color: blurOverlayWindow.dimColor
+                topLeftRadius: 0
+                topRightRadius: 0
+                bottomLeftRadius: blurOverlayWindow.dimR
+                bottomRightRadius: blurOverlayWindow.dimR
+                opacity: blurOverlayWindow.dimOpacity
+                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
+
+            // Left strip: from top of SearchDrop to its bottom, left of SearchDrop
+            Rectangle {
+                id: dimLeft
+                visible: blurOverlayWindow.hasExclusion
+                x: blurOverlayWindow.dimX
+                y: blurOverlayWindow.ey
+                width: Math.max(0, blurOverlayWindow.ex - blurOverlayWindow.dimX)
+                height: blurOverlayWindow.eh
+                color: blurOverlayWindow.dimColor
+                opacity: blurOverlayWindow.dimOpacity
+                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
+
+            // Right strip: from top of SearchDrop to its bottom, right of SearchDrop
+            Rectangle {
+                id: dimRight
+                visible: blurOverlayWindow.hasExclusion
+                x: blurOverlayWindow.ex + blurOverlayWindow.ew
+                y: blurOverlayWindow.ey
+                width: Math.max(0, blurOverlayWindow.dimX + blurOverlayWindow.dimW - (blurOverlayWindow.ex + blurOverlayWindow.ew))
+                height: blurOverlayWindow.eh
+                color: blurOverlayWindow.dimColor
+                opacity: blurOverlayWindow.dimOpacity
+                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
+
+            // Concave / convex corner fillers for the Notch silhouette.
+            // The rectangular exclusion above leaves the "negative" areas of the
+            // SearchDrop's concave top corners and convex bottom corners uncovered.
+            // These RoundCorners paint dimColor into those quadrants so the blur+dim
+            // overlay flushes against the actual Notch shape instead of leaving gaps.
+            Item {
+                visible: blurOverlayWindow.hasExclusion
+                x: 0
+                y: 0
+                width: blurOverlayWindow.width
+                height: blurOverlayWindow.height
+
+
             }
         }
     }

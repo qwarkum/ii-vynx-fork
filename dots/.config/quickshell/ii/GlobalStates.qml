@@ -57,6 +57,8 @@ Singleton {
     property real searchDropExclusionY: 0
     property real searchDropExclusionWidth: 0
     property real searchDropExclusionHeight: 0
+    property real searchDropTopRadius: 0
+    property real searchDropBottomRadius: 0
     property bool policiesExtended: false
     property bool policiesPinned: false
     property bool policiesDetached: false
