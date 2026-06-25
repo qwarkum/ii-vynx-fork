@@ -430,6 +430,7 @@ Singleton {
                         property real y: 100
                     }
                 }
+                property bool scaleLargeWallpapers: true
                 property bool animateWallpaperChanges: true
                 property bool zoomOutEnabled: true  // master toggle for zoom-out animations
                 property bool windowZoomOnOverview: false // fake window scale-out during overview (GNOME-like)

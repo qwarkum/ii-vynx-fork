@@ -199,12 +199,16 @@ Scope {
                         bgRoot.wallpaperWidth = width;
                         bgRoot.wallpaperHeight = height;
 
-                        if (width <= screenWidth || height <= screenHeight) {
-                            // Undersized/perfectly sized wallpapers
-                            bgRoot.effectiveWallpaperScale = Math.max(screenWidth / width, screenHeight / height);
+                        if (Config.options.background.scaleLargeWallpapers) {
+                            if (width <= screenWidth || height <= screenHeight) {
+                                // Undersized/perfectly sized wallpapers
+                                bgRoot.effectiveWallpaperScale = Math.max(screenWidth / width, screenHeight / height);
+                            } else {
+                                // Oversized = can be zoomed for parallax, yay
+                                bgRoot.effectiveWallpaperScale = Math.min(bgRoot.preferredWallpaperScale, width / screenWidth, height / screenHeight);
+                            }
                         } else {
-                            // Oversized = can be zoomed for parallax, yay
-                            bgRoot.effectiveWallpaperScale = Math.min(bgRoot.preferredWallpaperScale, width / screenWidth, height / screenHeight);
+                            bgRoot.effectiveWallpaperScale = 1.0;
                         }
                     }
                 }
@@ -513,7 +517,7 @@ Scope {
 
                                 visible: opacity > 0 && !bgRoot.wallpaperIsVideo
                                 opacity: (wallpaper.status === Image.Ready && !bgRoot.wallpaperIsVideo) ? 1 : 0
-                                sourceSize: Qt.size(bgRoot.screen.width > 0 ? Math.round(bgRoot.screen.width * bgRoot.preferredWallpaperScale) : 1920, bgRoot.screen.height > 0 ? Math.round(bgRoot.screen.height * bgRoot.preferredWallpaperScale) : 1080)
+                                sourceSize: Config.options.background.scaleLargeWallpapers ? Qt.size(bgRoot.screen.width > 0 ? Math.round(bgRoot.screen.width * bgRoot.preferredWallpaperScale) : 1920, bgRoot.screen.height > 0 ? Math.round(bgRoot.screen.height * bgRoot.preferredWallpaperScale) : 1080) : Qt.size(-1, -1)
 
                                 property int chunkSize: bgRoot.chunkSize
                                 property int lower: Math.floor(bgRoot.firstWorkspaceId / chunkSize) * chunkSize

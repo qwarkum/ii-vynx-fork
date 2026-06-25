@@ -192,6 +192,23 @@ ContentPage {
     }
 
     ContentSection {
+        title: Translation.tr("Wallpaper settings")
+        icon: "wallpaper"
+
+        ConfigSwitch {
+            buttonIcon: "photo_size_select_large"
+            text: Translation.tr("Smooth wallpapers")
+            checked: Config.options.background.scaleLargeWallpapers
+            onCheckedChanged: {
+                Config.options.background.scaleLargeWallpapers = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Reduces the resolution of wallpapers larger than the screen to save memory. Disabling i you can have some jagged edges on the wallpaper.")
+            }
+        }
+    }
+
+    ContentSection {
         title: Translation.tr("Media Mode Background")
         icon: "music_note"
 
