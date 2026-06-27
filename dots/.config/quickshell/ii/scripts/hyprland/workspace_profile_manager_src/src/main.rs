@@ -700,7 +700,14 @@ fn cmd_restore(slug: &str) {
 
 fn cmd_delete(slug: &str) {
     let path = profiles_dir().join(format!("{}.json", slug));
-    fs::remove_file(path).ok();
+    if path.exists() {
+        match fs::remove_file(path) {
+            Ok(_) => println!("ok"),
+            Err(e) => eprintln!("[error] Failed to delete file: {}", e),
+        }
+    } else {
+        println!("ok"); // missing_ok=True equivalent
+    }
 }
 
 fn cmd_update_window(slug: &str, idx_str: &str, autolaunch_str: &str, launch_cmd: &str) {

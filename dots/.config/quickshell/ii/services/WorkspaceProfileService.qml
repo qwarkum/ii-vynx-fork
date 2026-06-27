@@ -12,7 +12,7 @@ import qs.modules.common
  * Manages per-file workspace profiles stored in
  * ~/.config/illogical-impulse/workspace_profiles/<slug>.json
  *
- * Each public function delegates to workspace_profile_manager.py.
+ * Each public function delegates to the workspace_profile_manager Rust binary.
  */
 Singleton {
     id: root
@@ -23,12 +23,30 @@ Singleton {
     property bool restoring: false
     property string restoringSlug: ""
 
+    // Expose a public busy state when any process is active
+    readonly property bool busy: (
+        listProc.running ||
+        snapshotProc.running ||
+        restoreProc.running ||
+        deleteProc.running ||
+        renameProc.running ||
+        updateEmojiProc.running ||
+        updateDescProc.running ||
+        updateWindowProc.running ||
+        updateProfileProc.running ||
+        addWindowProc.running ||
+        deleteWindowProc.running ||
+        updateWindowWorkspaceProc.running ||
+        togglePinProc.running
+    )
+
     // ── signals ─────────────────────────────────────────────────────────────
     signal snapshotFinished(bool success, string slug)
     signal restoreStarted(string profileName)
     signal restoreFinished(bool success, int errors)
     signal renameFinished(bool success, string newSlug)
     signal updateDescriptionFinished(bool success)
+    signal updateEmojiFinished(bool success)
     signal deleteFinished(bool success)
 
     // ── paths ────────────────────────────────────────────────────────────────
@@ -42,6 +60,7 @@ Singleton {
     }
 
     function snapshot(name, emoji, description, windowOverrides) {
+        if (root.busy) return;
         const meta = JSON.stringify({
             name,
             emoji:          emoji       || "🗂️",
@@ -53,7 +72,7 @@ Singleton {
     }
 
     function restoreProfile(slug) {
-        if (root.restoring) return;
+        if (root.busy) return;
         
         // Find the name for the signal
         for (let i = 0; i < root.profilesModel.count; i++) {
@@ -69,26 +88,31 @@ Singleton {
     }
 
     function deleteProfile(slug) {
+        if (root.busy) return;
         deleteProc.command = [root.scriptPath, "delete", slug];
         deleteProc.running = true;
     }
 
     function renameProfile(oldSlug, newName) {
+        if (root.busy) return;
         renameProc.command = [root.scriptPath, "rename", oldSlug, newName];
         renameProc.running = true;
     }
 
     function updateEmoji(slug, newEmoji) {
+        if (root.busy) return;
         updateEmojiProc.command = [root.scriptPath, "update_emoji", slug, newEmoji];
         updateEmojiProc.running = true;
     }
 
     function updateDescription(slug, newDescription) {
-        updateDescProc.command = [scriptPath, "update_description", slug, newDescription];
+        if (root.busy) return;
+        updateDescProc.command = [root.scriptPath, "update_description", slug, newDescription];
         updateDescProc.running = true;
     }
 
     function updateWindowOptions(slug, index, autolaunch, launchCmd) {
+        if (root.busy) return;
         updateWindowProc.command = [
             root.scriptPath, "update_window",
             slug, index.toString(), autolaunch ? "true" : "false", launchCmd || ""
@@ -97,6 +121,7 @@ Singleton {
     }
 
     function updateProfileOptions(slug, closeOthers, killOthers) {
+        if (root.busy) return;
         updateProfileProc.command = [
             root.scriptPath, "update_profile",
             slug, closeOthers ? "true" : "false", killOthers ? "true" : "false"
@@ -104,7 +129,9 @@ Singleton {
         updateProfileProc.running = true;
     }
 
+    // addWindow handles inserting a new window config helper
     function addWindow(slug, className, workspace, autolaunch, launchCmd) {
+        if (root.busy) return;
         addWindowProc.command = [
             root.scriptPath, "add_window",
             slug, className, workspace.toString(), autolaunch ? "true" : "false", launchCmd || ""
@@ -112,7 +139,9 @@ Singleton {
         addWindowProc.running = true;
     }
 
+    // deleteWindow deletes a specific window config helper
     function deleteWindow(slug, index) {
+        if (root.busy) return;
         deleteWindowProc.command = [
             root.scriptPath, "delete_window",
             slug, index.toString()
@@ -120,7 +149,9 @@ Singleton {
         deleteWindowProc.running = true;
     }
 
+    // updateWindowWorkspace updates a window's workspace destination
     function updateWindowWorkspace(slug, index, workspace) {
+        if (root.busy) return;
         updateWindowWorkspaceProc.command = [
             root.scriptPath, "update_window_workspace",
             slug, index.toString(), workspace.toString()
@@ -128,7 +159,9 @@ Singleton {
         updateWindowWorkspaceProc.running = true;
     }
 
+    // togglePin toggles pinned state for the profile
     function togglePin(slug) {
+        if (root.busy) return;
         togglePinProc.command = [
             root.scriptPath, "toggle_pin",
             slug
@@ -187,6 +220,13 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: listStderr
+            onStreamFinished: {
+                const err = listStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] list error:", err);
+            }
+        }
     }
 
     // snapshot
@@ -202,6 +242,13 @@ Singleton {
                 } else {
                     root.snapshotFinished(false, "");
                 }
+            }
+        }
+        stderr: StdioCollector {
+            id: snapshotStderr
+            onStreamFinished: {
+                const err = snapshotStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] snapshot error:", err);
             }
         }
     }
@@ -224,15 +271,32 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: restoreStderr
+            onStreamFinished: {
+                const err = restoreStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] restore error:", err);
+            }
+        }
     }
 
-    // delete — always treat completion as success (script uses missing_ok=True)
+    // delete
     Process {
         id: deleteProc
-        onRunningChanged: {
-            if (!running) {
-                root.deleteFinished(true);
-                root.refresh();
+        stdout: StdioCollector {
+            id: deleteCollector
+            onStreamFinished: {
+                const out = deleteCollector.text.trim();
+                const ok = (out === "ok");
+                root.deleteFinished(ok);
+                if (ok) root.refresh();
+            }
+        }
+        stderr: StdioCollector {
+            id: deleteStderr
+            onStreamFinished: {
+                const err = deleteStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] delete error:", err);
             }
         }
     }
@@ -249,6 +313,13 @@ Singleton {
                 if (ok) root.refresh();
             }
         }
+        stderr: StdioCollector {
+            id: renameStderr
+            onStreamFinished: {
+                const err = renameStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] rename error:", err);
+            }
+        }
     }
 
     // update emoji
@@ -258,13 +329,23 @@ Singleton {
             id: updateEmojiCollector
             onStreamFinished: {
                 const out = updateEmojiCollector.text.trim();
-                if (out === "ok") {
+                const ok = (out === "ok");
+                if (ok) {
                     root.refresh();
                 }
+                root.updateEmojiFinished(ok);
+            }
+        }
+        stderr: StdioCollector {
+            id: updateEmojiStderr
+            onStreamFinished: {
+                const err = updateEmojiStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] update emoji error:", err);
             }
         }
     }
 
+    // update description
     Process {
         id: updateDescProc
         stdout: StdioCollector {
@@ -278,8 +359,16 @@ Singleton {
                 root.updateDescriptionFinished(ok);
             }
         }
+        stderr: StdioCollector {
+            id: updateDescStderr
+            onStreamFinished: {
+                const err = updateDescStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] update description error:", err);
+            }
+        }
     }
 
+    // update window
     Process {
         id: updateWindowProc
         stdout: StdioCollector {
@@ -291,8 +380,16 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: updateWindowStderr
+            onStreamFinished: {
+                const err = updateWindowStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] update window error:", err);
+            }
+        }
     }
 
+    // update profile
     Process {
         id: updateProfileProc
         stdout: StdioCollector {
@@ -304,8 +401,16 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: updateProfileStderr
+            onStreamFinished: {
+                const err = updateProfileStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] update profile error:", err);
+            }
+        }
     }
 
+    // add window
     Process {
         id: addWindowProc
         stdout: StdioCollector {
@@ -317,8 +422,16 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: addWindowStderr
+            onStreamFinished: {
+                const err = addWindowStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] add window error:", err);
+            }
+        }
     }
 
+    // delete window
     Process {
         id: deleteWindowProc
         stdout: StdioCollector {
@@ -330,8 +443,16 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: deleteWindowStderr
+            onStreamFinished: {
+                const err = deleteWindowStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] delete window error:", err);
+            }
+        }
     }
 
+    // update window workspace
     Process {
         id: updateWindowWorkspaceProc
         stdout: StdioCollector {
@@ -343,7 +464,16 @@ Singleton {
                 }
             }
         }
+        stderr: StdioCollector {
+            id: updateWindowWorkspaceStderr
+            onStreamFinished: {
+                const err = updateWindowWorkspaceStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] update window workspace error:", err);
+            }
+        }
     }
+
+    // toggle pin
     Process {
         id: togglePinProc
         stdout: StdioCollector {
@@ -353,6 +483,13 @@ Singleton {
                 if (out === "ok") {
                     root.refresh();
                 }
+            }
+        }
+        stderr: StdioCollector {
+            id: togglePinStderr
+            onStreamFinished: {
+                const err = togglePinStderr.text.trim();
+                if (err) console.warn("[WorkspaceProfileService] toggle pin error:", err);
             }
         }
     }
