@@ -313,7 +313,8 @@ Item {
                         visible: root.showNewForm
                         radius: Appearance.rounding.large
                         color: Appearance.colors.colLayer4
-                        border { width: 1; color: Appearance.colors.colOutlineVariant }
+                        border.width: Config.options.appearance.borderless ? 0 : 1
+                        border.color: Appearance.colors.colOutlineVariant
                         clip: true
 
                         implicitHeight: formCardLayout.implicitHeight + 32

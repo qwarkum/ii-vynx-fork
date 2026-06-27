@@ -31,9 +31,18 @@ Item {
     required property bool   pinned
 
     // ── internal state ──────────────────────────────────────────────────────
-    property bool isRestoring:   WorkspaceProfileService.restoring && WorkspaceProfileService.restoringSlug === root.slug
+    property bool isRestoring:   false
     property bool restoreSuccess: false
     property bool restorePartial: false
+
+    Connections {
+        target: WorkspaceProfileService
+        function onRestoringChanged() { root.updateRestoring() }
+        function onRestoringSlugChanged() { root.updateRestoring() }
+    }
+    function updateRestoring() {
+        root.isRestoring = WorkspaceProfileService.restoring && WorkspaceProfileService.restoringSlug === root.slug;
+    }
 
     property string shortcutHint: ""
     property bool showDeleteConfirm: false
@@ -77,27 +86,23 @@ Item {
     // Height driven by content
     implicitHeight: cardBg.implicitHeight
 
-    // ── shape cycling — derived from slug hash so no model index needed ──────
-    readonly property var cardShapes: ["Circle", "Cookie9Sided", "Flower"]
-    readonly property string cardShape: {
+    function _slugHash() {
         var h = 0;
         for (var i = 0; i < root.slug.length; i++) {
             h = (h * 31 + root.slug.charCodeAt(i)) & 0xFFFF;
         }
-        return cardShapes[h % cardShapes.length];
-    }
-    // stagger delay derived from same hash (0–3 steps of 45 ms)
-    readonly property int staggerDelay: {
-        var h = 0;
-        for (var i = 0; i < root.slug.length; i++) {
-            h = (h * 31 + root.slug.charCodeAt(i)) & 0xFFFF;
-        }
-        return (h % 4) * 45;
+        return h;
     }
 
+    // ── shape cycling — derived from slug hash so no model index needed ──────
+    readonly property var cardShapes: ["Circle", "Cookie9Sided", "Flower"]
+    readonly property string cardShape: cardShapes[_slugHash() % cardShapes.length]
+    // stagger delay derived from same hash (0–3 steps of 45 ms)
+    readonly property int staggerDelay: (_slugHash() % 4) * 45
+
     // ── colours (from M3 tokens) ─────────────────────────────────────────────
-    readonly property color colBg:          Appearance.colors.colLayer4
-    readonly property color colBgHover:     Appearance.colors.colSurfaceContainerHigh
+    readonly property color colBg:          Appearance.colors.colLayer1Base
+    readonly property color colBgHover:     Appearance.colors.colLayer1Hover
     readonly property color colBorder:      Appearance.colors.colOutlineVariant
     readonly property color colOnSurface:   Appearance.colors.colOnSurface
     readonly property color colSubtle:      Appearance.colors.colOnSurfaceVariant
@@ -138,7 +143,10 @@ Item {
     // ── staggered entrance animation ─────────────────────────────────────────
     opacity: 0.0
     scale: 0.97
-    Component.onCompleted: entranceDelayTimer.start()
+    Component.onCompleted: {
+        entranceDelayTimer.start();
+        root.updateRestoring();
+    }
 
     Timer {
         id: entranceDelayTimer
@@ -149,17 +157,17 @@ Item {
         id: entranceOpacity
         target: root; property: "opacity"
         from: 0.0; to: 1.0
-        duration: 320
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+        duration: Appearance.animation.elementMoveEnter.duration
+        easing.type: Appearance.animation.elementMoveEnter.type
+        easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
     }
     NumberAnimation {
         id: entranceScale
         target: root; property: "scale"
         from: 0.97; to: 1.0
-        duration: 320
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+        duration: Appearance.animation.elementMoveEnter.duration
+        easing.type: Appearance.animation.elementMoveEnter.type
+        easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
     }
 
     // ── card background ───────────────────────────────────────────────────────
@@ -168,7 +176,8 @@ Item {
         anchors { left: parent.left; right: parent.right; top: parent.top }
         radius: Appearance.rounding.large
         color: hoverHandler.hovered ? root.colBgHover : root.colBg
-        border { width: 1; color: root.colBorder }
+        border.width: Config.options.appearance.borderless ? 0 : 1
+        border.color: root.colBorder
         implicitHeight: cardLayout.implicitHeight + 36
         clip: true
 
@@ -429,9 +438,9 @@ Item {
                         scale: toggled ? 1.15 : 1.0
                         Behavior on scale {
                             NumberAnimation {
-                                duration: 150
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                                duration: Appearance.animation.elementMoveFast.duration
+                                easing.type: Appearance.animation.elementMoveFast.type
+                                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                             }
                         }
 
@@ -508,9 +517,9 @@ Item {
                         scale: chipHover.hovered ? 1.07 : 1.0
                         Behavior on scale {
                             NumberAnimation {
-                                duration: 150
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                                duration: Appearance.animation.elementMoveFast.duration
+                                easing.type: Appearance.animation.elementMoveFast.type
+                                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                             }
                         }
 
@@ -651,13 +660,13 @@ Item {
                         rotation: root.expanded ? 180 : 0
                         Behavior on rotation {
                             NumberAnimation {
-                                duration: 280
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                                duration: Appearance.animation.elementResize.duration
+                                easing.type: Appearance.animation.elementResize.type
+                                easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
                             }
                         }
                         Behavior on color {
-                            ColorAnimation { duration: 150 }
+                            ColorAnimation { duration: Appearance.animation.elementMoveFast.duration }
                         }
                     }
                 }
@@ -715,7 +724,13 @@ Item {
                     spacing: 6
                     visible: root.restoreSuccess || root.restorePartial
                     opacity: visible ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Appearance.animation.elementMoveFast.duration
+                            easing.type: Appearance.animation.elementMoveFast.type
+                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                        }
+                    }
 
                     MaterialSymbol {
                         text: root.restoreSuccess ? "check_circle" : "warning"
@@ -769,13 +784,17 @@ Item {
 
                 Behavior on implicitHeight {
                     NumberAnimation {
-                        duration: 380
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                        duration: Appearance.animation.elementResize.duration
+                        easing.type: Appearance.animation.elementResize.type
+                        easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
                     }
                 }
                 Behavior on opacity {
-                    NumberAnimation { duration: 220 }
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
                 }
 
                 ColumnLayout {
@@ -1238,14 +1257,7 @@ Item {
         return classes;
     }
 
-    function getDefaultLaunchCmd(cls) {
-        if (!cls) return "command";
-        let name = cls.toLowerCase();
-        if (name === "brave-browser" || name === "brave") return "brave";
-        if (name === "google-chrome" || name === "chrome") return "google-chrome-stable";
-        if (name === "navigator" || name === "firefox-esr") return "firefox";
-        return cls;
-    }
+
 
     function _dateString(epoch) {
         const d = new Date(epoch * 1000);
