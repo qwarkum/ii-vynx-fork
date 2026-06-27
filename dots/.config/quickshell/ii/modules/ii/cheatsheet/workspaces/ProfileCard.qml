@@ -7,6 +7,7 @@ import Quickshell
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
+import Qt5Compat.GraphicalEffects
 
 /**
  * ProfileCard — a single saved workspace profile displayed in CheatsheetWorkspaces.
@@ -114,8 +115,8 @@ Item {
     readonly property int staggerDelay: (_slugHash() % 4) * 45
 
     // ── colours (from M3 tokens) ─────────────────────────────────────────────
-    readonly property color colBg:          Appearance.colors.colLayer1Base
-    readonly property color colBgHover:     Appearance.colors.colLayer1Hover
+    readonly property color colBg:          Config.options.appearance.transparency.enable ? Appearance.colors.colLayer1 : Appearance.m3colors.m3surfaceContainerLow
+    readonly property color colBgHover:     Config.options.appearance.transparency.enable ? Appearance.colors.colLayer1Hover : Appearance.m3colors.m3surfaceContainer
     readonly property color colBorder:      Appearance.colors.colOutlineVariant
     readonly property color colOnSurface:   Appearance.colors.colOnSurface
     readonly property color colSubtle:      Appearance.colors.colOnSurfaceVariant
@@ -262,6 +263,7 @@ Item {
                 ColumnLayout {
                     visible: !root.isEditing
                     Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
                     spacing: 1
 
                     RowLayout {
@@ -290,10 +292,12 @@ Item {
                     }
 
                     StyledText {
-                        visible: root.createdAt > 0
-                        text: root.createdAt > 0 ? _dateString(root.createdAt) : ""
+                        visible: root.description.length > 0
+                        text: root.description
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: root.colSubtle
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
                     }
                 }
 
@@ -498,97 +502,174 @@ Item {
                 font.pixelSize: Appearance.font.pixelSize.small
             }
 
-            // ── description — quote-block style ──────────────────────────────
-            Item {
-                visible: root.description.length > 0 && !root.isEditing
-                Layout.fillWidth: true
-                implicitHeight: descText.implicitHeight + 10
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Appearance.rounding.small
-                    color: root.colPrimary
-                    opacity: 0.07
-                }
-                Rectangle {
-                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                    width: 3
-                    radius: Appearance.rounding.full
-                    color: root.colPrimary
-                    opacity: 0.55
-                }
-                StyledText {
-                    id: descText
-                    anchors {
-                        left: parent.left; right: parent.right
-                        verticalCenter: parent.verticalCenter
-                        leftMargin: 10; rightMargin: 6
-                    }
-                    text: root.description
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: root.colSubtle
-                    wrapMode: Text.WordWrap
-                }
-            }
 
             // ── workspace chips row + duplicate warning ───────────────────────
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
 
-                Repeater {
-                    model: root.workspaceIds
-                    delegate: Item {
-                        id: chipItem
-                        required property var modelData
+                // Container for horizontal scrolling of workspace chips
+                Item {
+                    id: chipsContainer
+                    Layout.fillWidth: true
+                    implicitHeight: 36
+                    clip: true
 
-                        implicitWidth: chipRect.implicitWidth
-                        implicitHeight: chipRect.implicitHeight
+                    Flickable {
+                        id: chipsFlickable
+                        anchors.fill: parent
+                        contentWidth: chipsRow.implicitWidth
+                        contentHeight: 36
+                        boundsBehavior: Flickable.StopAtBounds
+                        flickableDirection: Flickable.HorizontalFlick
+                        clip: true
 
-                        HoverHandler { id: chipHover }
+                        onMovementStarted: scrollAnim.stop()
 
-                        scale: chipHover.hovered ? 1.07 : 1.0
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: Appearance.animation.elementMoveFast.duration
-                                easing.type: Appearance.animation.elementMoveFast.type
-                                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                        readonly property bool showLeftFade: contentX > 5
+                        readonly property bool showRightFade: contentWidth > width && contentX < contentWidth - width - 5
+
+                        property color leftFadeColor: showLeftFade ? "transparent" : "white"
+                        property color rightFadeColor: showRightFade ? "transparent" : "white"
+
+                        Behavior on leftFadeColor { ColorAnimation { duration: 150 } }
+                        Behavior on rightFadeColor { ColorAnimation { duration: 150 } }
+
+                        layer.enabled: chipsFlickable.contentWidth > chipsFlickable.width
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: chipsFlickable.width
+                                height: chipsFlickable.height
+                                gradient: Gradient {
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: 0.0; color: chipsFlickable.leftFadeColor }
+                                    GradientStop { position: Math.min(1.0, 72 / chipsFlickable.width); color: "white" }
+                                    GradientStop { position: Math.max(0, (chipsFlickable.width - 72) / chipsFlickable.width); color: "white" }
+                                    GradientStop { position: 1.0; color: chipsFlickable.rightFadeColor }
+                                }
                             }
                         }
 
-                        Rectangle {
-                            id: chipRect
-                            radius: Appearance.rounding.full
-                            color: root.colChipBg
-                            implicitWidth: chipRow.implicitWidth + 16
-                            implicitHeight: 36
+                        Row {
+                            id: chipsRow
+                            spacing: 6
+                            height: parent.height
 
-                            RowLayout {
-                                id: chipRow
-                                anchors.centerIn: parent
-                                spacing: 6
+                            Repeater {
+                                model: root.workspaceIds
+                                delegate: Item {
+                                    id: chipItem
+                                    required property var modelData
 
-                                Repeater {
-                                    model: root.getWorkspaceClasses(chipItem.modelData)
-                                    delegate: Image {
-                                        required property var modelData
-                                        sourceSize: Qt.size(16, 16)
-                                        source: {
-                                            const _ = TaskbarApps.iconThemeRevision;
-                                            return Quickshell.iconPath(AppSearch.guessIcon(modelData), "");
+                                    implicitWidth: chipRect.implicitWidth
+                                    implicitHeight: chipRect.implicitHeight
+
+                                    HoverHandler { id: chipHover }
+
+                                    scale: chipHover.hovered ? 1.03 : 1.0
+                                    Behavior on scale {
+                                        NumberAnimation {
+                                            duration: Appearance.animation.elementMoveFast.duration
+                                            easing.type: Appearance.animation.elementMoveFast.type
+                                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                                         }
-                                        visible: source.toString() !== "" && status !== Image.Error
-                                        smooth: true
+                                    }
+
+                                    Rectangle {
+                                        id: chipRect
+                                        radius: Appearance.rounding.full
+                                        color: root.colChipBg
+                                        implicitWidth: chipRow.implicitWidth + 16
+                                        implicitHeight: 36
+
+                                        RowLayout {
+                                            id: chipRow
+                                            anchors.centerIn: parent
+                                            spacing: 6
+
+                                            Repeater {
+                                                model: root.getWorkspaceClasses(chipItem.modelData)
+                                                delegate: Image {
+                                                    required property var modelData
+                                                    sourceSize: Qt.size(16, 16)
+                                                    source: {
+                                                        const _ = TaskbarApps.iconThemeRevision;
+                                                        return Quickshell.iconPath(AppSearch.guessIcon(modelData), "");
+                                                    }
+                                                    visible: source.toString() !== "" && status !== Image.Error
+                                                    smooth: true
+                                                }
+                                            }
+
+                                            StyledText {
+                                                id: chipLabel
+                                                text: root.getWorkspaceApps(chipItem.modelData)
+                                                font.pixelSize: Appearance.font.pixelSize.small
+                                                color: root.colChipText
+                                            }
+                                        }
                                     }
                                 }
-
-                                StyledText {
-                                    id: chipLabel
-                                    text: root.getWorkspaceApps(chipItem.modelData)
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: root.colChipText
-                                }
                             }
+                        }
+                    }
+
+                    NumberAnimation {
+                        id: scrollAnim
+                        target: chipsFlickable
+                        property: "contentX"
+                        duration: 250
+                        easing.type: Easing.OutCubic
+                    }
+
+                    RippleButton {
+                        id: scrollLeftBtn
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSecondaryContainer
+                        colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                        visible: chipsFlickable.contentWidth > chipsFlickable.width && chipsFlickable.contentX > 5
+
+                        onClicked: {
+                            scrollAnim.stop();
+                            scrollAnim.to = Math.max(chipsFlickable.contentX - 120, 0);
+                            scrollAnim.start();
+                        }
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "chevron_left"
+                            iconSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                    }
+
+                    RippleButton {
+                        id: scrollRightBtn
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSecondaryContainer
+                        colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                        visible: chipsFlickable.contentWidth > chipsFlickable.width && chipsFlickable.contentX < chipsFlickable.contentWidth - chipsFlickable.width - 5
+
+                        onClicked: {
+                            scrollAnim.stop();
+                            scrollAnim.to = Math.min(chipsFlickable.contentX + 120, chipsFlickable.contentWidth - chipsFlickable.width);
+                            scrollAnim.start();
+                        }
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "chevron_right"
+                            iconSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSecondaryContainer
                         }
                     }
                 }
@@ -636,8 +717,6 @@ Item {
                     }
                 }
 
-                Item { Layout.fillWidth: true }
-
                 // window count badge
                 Rectangle {
                     radius: Appearance.rounding.full
@@ -655,23 +734,7 @@ Item {
                     }
                 }
 
-                // age badge
-                Rectangle {
-                    visible: root.createdAt > 0
-                    radius: Appearance.rounding.full
-                    color: Appearance.colors.colLayer2
-                    implicitWidth: ageText.implicitWidth + 12
-                    implicitHeight: 24
-                    opacity: 0.85
 
-                    StyledText {
-                        id: ageText
-                        anchors.centerIn: parent
-                        text: root.createdAt > 0 ? _ageString(root.createdAt) : ""
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        color: root.colSubtle
-                    }
-                }
             }
 
             // ── restore button row ────────────────────────────────────────────

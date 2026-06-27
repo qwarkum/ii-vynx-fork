@@ -316,7 +316,7 @@ Item {
                         width: gridArea.cardWidth
                         visible: root.showNewForm || opacity > 0.0
                         radius: Appearance.rounding.large
-                        color: Appearance.colors.colLayer4
+                        color: Config.options.appearance.transparency.enable ? Appearance.colors.colLayer4 : Appearance.m3colors.m3surfaceContainer
                         border.width: Config.options.appearance.borderless ? 0 : 1
                         border.color: Appearance.colors.colOutlineVariant
                         clip: true
