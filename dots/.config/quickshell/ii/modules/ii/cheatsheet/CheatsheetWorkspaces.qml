@@ -192,6 +192,7 @@ Item {
                         readonly property real cardSpacing: 12
                         readonly property real cardWidth: (width - cardSpacing) / 2
                         property int visibleProfileCount: 0
+                        property int layoutVersion: 0
 
                         // ── masonry helpers ───────────────────────────────────────
 
@@ -224,6 +225,7 @@ Item {
                             }
                             var maxH = Math.max(heights[0], heights[1]);
                             gridArea.implicitHeight = (maxH > cardSpacing) ? maxH - cardSpacing : 0;
+                            gridArea.layoutVersion++;
                         }
 
                         function triggerLayout() {
@@ -261,6 +263,7 @@ Item {
 
                                 shortcutHint: {
                                     var _trigger = gridArea.visibleProfileCount;
+                                    var _trigger2 = gridArea.layoutVersion;
                                     if (!card.visible)
                                         return "";
                                     var count = 0;
