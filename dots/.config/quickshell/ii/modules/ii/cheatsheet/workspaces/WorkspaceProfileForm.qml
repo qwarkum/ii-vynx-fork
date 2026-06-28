@@ -424,6 +424,14 @@ Item {
                             radius: Appearance.rounding.large
                             implicitHeight: sec1Layout.implicitHeight + 32
 
+                            Behavior on implicitHeight {
+                                NumberAnimation {
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
+                            }
+
                             ColumnLayout {
                                 id: sec1Layout
                                 anchors {
@@ -454,8 +462,21 @@ Item {
 
                                 // Emoji Selector Field
                                 ColumnLayout {
+                                    id: emojiSelectorSection
                                     Layout.fillWidth: true
                                     spacing: 12
+
+                                    property string searchPattern: ""
+
+                                    readonly property var filteredEmojisList: {
+                                        const queryText = searchPattern.trim();
+                                        return Emojis.fuzzyQuery(queryText);
+                                    }
+
+                                    onSearchPatternChanged: {
+                                        emojiGridView.contentY = 0;
+                                    }
+
                                     StyledText {
                                         text: qsTr("Select Emoji")
                                         font.weight: Font.Bold
@@ -469,6 +490,7 @@ Item {
                                             shapeString: "Cookie9Sided"
                                             implicitSize: 56
                                             color: Appearance.colors.colPrimaryContainer
+                                            Layout.alignment: Qt.AlignTop
 
                                             StyledText {
                                                 anchors.centerIn: parent
@@ -477,37 +499,164 @@ Item {
                                             }
                                         }
 
-                                        Flow {
+                                        ColumnLayout {
                                             Layout.fillWidth: true
-                                            spacing: 6
+                                            spacing: 8
 
-                                            Repeater {
-                                                model: WorkspaceProfileService.presetEmojis
-                                                delegate: RippleButton {
-                                                    required property var modelData
-                                                    implicitWidth: 36
-                                                    implicitHeight: 36
-                                                    buttonRadius: Appearance.rounding.small
-                                                    toggled: root.editEmojiValue === modelData
-                                                    colBackgroundToggled: Appearance.colors.colPrimaryContainer
+                                            // Text Input for search (aligned to preview height: 56px)
+                                            Rectangle {
+                                                Layout.fillWidth: true
+                                                Layout.preferredHeight: 56
+                                                color: root.colFieldBg
+                                                radius: Appearance.rounding.small
+                                                antialiasing: true
 
-                                                    scale: toggled ? 1.15 : 1.0
-                                                    Behavior on scale {
-                                                        NumberAnimation {
-                                                            duration: 150
-                                                            easing.type: Easing.BezierSpline
-                                                            easing.bezierCurve: Appearance.animationCurves.emphasized
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.IBeamCursor
+                                                    onClicked: emojiSearchInput.forceActiveFocus()
+                                                }
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: 12
+                                                    anchors.rightMargin: 12
+                                                    spacing: 8
+
+                                                    MaterialSymbol {
+                                                        text: "search"
+                                                        iconSize: Appearance.font.pixelSize.normal
+                                                        color: root.colFieldPlaceholder
+                                                        Layout.alignment: Qt.AlignVCenter
+                                                    }
+
+                                                    TextInput {
+                                                        id: emojiSearchInput
+                                                        Layout.fillWidth: true
+                                                        verticalAlignment: TextInput.AlignVCenter
+                                                        font.family: Appearance.font.family.main
+                                                        font.pixelSize: Appearance.font.pixelSize.normal
+                                                        color: root.colFieldText
+                                                        clip: true
+                                                        activeFocusOnTab: false
+
+                                                        onTextChanged: emojiSelectorSection.searchPattern = text
+                                                        Keys.onEscapePressed: root.startClose()
+
+                                                        StyledText {
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                            text: qsTr("Search emojis...")
+                                                            color: root.colFieldPlaceholder
+                                                            font.pixelSize: Appearance.font.pixelSize.normal
+                                                            visible: emojiSearchInput.text.length === 0 && !emojiSearchInput.activeFocus
                                                         }
                                                     }
+                                                }
+                                            }
 
-                                                    onClicked: root.editEmojiValue = modelData
+                                            // Quick presets (visible when search is empty, emoji size 44)
+                                            Flow {
+                                                Layout.fillWidth: true
+                                                spacing: 6
+                                                visible: emojiSearchInput.text.trim().length === 0
 
-                                                    StyledText {
-                                                        anchors.centerIn: parent
-                                                        text: parent.modelData
-                                                        font.pixelSize: Appearance.font.pixelSize.small
+                                                Repeater {
+                                                    model: WorkspaceProfileService.presetEmojis
+                                                    delegate: RippleButton {
+                                                        id: presetBtn
+                                                        required property var modelData
+                                                        implicitWidth: 44
+                                                        implicitHeight: 44
+                                                        buttonRadius: Appearance.rounding.small
+                                                        toggled: root.editEmojiValue === modelData
+                                                        colBackgroundToggled: Appearance.colors.colPrimaryContainer
+
+                                                        onClicked: root.editEmojiValue = modelData
+
+                                                        StyledText {
+                                                            anchors.centerIn: parent
+                                                            text: parent.modelData
+                                                            font.pixelSize: 22
+                                                            scale: presetBtn.toggled ? 1.15 : 1.0
+
+                                                            Behavior on scale {
+                                                                NumberAnimation {
+                                                                    duration: 150
+                                                                    easing.type: Easing.BezierSpline
+                                                                    easing.bezierCurve: Appearance.animationCurves.emphasized
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
+                                            }
+
+                                            // Scrollable GridView (virtually loaded to prevent lag, fits exactly 3 lines of 48px cells)
+                                            GridView {
+                                                id: emojiGridView
+                                                Layout.fillWidth: true
+                                                Layout.preferredHeight: 144
+                                                cellWidth: 48
+                                                cellHeight: 48
+                                                clip: true
+                                                visible: emojiSelectorSection.filteredEmojisList.length > 0
+                                                model: emojiSelectorSection.filteredEmojisList
+
+                                                delegate: Item {
+                                                    width: 48
+                                                    height: 48
+
+                                                    required property var modelData
+                                                    readonly property string emojiChar: modelData.match(/^\s*(\S+)/)?.[1] || ""
+                                                    readonly property string emojiName: modelData.replace(/^\s*\S+\s+/, "")
+
+                                                    RippleButton {
+                                                        id: gridBtn
+                                                        anchors.centerIn: parent
+                                                        implicitWidth: 44
+                                                        implicitHeight: 44
+                                                        buttonRadius: Appearance.rounding.small
+
+                                                        toggled: root.editEmojiValue === emojiChar
+                                                        colBackgroundToggled: Appearance.colors.colPrimaryContainer
+
+                                                        onClicked: root.editEmojiValue = emojiChar
+
+                                                        StyledText {
+                                                            anchors.centerIn: parent
+                                                            text: emojiChar
+                                                            font.pixelSize: 22
+                                                            scale: gridBtn.toggled ? 1.15 : 1.0
+
+                                                            Behavior on scale {
+                                                                NumberAnimation {
+                                                                    duration: 150
+                                                                    easing.type: Easing.BezierSpline
+                                                                    easing.bezierCurve: Appearance.animationCurves.emphasized
+                                                                }
+                                                            }
+                                                        }
+
+                                                        StyledToolTip {
+                                                            text: emojiName
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // Empty state for when no emojis are found
+                                            StyledText {
+                                                visible: emojiSelectorSection.filteredEmojisList.length === 0
+                                                text: qsTr("No emojis found")
+                                                color: root.colSubtle
+                                                font {
+                                                    pixelSize: Appearance.font.pixelSize.small
+                                                    weight: Font.Normal
+                                                }
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.topMargin: 20
+                                                Layout.bottomMargin: 20
                                             }
                                         }
                                     }
@@ -515,13 +664,20 @@ Item {
                             }
                         }
 
-                        // ── SECTION 2: Restore Options ──────────────────────
                         Rectangle {
                             visible: root.mode === "edit"
                             Layout.fillWidth: true
                             color: root.colSectionBg
                             radius: Appearance.rounding.large
                             implicitHeight: sec2Layout.implicitHeight + 32
+
+                            Behavior on implicitHeight {
+                                NumberAnimation {
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
+                            }
 
                             ColumnLayout {
                                 id: sec2Layout
@@ -633,13 +789,20 @@ Item {
                             }
                         }
 
-                        // ── SECTION 3: Windows & Autolaunch ───────────────
                         Rectangle {
                             visible: root.mode === "edit"
                             Layout.fillWidth: true
                             color: root.colSectionBg
                             radius: Appearance.rounding.large
                             implicitHeight: sec3Layout.implicitHeight + 32
+
+                            Behavior on implicitHeight {
+                                NumberAnimation {
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
+                            }
 
                             ColumnLayout {
                                 id: sec3Layout
