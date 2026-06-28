@@ -30,7 +30,7 @@ Item {
     property var notifications: notificationGroup?.notifications ?? []
     property int notificationCount: notifications.length
     property bool multipleNotifications: notificationCount > 1
-    property bool expanded: false
+    property bool expanded: true
     property real padding: 10
     property int lazyLimit: 2
 
