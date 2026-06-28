@@ -120,7 +120,7 @@ Scope {
             color: "transparent"
 
             mask: Region {
-                item: cheatsheetBackground
+                item: cheatsheetInputMask
             }
 
             Timer {
@@ -166,6 +166,13 @@ Scope {
             }
 
             Item {
+                id: cheatsheetInputMask
+                width: cheatsheetBackground.width
+                height: cheatsheetBackground.height
+                anchors.centerIn: parent
+            }
+
+            Item {
                 id: dialogWrap
                 anchors.fill: parent
                 transformOrigin: Item.Center
@@ -190,6 +197,7 @@ Scope {
                 StyledRectangularShadow {
                     target: cheatsheetBackground
                 }
+
                 Rectangle {
                     id: cheatsheetBackground
                 anchors.centerIn: parent
