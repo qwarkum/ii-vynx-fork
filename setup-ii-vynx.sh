@@ -14,6 +14,8 @@ while [ -L "$SOURCE" ]; do
     SOURCE="$(readlink "$SOURCE")"
     [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
+
+
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
 # ── Log to file for debugging (called from QML Process) ─────────────────────
@@ -62,6 +64,7 @@ NO_CONFIRM=false
 USE_II_VYNX=false
 UPDATE_ONLY=false
 PRESERVE_CONFIG=false
+DELETE_CACHE=false
 REBUILD_QS=false
 
 UPSTREAM_REPO="https://github.com/vaguesyntax/ii-vynx"
@@ -69,16 +72,38 @@ UPSTREAM_DIR="$HOME/.local/share/ii-vynx-upstream"
 STANDARD_SCRIPT_DIR="$HOME/.local/share/ii-vynx"
 
 # Auto-detect fork directory:
-# 1. If running from a local clone directly (SCRIPT_DIR has .git), prioritize it!
-# 2. Otherwise, if ~/.local/share/ii-vynx-fork exists (dedicated install), use it
-# 3. Otherwise use SCRIPT_DIR itself
+# 1. Check if SCRIPT_DIR is a git repo and its remote does NOT point to upstream
+# 2. Check ~/.local/share/ii-vynx-fork
+# 3. Check ~/Downloads/ii-vynx
+# 4. Fallback to SCRIPT_DIR
+IS_UPSTREAM=false
 if [ -d "$SCRIPT_DIR/.git" ]; then
+    REMOTE_URL=$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)
+    if [[ "$REMOTE_URL" == *"vaguesyntax/ii-vynx"* ]]; then
+        IS_UPSTREAM=true
+    fi
+fi
+
+if [ -d "$SCRIPT_DIR/.git" ] && [ "$IS_UPSTREAM" = false ]; then
     FORK_DIR="$SCRIPT_DIR"
+elif [ -d "$HOME/Downloads/ii-vynx/.git" ]; then
+    FORK_DIR="$HOME/Downloads/ii-vynx"
 elif [ -d "$HOME/.local/share/ii-vynx-fork/.git" ]; then
     FORK_DIR="$HOME/.local/share/ii-vynx-fork"
 else
     FORK_DIR="$SCRIPT_DIR"
 fi
+
+if [ -d "$SCRIPT_DIR/.git" ] && [ "$IS_UPSTREAM" = true ]; then
+    UPSTREAM_DIR="$SCRIPT_DIR"
+else
+    UPSTREAM_DIR="$HOME/.local/share/ii-vynx-upstream"
+fi
+
+CONFIG_DIR="$HOME/.config"
+CHECK_DIR="$CONFIG_DIR/illogical-impulse"
+TARGET_DIR="$CONFIG_DIR/quickshell/ii"
+
 
 # ── Parse arguments ──────────────────────────────────────────────────────────
 for arg in "$@"; do
@@ -92,6 +117,7 @@ for arg in "$@"; do
         --ii-vynx)        USE_II_VYNX=true ;;
         --update-only)    UPDATE_ONLY=true; DO_PULL=true ;;
         --preserve-config)  PRESERVE_CONFIG=true ;;
+        --delete-cache)  DELETE_CACHE=true ;;
         --rebuild-quickshell) REBUILD_QS=true ;;
         *)
             echo -e "${RED}Unknown flag: $arg${NC}"
@@ -106,12 +132,36 @@ for arg in "$@"; do
             echo "  --ii-vynx            Switch to official vaguesyntax/ii-vynx quickshell"
             echo "  --update-only        Pull latest changes for current source, no switch"
             echo "  --preserve-config     Keep existing config.json (use with --no-confirm for update buttons)"
+            echo "  --delete-cache       Clean local cache directories in ~/.local/share"
             echo "  --rebuild-quickshell  Compile Quickshell from source matching system Qt ABI"
             echo "  -v, --verbose        Enable verbose output"
             exit 1
             ;;
     esac
 done
+# ── Delete Cache ─────────────────────────────────────────────────────────────
+if [ "$DELETE_CACHE" = true ]; then
+    echo -e "${BLUE}• Cleaning up local cache directories in ~/.local/share/...${NC}"
+    if [ -d "$HOME/.local/share/ii-vynx-fork" ]; then
+        rm -rf "$HOME/.local/share/ii-vynx-fork"
+        echo -e "${GREEN}✓ Removed ~/.local/share/ii-vynx-fork${NC}"
+    fi
+    if [ -d "$HOME/.local/share/ii-vynx-upstream" ]; then
+        rm -rf "$HOME/.local/share/ii-vynx-upstream"
+        echo -e "${GREEN}✓ Removed ~/.local/share/ii-vynx-upstream${NC}"
+    fi
+    if [ -d "$HOME/.local/share/ii-vynx" ]; then
+        if [ "$SCRIPT_DIR" = "$HOME/.local/share/ii-vynx" ]; then
+            find "$HOME/.local/share/ii-vynx" -mindepth 1 -not -name "setup-ii-vynx.sh" -exec rm -rf {} + 2>/dev/null
+        else
+            rm -rf "$HOME/.local/share/ii-vynx"
+        fi
+        echo -e "${GREEN}✓ Cleaned ~/.local/share/ii-vynx${NC}"
+    fi
+    echo -e "${GREEN}✓ Cache cleanup complete!${NC}"
+    exit 0
+fi
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log_verbose() {
@@ -122,6 +172,7 @@ log_verbose() {
 
 # Files that must NEVER be overwritten during any install or switch
 PROTECTED_FILES=(
+    "config.json"
 )
 
 # Patterns for files that must NEVER be overwritten (glob-style, relative to TARGET_DIR)
@@ -155,6 +206,10 @@ backup_protected_files() {
     for rel in "${PROTECTED_FILES[@]}"; do
         local src="$target/$rel"
         if [ -f "$src" ]; then
+            if [ "$rel" = "config.json" ] && [ "$PRESERVE_CONFIG" = "false" ]; then
+                echo -e "${YELLOW}• Resetting config.json (not preserving).${NC}"
+                continue
+            fi
             local dest_dir="$tmpdir/$(dirname "$rel")"
             mkdir -p "$dest_dir"
             cp "$src" "$tmpdir/$rel"
@@ -325,9 +380,9 @@ install_cli() {
         echo -e "${GREEN}   export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
     fi
 
-    chmod +x "$SCRIPT_DIR/setup-ii-vynx.sh"
+    chmod +x "$SOURCE"
     [ -d "$SCRIPT_DIR/sdata/cli/lib" ] && chmod +x "$SCRIPT_DIR/sdata/cli/lib/"*.sh
-    ln -sf "$SCRIPT_DIR/setup-ii-vynx.sh" "$TARGET"
+    ln -sf "$SOURCE" "$TARGET"
     echo -e "${GREEN}✓ Symlinked vynx → $TARGET${NC}"
 }
 
@@ -421,15 +476,24 @@ if [ "$UPDATE_ONLY" = true ]; then
         fi
     fi
     
-    # Force preserving config and skipping second pull during update-only to prevent data loss and duplicate work
-    PRESERVE_CONFIG=true
-    DO_PULL=false
+    # Save active remote URL
+    mkdir -p "$TARGET_DIR"
+    if [ "$USE_II_VYNX" = true ]; then
+        echo "$UPSTREAM_REPO" > "$TARGET_DIR/.active-remote"
+    else
+        if [ -d "$FORK_DIR/.git" ]; then
+            git -C "$FORK_DIR" remote get-url origin > "$TARGET_DIR/.active-remote" 2>/dev/null || echo "fork" > "$TARGET_DIR/.active-remote"
+        else
+            echo "fork" > "$TARGET_DIR/.active-remote"
+        fi
+    fi
+    
+    echo -e "${GREEN}✓ Update complete. Run without --update-only to apply.${NC}"
+    exit 0
 fi
 
 # ── Resolve source directory ─────────────────────────────────────────────────
-CONFIG_DIR="$HOME/.config"
-CHECK_DIR="$CONFIG_DIR/illogical-impulse"
-TARGET_DIR="$CONFIG_DIR/quickshell/ii"
+
 
 if [ "$USE_II_VYNX" = true ]; then
     # Official upstream source (local cache only when --no-pull)
@@ -560,6 +624,17 @@ cp -r "$SOURCE_DIR/." "$TARGET_DIR/"
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Copy failed!${NC}"
     exit 1
+fi
+
+# Save active remote URL
+if [ "$USE_II_VYNX" = true ]; then
+    echo "$UPSTREAM_REPO" > "$TARGET_DIR/.active-remote"
+else
+    if [ -d "$FORK_DIR/.git" ]; then
+        git -C "$FORK_DIR" remote get-url origin > "$TARGET_DIR/.active-remote" 2>/dev/null || echo "fork" > "$TARGET_DIR/.active-remote"
+    else
+        echo "fork" > "$TARGET_DIR/.active-remote"
+    fi
 fi
 
 # Ensure all scripts are executable

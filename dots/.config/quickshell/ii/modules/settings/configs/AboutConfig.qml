@@ -14,10 +14,13 @@ ContentPage {
     forceWidth: false
 
     property string activeRemote: ""
+    property int forkUpdates: 0
+    property int upstreamUpdates: 0
+    property bool checkingUpdates: false
 
     Process {
         id: checkRemoteProc
-        command: ["bash", "-c", "for dir in \"$HOME/Downloads/ii-vynx\" \"$HOME/.local/share/ii-vynx-fork\" \"$HOME/.local/share/ii-vynx-upstream\" \"$HOME/.local/share/ii-vynx\" \"$HOME/dotfiles\"; do if git -C \"$dir\" rev-parse --is-inside-work-tree >/dev/null 2>&1; then git -C \"$dir\" remote get-url origin; break; fi; done"]
+        command: ["bash", "-c", "if [ -f \"$HOME/.config/quickshell/ii/.active-remote\" ]; then cat \"$HOME/.config/quickshell/ii/.active-remote\"; else for dir in \"$HOME/Downloads/ii-vynx\" \"$HOME/.local/share/ii-vynx-fork\" \"$HOME/.local/share/ii-vynx-upstream\" \"$HOME/.local/share/ii-vynx\" \"$HOME/dotfiles\"; do if git -C \"$dir\" rev-parse --is-inside-work-tree >/dev/null 2>&1; then git -C \"$dir\" remote get-url origin; break; fi; done; fi"]
         stdout: StdioCollector {
             onStreamFinished: {
                 page.activeRemote = text.trim();
@@ -25,7 +28,37 @@ ContentPage {
         }
     }
 
-    Component.onCompleted: checkRemoteProc.running = true
+    Process {
+        id: checkUpdatesProc
+        command: ["bash", "-c", "fork_dir=\"$HOME/Downloads/ii-vynx\"; [ ! -d \"$fork_dir/.git\" ] && fork_dir=\"$HOME/.local/share/ii-vynx-fork\"; upstream_dir=\"$HOME/.local/share/ii-vynx-upstream\"; fork_updates=0; [ -d \"$fork_dir/.git\" ] && { git -C \"$fork_dir\" fetch --quiet origin 2>/dev/null; fork_updates=$(git -C \"$fork_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; upstream_updates=0; [ -d \"$upstream_dir/.git\" ] && { git -C \"$upstream_dir\" fetch --quiet origin 2>/dev/null; upstream_updates=$(git -C \"$upstream_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; echo \"$fork_updates $upstream_updates\""]
+        
+        onStarted: {
+            page.checkingUpdates = true;
+        }
+        
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var parts = text.trim().split(" ");
+                if (parts.length === 2) {
+                    page.forkUpdates = parseInt(parts[0]) || 0;
+                    page.upstreamUpdates = parseInt(parts[1]) || 0;
+                }
+                page.checkingUpdates = false;
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        checkRemoteProc.running = true;
+        checkUpdatesProc.running = true;
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            checkRemoteProc.running = true;
+            checkUpdatesProc.running = true;
+        }
+    }
 
     readonly property string setupScript: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/ii-vynx/setup-ii-vynx.sh`)
 
@@ -48,10 +81,20 @@ ContentPage {
         onExited: code => {
             actionProc.exitCode = code;
             actionProc.finished = true;
-            if (code === 0)
+            if (code === 0) {
                 actionProc.logOutput += "✓ Done\n";
-            else
+                if (actionProc.mode === "update-fork") {
+                    Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--preserve-config"]);
+                } else if (actionProc.mode === "update-upstream") {
+                    Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--ii-vynx", "--preserve-config"]);
+                } else if (actionProc.mode === "delete-cache") {
+                    page.forkUpdates = 0;
+                    page.upstreamUpdates = 0;
+                    checkUpdatesProc.running = true;
+                }
+            } else {
                 actionProc.logOutput += "✗ Exited with code " + code + "\n";
+            }
         }
     }
 
@@ -261,7 +304,31 @@ ContentPage {
                     Layout.preferredHeight: 45
                     buttonRadius: Appearance.rounding.large
                     materialIcon: actionProc.running && actionProc.mode === "update-fork" ? "sync" : "system_update_alt"
-                    mainText: actionProc.running && actionProc.mode === "update-fork" ? Translation.tr("Updating fork...") : Translation.tr("Update My Fork (ii-p3drovfx)")
+                    mainContentComponent: RowLayout {
+                        spacing: 8
+                        StyledText {
+                            text: actionProc.running && actionProc.mode === "update-fork" ? Translation.tr("Updating fork...") : Translation.tr("Update My Fork (ii-p3drovfx)")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                        Rectangle {
+                            visible: page.forkUpdates > 0
+                            radius: 10
+                            color: Appearance.colors.colError
+                            implicitWidth: badgeText.implicitWidth + 8
+                            implicitHeight: 18
+                            Layout.alignment: Qt.AlignVCenter
+                            
+                            StyledText {
+                                id: badgeText
+                                anchors.centerIn: parent
+                                text: page.forkUpdates
+                                font.pixelSize: Appearance.font.pixelSize.verysmall
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colOnError
+                            }
+                        }
+                    }
                     enabled: !actionProc.running
                     onClicked: {
                         Config.blockWrites = true;
@@ -279,7 +346,31 @@ ContentPage {
                     Layout.preferredHeight: 45
                     buttonRadius: Appearance.rounding.large
                     materialIcon: actionProc.running && actionProc.mode === "update-upstream" ? "sync" : "cloud_download"
-                    mainText: actionProc.running && actionProc.mode === "update-upstream" ? Translation.tr("Updating...") : Translation.tr("Update Upstream (ii-vynx)")
+                    mainContentComponent: RowLayout {
+                        spacing: 8
+                        StyledText {
+                            text: actionProc.running && actionProc.mode === "update-upstream" ? Translation.tr("Updating...") : Translation.tr("Update Upstream (ii-vynx)")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                        Rectangle {
+                            visible: page.upstreamUpdates > 0
+                            radius: 10
+                            color: Appearance.colors.colError
+                            implicitWidth: badgeText2.implicitWidth + 8
+                            implicitHeight: 18
+                            Layout.alignment: Qt.AlignVCenter
+                            
+                            StyledText {
+                                id: badgeText2
+                                anchors.centerIn: parent
+                                text: page.upstreamUpdates
+                                font.pixelSize: Appearance.font.pixelSize.verysmall
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colOnError
+                            }
+                        }
+                    }
                     enabled: !actionProc.running
                     onClicked: {
                         Config.blockWrites = true;
@@ -290,6 +381,24 @@ ContentPage {
                         actionProc.command = ["bash", page.setupScript, "--update-only", "--ii-vynx", "--no-confirm"];
                         actionProc.running = true;
                     }
+                }
+            }
+
+            RippleButtonWithIcon {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                buttonRadius: Appearance.rounding.large
+                materialIcon: actionProc.running && actionProc.mode === "delete-cache" ? "sync" : "delete_sweep"
+                mainText: actionProc.running && actionProc.mode === "delete-cache" ? Translation.tr("Cleaning cache...") : Translation.tr("Clean Local Cache")
+                enabled: !actionProc.running
+                onClicked: {
+                    Config.blockWrites = true;
+                    actionProc.logOutput = "";
+                    actionProc.finished = false;
+                    actionProc.exitCode = -1;
+                    actionProc.mode = "delete-cache";
+                    actionProc.command = ["bash", page.setupScript, "--delete-cache"];
+                    actionProc.running = true;
                 }
             }
 
@@ -370,21 +479,15 @@ ContentPage {
                     Layout.preferredHeight: 45
                     buttonRadius: Appearance.rounding.small
                     colBackground: page.activeRemote.indexOf("P3DROVFX") !== -1 ? Appearance.colors.colSecondaryContainer : Appearance.colors.colLayer2
-                    materialIcon: actionProc.running && actionProc.mode === "fork" ? "sync" : "fork_right"
+                    materialIcon: "fork_right"
                     mainText: {
-                        if (actionProc.running && actionProc.mode === "fork") return Translation.tr("Switching...");
                         if (page.activeRemote.indexOf("P3DROVFX") !== -1) return Translation.tr("Current (My Fork)");
                         return Translation.tr("Switch to My Fork (ii-p3drovfx)");
                     }
                     enabled: !actionProc.running && page.activeRemote.indexOf("P3DROVFX") === -1
                     onClicked: {
                         Config.blockWrites = true;
-                        actionProc.logOutput = "";
-                        actionProc.finished = false;
-                        actionProc.exitCode = -1;
-                        actionProc.mode = "fork";
-                        actionProc.command = ["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--preserve-config"];
-                        actionProc.running = true;
+                        Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--preserve-config"]);
                     }
                 }
 
@@ -393,47 +496,21 @@ ContentPage {
                     Layout.preferredHeight: 45
                     buttonRadius: Appearance.rounding.small
                     colBackground: page.activeRemote.indexOf("vaguesyntax") !== -1 ? Appearance.colors.colSecondaryContainer : Appearance.colors.colLayer2
-                    materialIcon: actionProc.running && actionProc.mode === "upstream" ? "sync" : "deployed_code"
+                    materialIcon: "deployed_code"
                     mainText: {
-                        if (actionProc.running && actionProc.mode === "upstream") return Translation.tr("Switching...");
                         if (page.activeRemote.indexOf("vaguesyntax") !== -1) return Translation.tr("Current (Upstream)");
                         return Translation.tr("Switch to Upstream (ii-vynx)");
                     }
                     enabled: !actionProc.running && page.activeRemote.indexOf("vaguesyntax") === -1
                     onClicked: {
                         Config.blockWrites = true;
-                        actionProc.logOutput = "";
-                        actionProc.finished = false;
-                        actionProc.exitCode = -1;
-                        actionProc.mode = "upstream";
-                        actionProc.command = ["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--ii-vynx", "--preserve-config"];
-                        actionProc.running = true;
+                        Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--ii-vynx", "--preserve-config"]);
                     }
                 }
             }
         }
 
-        ConfigSwitch {
-            buttonIcon: "deployed_code_update"
-            text: Translation.tr("Enable update checks")
-            checked: Config.options.updates.enableCheck
-            onCheckedChanged: {
-                Config.options.updates.enableCheck = checked;
-            }
-        }
 
-        ConfigSpinBox {
-            enabled: Config.options.updates.enableCheck
-            icon: "av_timer"
-            text: Translation.tr("Check interval (mins)")
-            value: Config.options.updates.checkInterval
-            from: 60
-            to: 1440
-            stepSize: 60
-            onValueChanged: {
-                Config.options.updates.checkInterval = value;
-            }
-        }
     }
 
     ContentSection {
@@ -490,10 +567,10 @@ ContentPage {
                         property bool isFirst: itemIndex === 0
                         property bool isLast: itemIndex === totalItems - 1
 
-                        topLeftRadius: isFirst ? Appearance.rounding.large : Appearance.rounding.verysmall
-                        topRightRadius: isFirst ? Appearance.rounding.large : Appearance.rounding.verysmall
-                        bottomLeftRadius: isLast ? Appearance.rounding.large : Appearance.rounding.verysmall
-                        bottomRightRadius: isLast ? Appearance.rounding.large : Appearance.rounding.verysmall
+                        topLeftRadius: isLast ? Appearance.rounding.large : Appearance.rounding.verysmall
+                        topRightRadius: isLast ? Appearance.rounding.large : Appearance.rounding.verysmall
+                        bottomLeftRadius: isFirst ? Appearance.rounding.large : Appearance.rounding.verysmall
+                        bottomRightRadius: isFirst ? Appearance.rounding.large : Appearance.rounding.verysmall
 
                         
                         readonly property string commitHash: model.hash
