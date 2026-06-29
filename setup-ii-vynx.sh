@@ -24,9 +24,10 @@ echo "--- Starting setup at $(date) | args: $* ---"
 echo "SCRIPT_DIR: $SCRIPT_DIR"
 
 # ── CLI sub-command dispatcher (when invoked as "vynx") ─────────────────────
-INVOKED_AS="$(basename "$SOURCE")"
+INVOKED_AS="$(basename "$0")"
 if [[ "$INVOKED_AS" == "vynx" ]]; then
     LIB_DIR="$SCRIPT_DIR/sdata/cli/lib"
+    BASE_DIR="$SCRIPT_DIR"
     VERBOSE=false
     TEMP_ARGS=()
     while [[ $# -gt 0 ]]; do
@@ -86,6 +87,8 @@ fi
 
 if [ -d "$SCRIPT_DIR/.git" ] && [ "$IS_UPSTREAM" = false ]; then
     FORK_DIR="$SCRIPT_DIR"
+elif [ -d "$HOME/.config/quickshell/ii-vynx-repo/.git" ]; then
+    FORK_DIR="$HOME/.config/quickshell/ii-vynx-repo"
 elif [ -d "$HOME/Downloads/ii-vynx/.git" ]; then
     FORK_DIR="$HOME/Downloads/ii-vynx"
 elif [ -d "$HOME/.local/share/ii-vynx-fork/.git" ]; then
@@ -172,6 +175,7 @@ log_verbose() {
 
 # Files that must NEVER be overwritten during any install or switch
 PROTECTED_FILES=(
+    "modules/settings/About.qml"
     "config.json"
 )
 
@@ -179,9 +183,7 @@ PROTECTED_FILES=(
 PROTECTED_PATTERNS=(
     "*.env"
     ".env"
-    "user/generated/*"
-    "user/*"
-    "defaults/themes/*.json"
+    "user/generated/*.json"
 )
 
 backup_protected_files() {
@@ -190,22 +192,22 @@ backup_protected_files() {
     rm -rf "$tmpdir"
     mkdir -p "$tmpdir"
 
-    # Explicitly protect About.qml ONLY when switching to official ii-vynx
-    if [ "$USE_II_VYNX" = "true" ]; then
-        local about_src="$target/modules/settings/About.qml"
-        if [ -f "$about_src" ] && grep -q "update-fork" "$about_src" 2>/dev/null; then
-            local dest_dir="$tmpdir/modules/settings"
-            mkdir -p "$dest_dir"
-            cp "$about_src" "$tmpdir/modules/settings/About.qml"
-            log_verbose "Protected (backed up): modules/settings/About.qml"
-        fi
-    else
-        echo -e "${YELLOW}• Updating fork: Overwriting About.qml with updated repository version.${NC}"
-    fi
-
     for rel in "${PROTECTED_FILES[@]}"; do
         local src="$target/$rel"
         if [ -f "$src" ]; then
+            if [ "$rel" = "modules/settings/About.qml" ]; then
+                # Only preserve About.qml when switching/updating to official ii-vynx.
+                # If we are installing or updating the fork (USE_II_VYNX=false), we want to overwrite it
+                # so the user gets the updated About.qml from the fork repository.
+                if [ "$USE_II_VYNX" = "false" ]; then
+                    echo -e "${YELLOW}• Updating fork: Overwriting About.qml with updated repository version.${NC}"
+                    continue
+                fi
+                if ! grep -q "update-fork" "$src" 2>/dev/null; then
+                    echo -e "${YELLOW}• About.qml lacks update buttons. Replacing with repository version.${NC}"
+                    continue
+                fi
+            fi
             if [ "$rel" = "config.json" ] && [ "$PRESERVE_CONFIG" = "false" ]; then
                 echo -e "${YELLOW}• Resetting config.json (not preserving).${NC}"
                 continue
@@ -232,16 +234,6 @@ backup_protected_files() {
 restore_protected_files() {
     local target="$1"
     local tmpdir="/tmp/ii-vynx-protected"
-
-    if [ "$USE_II_VYNX" = "true" ]; then
-        local about_src="$tmpdir/modules/settings/About.qml"
-        if [ -f "$about_src" ]; then
-            local dest_dir="$target/modules/settings"
-            mkdir -p "$dest_dir"
-            cp "$about_src" "$target/modules/settings/About.qml"
-            log_verbose "Restored protected: modules/settings/About.qml"
-        fi
-    fi
 
     for rel in "${PROTECTED_FILES[@]}"; do
         local src="$tmpdir/$rel"
@@ -355,22 +347,24 @@ build_quickshell() {
 
 
 run_bundled_setup() {
-    if [ "$FULL_INSTALL" = true ]; then
-        echo -e "${BLUE}• Installing II base dotfiles...${NC}"
-        bash "$SCRIPT_DIR/setup" "install"
-        [ $? -eq 0 ] || { echo -e "${RED}✗ Setup failed!${NC}"; exit 1; }
-    else
-        echo -e "${RED}This fork's base dotfiles are not installed yet. Install them now? (y/n): ${NC}"
-        read -r setup_response
-        [[ ! "$setup_response" =~ ^[Yy]$ ]] && echo -e "${RED}✗ Setup cancelled.${NC}" && exit 1
-        bash "$SCRIPT_DIR/setup" "install"
-        [ $? -eq 0 ] || { echo -e "${RED}✗ Setup failed!${NC}"; exit 1; }
-    fi
+    echo -e "${RED}This fork's base dotfiles are not installed yet. Install them now? (y/n): ${NC}"
+    read -r setup_response
+    [[ ! "$setup_response" =~ ^[Yy]$ ]] && echo -e "${RED}✗ Setup cancelled.${NC}" && exit 1
+
+    bash "$SCRIPT_DIR/setup" "install"
+    [ $? -eq 0 ] || { echo -e "${RED}✗ Setup failed!${NC}"; exit 1; }
 }
 
 install_cli() {
     local BIN_PATH="$HOME/.local/bin"
     local TARGET="$BIN_PATH/vynx"
+    local CLI_SRC=""
+
+    if [ "$USE_II_VYNX" = true ]; then
+        CLI_SRC="$UPSTREAM_DIR/setup-ii-vynx.sh"
+    else
+        CLI_SRC="$FORK_DIR/setup-ii-vynx.sh"
+    fi
 
     echo -e "${BLUE}• Installing Vynx CLI...${NC}"
     mkdir -p "$BIN_PATH"
@@ -380,18 +374,12 @@ install_cli() {
         echo -e "${GREEN}   export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
     fi
 
-    chmod +x "$SOURCE"
-    [ -d "$SCRIPT_DIR/sdata/cli/lib" ] && chmod +x "$SCRIPT_DIR/sdata/cli/lib/"*.sh
-    ln -sf "$SOURCE" "$TARGET"
+    chmod +x "$CLI_SRC"
+    local CLI_SCRIPT_DIR="$(dirname "$CLI_SRC")"
+    [ -d "$CLI_SCRIPT_DIR/sdata/cli/lib" ] && chmod +x "$CLI_SCRIPT_DIR/sdata/cli/lib/"*.sh
+    ln -sf "$CLI_SRC" "$TARGET"
     echo -e "${GREEN}✓ Symlinked vynx → $TARGET${NC}"
 }
-
-# ── Restart ──────────────────────────────────────────────────────────────────
-
-echo ""
-echo -e "${NC}• Restarting Quickshell...${NC}"
-trap '' TERM HUP
-pkill -x quickshell
 
 # ── Banner ───────────────────────────────────────────────────────────────────
 echo ""
@@ -429,7 +417,7 @@ if [ -f "$UPDATE_FORK_SRC" ]; then
 fi
 
 # If ii-vynx-fork doesn't exist yet, bootstrap it from SCRIPT_DIR
-if [ ! -d "$HOME/.local/share/ii-vynx-fork/.git" ] && [ "$SCRIPT_DIR" != "$HOME/.local/share/ii-vynx-upstream" ]; then
+if [ ! -d "$HOME/.local/share/ii-vynx-fork/.git" ] && [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$HOME/.local/share/ii-vynx-upstream" ]; then
     echo -e "${BLUE}• Setting up local fork at ~/.local/share/ii-vynx-fork...${NC}"
     cp -r "$SCRIPT_DIR" "$HOME/.local/share/ii-vynx-fork"
     FORK_DIR="$HOME/.local/share/ii-vynx-fork"
@@ -441,35 +429,13 @@ if [ "$UPDATE_ONLY" = true ]; then
     echo -e "${BLUE}• Update-only mode: pulling latest changes...${NC}"
     if [ "$USE_II_VYNX" = true ]; then
         fetch_upstream
-        SOURCE_DIR="$UPSTREAM_DIR/dots/.config/quickshell/ii"
     else
         if [ -d "$FORK_DIR/.git" ]; then
-            cd "$FORK_DIR" && git pull && git submodule update --init --recursive
-            if [ $? -ne 0 ]; then
-                if [ "$NO_CONFIRM" = true ]; then
-                    echo -e "${YELLOW}⚠ git pull failed due to divergence or local changes. Attempting automatic clean and reset...${NC}"
-                    git fetch origin
-                    DEFAULT_BRANCH="$(git remote show origin 2>/dev/null | sed -n '/HEAD branch/s/.*: //p' || echo "main")"
-                    git reset --hard "origin/$DEFAULT_BRANCH"
-                    git pull && git submodule update --init --recursive
-                else
-                    echo -e "${YELLOW}⚠ git pull failed due to divergence or local changes.${NC}"
-                    echo -ne "${CYAN}Would you like to force-reset the local cache to match the remote repository? (y/n): ${NC}"
-                    read -r reset_response
-                    if [[ "$reset_response" =~ ^[Yy]$ ]]; then
-                        echo -e "${BLUE}• Force-resetting fork repository...${NC}"
-                        git fetch origin
-                        DEFAULT_BRANCH="$(git remote show origin 2>/dev/null | sed -n '/HEAD branch/s/.*: //p' || echo "main")"
-                        git reset --hard "origin/$DEFAULT_BRANCH"
-                        git pull && git submodule update --init --recursive
-                    fi
-                fi
-            fi
+            cd "$FORK_DIR" && git pull
             if [ $? -ne 0 ]; then
                 echo -e "${RED}✗ git pull failed. Please check for branch conflicts or network issues.${NC}"
                 exit 1
             fi
-            SOURCE_DIR="$FORK_DIR/dots/.config/quickshell/ii"
         else
             echo -e "${RED}✗ Fork not found at $FORK_DIR${NC}"
             exit 1
@@ -555,24 +521,18 @@ if [ "$NO_CONFIRM" = false ]; then
 fi
 
 # ── Check source exists ──────────────────────────────────────────────────────
-if [ ! -d "$SOURCE_DIR" ] || [ -z "$(ls -A "$SOURCE_DIR" 2>/dev/null)" ]; then
-    echo -e "${RED}✗ Source directory not found or is empty: $SOURCE_DIR${NC}"
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo -e "${RED}✗ Source directory not found: $SOURCE_DIR${NC}"
     exit 1
 fi
 
 # ── Check illogical-impulse ──────────────────────────────────────────────────
-# if [ "$FORCE_INSTALL" = false ] && [ "$FULL_INSTALL" = false ]; then
-#     if [ ! -d "$CHECK_DIR" ]; then
-#         run_bundled_setup
-#     fi
-# fi
-if [ "$FULL_INSTALL" = true ]; then
-    run_bundled_setup
-elif [ "$FORCE_INSTALL" = false ]; then
+if [ "$FORCE_INSTALL" = false ] && [ "$FULL_INSTALL" = false ]; then
     if [ ! -d "$CHECK_DIR" ]; then
         run_bundled_setup
     fi
 fi
+
 # ── Check Quickshell Qt ABI compatibility ────────────────────────────────────
 if [ "$REBUILD_QS" = true ]; then
     build_quickshell
@@ -599,12 +559,6 @@ fi
 # ── Backup + Copy (preserving protected files) ───────────────────────────────
 echo ""
 echo -e "${NC}• Switching quickshell source...${NC}"
-
-# Kill quickshell to prevent it from overwriting config.json when files change under it
-echo -e "${NC}• Stopping Quickshell to safely update files...${NC}"
-pkill -x qs || true
-sleep 0.5
-
 mkdir -p "$(dirname "$TARGET_DIR")"
 
 # Step 1: Save protected files from current TARGET_DIR
@@ -620,7 +574,12 @@ if [ "$BACKUP" = true ] && [ -d "$TARGET_DIR" ]; then
 fi
 
 # Step 3: Copy new source
-cp -r "$SOURCE_DIR/." "$TARGET_DIR/"
+if command -v rsync &>/dev/null; then
+    rsync -a --exclude=".git" "$SOURCE_DIR/" "$TARGET_DIR/"
+else
+    cp -r "$SOURCE_DIR/." "$TARGET_DIR/"
+    find "$TARGET_DIR" -name ".git" -exec rm -rf {} + 2>/dev/null
+fi
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Copy failed!${NC}"
     exit 1
@@ -673,22 +632,12 @@ fi
 
 # ── Restart ──────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${NC}• Starting Quickshell...${NC}"
-pkill -x qs || true
+echo -e "${NC}• Restarting Quickshell...${NC}"
+pkill -x qs
 sleep 0.5
-nohup qs --path "$HOME/.config/quickshell/ii" >/dev/null 2>&1 &
-
-if [ "$UPDATE_ONLY" = true ]; then
-    echo ""
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}    Update completed successfully!   ${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    exit 0
-fi
-
 hyprctl reload
 sleep 0.5
+nohup qs --path "$HOME/.config/quickshell/ii" >/dev/null 2>&1 &
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

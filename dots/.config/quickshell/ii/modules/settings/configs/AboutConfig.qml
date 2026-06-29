@@ -30,7 +30,7 @@ ContentPage {
 
     Process {
         id: checkUpdatesProc
-        command: ["bash", "-c", "fork_dir=\"$HOME/Downloads/ii-vynx\"; [ ! -d \"$fork_dir/.git\" ] && fork_dir=\"$HOME/.local/share/ii-vynx-fork\"; upstream_dir=\"$HOME/.local/share/ii-vynx-upstream\"; fork_updates=0; [ -d \"$fork_dir/.git\" ] && { git -C \"$fork_dir\" fetch --quiet origin 2>/dev/null; fork_updates=$(git -C \"$fork_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; upstream_updates=0; [ -d \"$upstream_dir/.git\" ] && { git -C \"$upstream_dir\" fetch --quiet origin 2>/dev/null; upstream_updates=$(git -C \"$upstream_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; echo \"$fork_updates $upstream_updates\""]
+        command: ["bash", "-c", "fork_dir=\"$HOME/Downloads/ii-vynx\"; [ ! -d \"$fork_dir/.git\" ] && fork_dir=\"$HOME/.local/share/ii-vynx-fork\"; [ ! -d \"$fork_dir/.git\" ] && fork_dir=\"$HOME/.config/quickshell/ii-vynx-repo\"; upstream_dir=\"$HOME/.local/share/ii-vynx-upstream\"; fork_updates=0; [ -d \"$fork_dir/.git\" ] && { git -C \"$fork_dir\" fetch --quiet origin 2>/dev/null; fork_updates=$(git -C \"$fork_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; upstream_updates=0; [ -d \"$upstream_dir/.git\" ] && { git -C \"$upstream_dir\" fetch --quiet origin 2>/dev/null; upstream_updates=$(git -C \"$upstream_dir\" rev-list --count HEAD..@{u} 2>/dev/null || echo 0); }; echo \"$fork_updates $upstream_updates\""]
         
         onStarted: {
             page.checkingUpdates = true;
@@ -87,10 +87,6 @@ ContentPage {
                     Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--preserve-config"]);
                 } else if (actionProc.mode === "update-upstream") {
                     Quickshell.execDetached(["bash", page.setupScript, "--force-install", "--no-pull", "--no-confirm", "--ii-vynx", "--preserve-config"]);
-                } else if (actionProc.mode === "delete-cache") {
-                    page.forkUpdates = 0;
-                    page.upstreamUpdates = 0;
-                    checkUpdatesProc.running = true;
                 }
             } else {
                 actionProc.logOutput += "✗ Exited with code " + code + "\n";
@@ -384,23 +380,6 @@ ContentPage {
                 }
             }
 
-            RippleButtonWithIcon {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                buttonRadius: Appearance.rounding.large
-                materialIcon: actionProc.running && actionProc.mode === "delete-cache" ? "sync" : "delete_sweep"
-                mainText: actionProc.running && actionProc.mode === "delete-cache" ? Translation.tr("Cleaning cache...") : Translation.tr("Clean Local Cache")
-                enabled: !actionProc.running
-                onClicked: {
-                    Config.blockWrites = true;
-                    actionProc.logOutput = "";
-                    actionProc.finished = false;
-                    actionProc.exitCode = -1;
-                    actionProc.mode = "delete-cache";
-                    actionProc.command = ["bash", page.setupScript, "--delete-cache"];
-                    actionProc.running = true;
-                }
-            }
 
             Rectangle {
                 Layout.fillWidth: true
