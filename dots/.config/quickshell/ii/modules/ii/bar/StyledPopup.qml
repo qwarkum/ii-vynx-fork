@@ -31,6 +31,7 @@ LazyLoader {
     property bool animate: true
     property bool animateHeight: true
     property bool stickyHover: false
+    property int keyboardFocus: WlrKeyboardFocus.None
 
     property bool _popupHovered: false
     property bool _stickyActive: false
@@ -73,6 +74,7 @@ LazyLoader {
 
     component: PanelWindow {
         id: popupWindow
+        WlrLayershell.keyboardFocus: root.keyboardFocus
         color: "transparent"
 
         readonly property real screenWidth: popupWindow.screen?.width ?? 0
@@ -171,18 +173,8 @@ LazyLoader {
             // Delayed enable to avoid opening animation transition glitch
             property bool _heightReady: false
 
-            Timer {
-                id: heightCommit
-                interval: 32
-                repeat: false
-                onTriggered: popupBackground._commitHeight = popupBackground.targetHeight
-            }
-
             onTargetHeightChanged: {
-                if (popupWindow.animProgress >= 1.0 && popupBackground._heightReady)
-                    heightCommit.restart();
-                else
-                    _commitHeight = targetHeight;
+                _commitHeight = targetHeight;
             }
 
             Component.onCompleted: {

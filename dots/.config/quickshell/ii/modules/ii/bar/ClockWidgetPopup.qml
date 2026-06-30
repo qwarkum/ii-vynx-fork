@@ -6,10 +6,12 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 
 StyledPopup {
     id: root
     popupRadius: Appearance.rounding.large
+    keyboardFocus: alarmsCard.mode !== "list" ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     property var timezoneOffsets: ({})
     property var worldClocksOption: Config.options.time.worldClocks
@@ -77,34 +79,9 @@ StyledPopup {
     }
 
     required property bool compact
-    property string formattedDate: Qt.locale().toString(DateTime.clock.date, "MMMM dd, dddd")
-    property string formattedTime: DateTime.time
-    property string todosSection: getUpcomingTodos(Todo.list)
-    property bool todosEmpty: todosSection === ""
     stickyHover: true
 
     property bool stopwatchPaused: !TimerService.stopwatchRunning && TimerService.stopwatchTime > 0
-
-    function getUpcomingTodos(todos) {
-        const unfinishedTodos = todos.filter(function (item) {
-            return !item.done;
-        });
-        if (unfinishedTodos.length === 0) {
-            return "";
-        }
-
-        // Limit to first 3 todos
-        const limitedTodos = unfinishedTodos.slice(0, 3);
-        let todoText = limitedTodos.map(function (item, index) {
-            return `  • ${item.content}`;
-        }).join('\n');
-
-        if (unfinishedTodos.length > 3) {
-            todoText += `\n  ${Translation.tr("... and %1 more").arg(unfinishedTodos.length - 3)}`;
-        }
-
-        return todoText;
-    }
 
     function formatTimerDisplay(seconds) {
         let m = Math.floor(seconds / 60);
@@ -219,18 +196,23 @@ StyledPopup {
     contentItem: ColumnLayout {
         id: columnLayout
         anchors.centerIn: parent
+        implicitWidth: root.compact ? 380 : 420
         spacing: 12
 
-        HeroCard {
+        ClockHeaderCard {
             id: clockHero
-            icon: "schedule"
-            adaptiveWidth: true
+            Layout.fillWidth: true
+            Layout.minimumWidth: root.compact ? 320 : 360
+            visible: Config.options.time.alarms.showAnalogClock
+        }
 
-            title: root.formattedTime
-            subtitle: root.formattedDate
-
-            pillText: getDayProgressPercent() + "%"
-            pillIcon: "clock_loader_60"
+        Loader {
+            id: worldClocksLoader
+            Layout.fillWidth: true
+            Layout.minimumWidth: root.compact ? 320 : 360
+            visible: active && Config.options.time.alarms.showWorldClocks
+            active: Config.options.time.worldClocks && Config.options.time.worldClocks.length > 0
+            sourceComponent: worldClocksComponent
         }
 
         ColumnLayout {
@@ -255,6 +237,32 @@ StyledPopup {
             LocalSendPill {
                 visible: LocalSend.available
             }
+        }
+
+        Component {
+            id: transferCard
+            LocalSendTransferCard {}
+        }
+
+        Component {
+            id: sendCard
+            LocalSendSendCard {}
+        }
+
+        Loader {
+            id: localSendLoader
+            Layout.fillWidth: true
+            Layout.minimumWidth: root.compact ? 320 : 360
+            visible: active
+            active: LocalSend.currentTransfer !== null || LocalSend.droppedFiles.length > 0
+            sourceComponent: LocalSend.currentTransfer !== null ? transferCard : sendCard
+        }
+
+        AlarmsCard {
+            id: alarmsCard
+            Layout.fillWidth: true
+            Layout.minimumWidth: root.compact ? 320 : 360
+            visible: Config.options.time.alarms.showAlarmsSection
         }
 
         Component {
@@ -330,138 +338,18 @@ StyledPopup {
             }
         }
 
-        Loader {
-            id: worldClocksLoader
-            Layout.fillWidth: true
-            visible: active
-            active: Config.options.time.worldClocks && Config.options.time.worldClocks.length > 0
-            sourceComponent: worldClocksComponent
-        }
-
-        Loader {
-            Layout.fillWidth: true
-            visible: active
-            active: root.compact ? sourceComponent !== todoSection : true
-            sourceComponent: LocalSend.currentTransfer !== null ? transferCard : LocalSend.droppedFiles.length > 0 ? sendCard : todoSection
-        }
-
-        Component {
-            id: todoSection
-            SectionCard {
-                title: Translation.tr("To-Do Tasks")
-                icon: "checklist"
-                subtitle: root.todosSection
-
-                LoadingPlaceholder {
-                    Layout.preferredHeight: 30
-                    visible: root.todosEmpty
-                    loading: false
-                    emptyText: Translation.tr("No pending tasks")
-                }
-            }
-        }
 
         Component {
             id: worldClocksComponent
-            SectionCard {
-                title: Translation.tr("World Clocks")
-                icon: "public"
-                showDivider: true
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-
-                    Repeater {
-                        model: Config.options.time.worldClocks
-
-                        RowLayout {
-                            id: clockRow
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            required property var modelData
-                            required property int index
-
-                            ColumnLayout {
-                                spacing: 2
-
-                                StyledText {
-                                    text: clockRow.modelData.name || clockRow.modelData.tz || Translation.tr("Unnamed")
-                                    font.weight: Font.Bold
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnSurface
-                                }
-
-                                StyledText {
-                                    text: {
-                                        let offset = root.getTimezoneOffsetString(clockRow.modelData.tz, DateTime.clock.date);
-                                        if (offset === "") {
-                                            return Translation.tr("Same time");
-                                        }
-                                        return offset + " " + Translation.tr("relative to local");
-                                    }
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: Appearance.colors.colSubtext
-                                }
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                            }
-
-                            ColumnLayout {
-                                spacing: 2
-                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-
-                                StyledText {
-                                    text: root.getFormattedTime(clockRow.modelData.tz, DateTime.clock.date)
-                                    font.weight: Font.Bold
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnSurface
-                                    Layout.alignment: Qt.AlignRight
-                                }
-
-                                StyledText {
-                                    text: root.getFormattedDate(clockRow.modelData.tz, DateTime.clock.date)
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: Appearance.colors.colSubtext
-                                    Layout.alignment: Qt.AlignRight
-                                }
-                            }
-
-                            MaterialSymbol {
-                                text: {
-                                    try {
-                                        const targetUtc = root.getUtcTimeForTz(clockRow.modelData.tz, DateTime.clock.date);
-                                        if (isNaN(targetUtc)) {
-                                            return "question_mark";
-                                        }
-                                        const targetDate = new Date(targetUtc);
-                                        const hour = targetDate.getUTCHours();
-                                        return (hour < 6 || hour >= 18) ? "dark_mode" : "light_mode";
-                                    } catch (e) {
-                                        return "question_mark";
-                                    }
-                                }
-                                iconSize: 20
-                                color: text === "light_mode" ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-                    }
-                }
+            WorldClocksCard {
+                timezoneOffsets: root.timezoneOffsets
+                getTimezoneOffsetString: root.getTimezoneOffsetString
+                getUtcTimeForTz: root.getUtcTimeForTz
+                getFormattedTime: root.getFormattedTime
+                getFormattedDate: root.getFormattedDate
             }
         }
 
-        Component {
-            id: transferCard
-            LocalSendTransferCard {}
-        }
 
-        Component {
-            id: sendCard
-            LocalSendSendCard {}
-        }
     }
 }

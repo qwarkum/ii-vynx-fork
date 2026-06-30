@@ -65,5 +65,14 @@ ContentPage {
                 Config.options.sounds.pomodoro = checked;
             }
         }
+
+        ConfigSwitch {
+            buttonIcon: "alarm"
+            text: Translation.tr("Alarm sound toggle")
+            checked: Config.options.sounds.alarm
+            onCheckedChanged: {
+                Config.options.sounds.alarm = checked;
+            }
+        }
     }
 }

@@ -31,6 +31,7 @@ import qs.modules.ii.localSendPopup
 import qs.modules.ii.scratchpadOverlay
 import qs.modules.ii.keyboardLayoutTransitionPopup
 import qs.modules.ii.topLayer
+import qs.modules.ii.alarmRingingPopup
 
 Scope {
     property bool barExtraCondition: true
@@ -145,6 +146,9 @@ Scope {
     }
     PanelLoader {
         component: ScratchpadOverlay {}
+    }
+    PanelLoader {
+        component: AlarmRingingPopup {}
     }
     PanelLoader {
         extraCondition: GlobalStates.connectModeActive
