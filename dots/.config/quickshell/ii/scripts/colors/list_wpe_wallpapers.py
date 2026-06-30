@@ -54,14 +54,25 @@ def list_wallpapers():
                             p_path = os.path.join(subdir, preview)
                             if os.path.exists(p_path):
                                 preview_path = p_path
-                        
+
+                        wp_type = data.get("type", "NONE")
+                        file_ref = data.get("file", "")
+                        # Resolve the actual file path for video wallpapers
+                        content_file = ""
+                        if file_ref:
+                            candidate = os.path.join(subdir, file_ref)
+                            if os.path.exists(candidate):
+                                content_file = candidate
+
                         mtime = os.path.getmtime(subdir)
                         wallpapers.append({
                             "id": id_str,
                             "title": title,
                             "preview": preview_path,
                             "path": subdir,
-                            "mtime": mtime
+                            "mtime": mtime,
+                            "type": wp_type,
+                            "file": content_file
                         })
                 except Exception:
                     pass

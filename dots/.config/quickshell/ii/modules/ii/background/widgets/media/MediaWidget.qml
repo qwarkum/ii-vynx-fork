@@ -147,10 +147,11 @@ AbstractBackgroundWidget {
         Image { // using a loader somehow breaks the image
             id: blurredArt
             anchors.fill: parent
+            anchors.margins: -80 // Expand bounds for blur padding, removing the "invisible wall" clipping
             source: root.displayedArtFilePath
-            sourceSize.width: contentItem.implicitWidth
-            sourceSize.height: contentItem.implicitHeight
-            fillMode: Image.PreserveAspectCrop
+            sourceSize.width: root.widgetSize
+            sourceSize.height: root.widgetSize
+            fillMode: Image.Pad // Center the art without scaling to keep padding transparent
             cache: false
             antialiasing: true
             asynchronous: true
@@ -201,6 +202,19 @@ AbstractBackgroundWidget {
                 color: blendedColors.colOnSecondaryContainer
                 colSymbol: Appearance.colors.colPrimaryContainer
             }
+        }
+
+        MaterialShape {
+            id: shadowSourceShape
+            anchors.fill: parent
+            shapeString: Config.options.background.widgets.media.backgroundShape
+            visible: false
+        }
+
+        StyledDropShadow {
+            id: mediaShadow
+            target: shadowSourceShape
+            visible: Config.options.background.widgets.enableShadows ?? true
         }
 
         MaterialShape { // Art background

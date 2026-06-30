@@ -17,6 +17,7 @@ AbstractBackgroundWidget {
 
     StyledDropShadow {
         target: backgroundShape
+        visible: Config.options.background.widgets.enableShadows ?? true
     }
 
     MaterialShape {

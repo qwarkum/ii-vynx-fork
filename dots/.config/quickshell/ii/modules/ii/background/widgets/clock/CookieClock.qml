@@ -85,9 +85,11 @@ Item {
         }
     }
 
+    readonly property bool enableShadows: Config.options.background.widgets.enableShadows ?? true
     property string backgroundStyle: Config.options.background.widgets.clock.cookie.backgroundStyle
     StyledDropShadow {
         target: backgroundStyle === "sine" ? sineCookieLoader : backgroundStyle === "shape" ? materialShapeCookieLoader : roundedPolygonCookieLoader
+        visible: root.enableShadows
 
         RotationAnimation on rotation {
             running: Config.options.background.widgets.clock.cookie.constantlyRotate
@@ -101,7 +103,7 @@ Item {
     Loader {
         id: sineCookieLoader
         z: 0
-        visible: false // The DropShadow already draws it
+        visible: !root.enableShadows // Show target directly when shadows are disabled
         active: backgroundStyle === "sine"
         sourceComponent: SineCookie {
             implicitSize: root.implicitSize
@@ -112,7 +114,7 @@ Item {
     Loader {
         id: roundedPolygonCookieLoader
         z: 0
-        visible: false // The DropShadow already draws it
+        visible: !root.enableShadows // Show target directly when shadows are disabled
         active: backgroundStyle === "cookie"
         sourceComponent: MaterialCookie {
             implicitSize: root.implicitSize
@@ -123,7 +125,7 @@ Item {
     Loader {
         id: materialShapeCookieLoader
         z: 0
-        visible: false // The DropShadow already draws it
+        visible: !root.enableShadows // Show target directly when shadows are disabled
         active: backgroundStyle === "shape"
         sourceComponent: MaterialShape {
             implicitSize: root.implicitSize

@@ -112,6 +112,12 @@ AbstractBackgroundWidget {
         onTriggered: root.player.positionChanged()
     }
 
+    StyledRectangularShadow {
+        id: bgShadow
+        target: mainBg
+        visible: Config.options.background.widgets.enableShadows ?? true
+    }
+
     Rectangle {
         id: mainBg
         anchors.fill: parent

@@ -438,6 +438,8 @@ Singleton {
                         property real x: 100
                         property real y: 100
                     }
+                    property bool enableInnerShadow: true
+                    property bool enableShadows: true
                 }
                 property bool scaleLargeWallpapers: true
                 property bool animateWallpaperChanges: true

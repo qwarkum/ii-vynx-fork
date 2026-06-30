@@ -89,7 +89,7 @@ AbstractBackgroundWidget {
         implicitWidth: statusTextBg.implicitWidth
         StyledRectangularShadow {
             target: statusTextBg
-            visible: statusTextBg.visible && root.clockStyle === "cookie"
+            visible: statusTextBg.visible && root.clockStyle === "cookie" && (Config.options.background.widgets.enableShadows ?? true)
             opacity: statusTextBg.opacity
         }
         Rectangle {

@@ -27,38 +27,49 @@ AbstractBackgroundWidget {
         anchors.centerIn: parent
         spacing: 4
 
-        MaterialShape {
-            id: weatherIconShape
+        Item {
             Layout.preferredWidth: 200
             Layout.preferredHeight: 200
             Layout.alignment: Qt.AlignHCenter
-            shapeString: Config.options.background.widgets.weather.backgroundShape
-            color: "transparent"
 
-            // Background shape matching main shape to serve as source for InnerShadow
+            StyledDropShadow {
+                id: weatherShadow
+                target: weatherIconShape
+                visible: Config.options.background.widgets.enableShadows ?? true
+            }
+
             MaterialShape {
-                id: bgShape
+                id: weatherIconShape
                 anchors.fill: parent
-                shapeString: parent.shapeString
-                color: Appearance.colors.colPrimaryContainer
-                visible: false
-            }
+                shapeString: Config.options.background.widgets.weather.backgroundShape
+                color: "transparent"
 
-            InnerShadow {
-                id: innerShadow
-                anchors.fill: parent
-                radius: 32 // reduced to 24 for clean tight look
-                samples: 49 // reduced to 49 for optimized smooth blur
-                color: Qt.rgba(0, 0, 0, 0.25) // deep soft shadow
-                source: bgShape
-            }
+                // Background shape matching main shape to serve as source for InnerShadow
+                MaterialShape {
+                    id: bgShape
+                    anchors.fill: parent
+                    shapeString: parent.shapeString
+                    color: Appearance.colors.colPrimaryContainer
+                    visible: !(Config.options.background.widgets.enableInnerShadow ?? true)
+                }
 
-            MaterialSymbol {
-                anchors.centerIn: parent
-                iconSize: 120
-                text: Icons.getWeatherIcon(Weather.data?.wCode) ?? "cloud"
-                color: Appearance.colors.colOnSurfaceVariant
-                fill: 1.0
+                InnerShadow {
+                    id: innerShadow
+                    anchors.fill: parent
+                    radius: 24 // balanced radius for expressive shape
+                    samples: 49
+                    color: Qt.rgba(0, 0, 0, 0.35) // deep soft shadow
+                    source: bgShape
+                    visible: Config.options.background.widgets.enableInnerShadow ?? true
+                }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    iconSize: 120
+                    text: Icons.getWeatherIcon(Weather.data?.wCode) ?? "cloud"
+                    color: Appearance.colors.colOnSurfaceVariant
+                    fill: 1.0
+                }
             }
         }
 

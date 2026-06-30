@@ -248,9 +248,10 @@ Rectangle {
         source: shadowMaskCanvas
         radius: 40 // high radius for soft blur
         samples: 81 // high samples for smooth blur
-        color: Qt.rgba(0, 0, 0, 0.35) // high opacity, deep shadow
+        color: Qt.rgba(0, 0, 0, 0.25) // high opacity, deep shadow
         horizontalOffset: 0
         verticalOffset: 0
+        visible: Config.options.background.widgets.enableInnerShadow ?? true
     }
 
     // Right-side time & date information

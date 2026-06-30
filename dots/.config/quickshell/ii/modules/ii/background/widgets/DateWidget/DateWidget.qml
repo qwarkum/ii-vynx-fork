@@ -16,6 +16,12 @@ AbstractBackgroundWidget {
     implicitWidth: 240
     implicitHeight: 240
 
+    StyledRectangularShadow {
+        id: bgShadow
+        target: bgRect
+        visible: Config.options.background.widgets.enableShadows ?? true
+    }
+
     Rectangle {
         id: bgRect
         anchors.fill: parent
@@ -26,7 +32,8 @@ AbstractBackgroundWidget {
         }
         radius: Appearance.rounding.large
 
-        layer.enabled: true
+        // Recorte da camada ativado apenas se a sombra interna estiver ligada
+        layer.enabled: Config.options.background.widgets.enableInnerShadow ?? true
         layer.smooth: true
         layer.effect: OpacityMask {
             maskSource: Rectangle {
@@ -87,12 +94,11 @@ AbstractBackgroundWidget {
             }
         }
 
-        // Inner shadow mask canvas to create a solid frame with a rounded rectangle cutout matching the card
+        // Moldura do Canvas com recorte (furo) para projetar a sombra para dentro
         Canvas {
             id: shadowMaskCanvas
             x: -80
             y: -80
-            // Expand the canvas bounds significantly to prevent the drop shadow blur from being clipped
             width: bgRect.width + 160
             height: bgRect.height + 160
             visible: false
@@ -102,16 +108,14 @@ AbstractBackgroundWidget {
                 ctx.reset();
                 ctx.fillStyle = "black";
                 ctx.beginPath();
-                
-                // Outer rectangle covering the expanded canvas size
                 ctx.rect(0, 0, width, height);
                 
-                // Inner rounded rectangle matching the card's position and rounding
                 var rx = 80;
                 var ry = 80;
                 var rw = bgRect.width;
                 var rh = bgRect.height;
-                var r = bgRect.radius;
+                // Reduzimos o raio do cutout na moldura para compensar a sobreposição da sombra nos cantos
+                var r = Math.max(0, bgRect.radius - 8);
                 
                 ctx.moveTo(rx + r, ry);
                 ctx.arcTo(rx, ry, rx, ry + r, r);
@@ -131,7 +135,6 @@ AbstractBackgroundWidget {
             onHeightChanged: requestPaint()
         }
 
-        // DropShadow casting inward from the mask frame, creating the inner shadow effect
         DropShadow {
             id: innerShadow
             x: -80
@@ -139,11 +142,12 @@ AbstractBackgroundWidget {
             width: shadowMaskCanvas.width
             height: shadowMaskCanvas.height
             source: shadowMaskCanvas
-            radius: 32 // reduced to 24 for clean tight look
-            samples: 49 // reduced to 49 for optimized smooth blur
-            color: Qt.rgba(0, 0, 0, 0.25) // high opacity, deep shadow
+            radius: 24 // Soft blur equilibrado para o tamanho do widget
+            samples: 49
+            color: Qt.rgba(0, 0, 0, 0.35)
             horizontalOffset: 0
             verticalOffset: 0
+            visible: Config.options.background.widgets.enableInnerShadow ?? true
         }
     }
 }

@@ -715,6 +715,11 @@ ContentPage {
                 Layout.fillWidth: true
                 implicitHeight: 330
 
+                Process {
+                    id: downloadProc
+                    property string wallpaperId: ""
+                }
+
                 GridView {
                     id: wpeGrid
                     anchors.fill: parent
@@ -814,6 +819,60 @@ ContentPage {
                                         text: "done"
                                         iconSize: 14
                                         color: Appearance.colors.colOnPrimary
+                                    }
+                                }
+
+                                // Download Button — saves video/preview to ~/Pictures/Wallpapers
+                                Rectangle {
+                                    anchors {
+                                        top: parent.top
+                                        left: parent.left
+                                        margins: 6
+                                    }
+                                    width: 26
+                                    height: 26
+                                    radius: 13
+                                    color: Qt.rgba(0, 0, 0, 0.55)
+                                    visible: presetButton.hovered && !downloadProc.running
+                                    z: 5
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "download"
+                                        iconSize: 15
+                                        color: "#ffffff"
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            const scriptPath = `${Directories.scriptPath}/colors/download_wpe_wallpaper.py`;
+                                            downloadProc.command = ["python3", scriptPath, model.id];
+                                            downloadProc.running = true;
+                                        }
+                                    }
+                                }
+
+                                // Download progress indicator
+                                Rectangle {
+                                    anchors {
+                                        top: parent.top
+                                        left: parent.left
+                                        margins: 6
+                                    }
+                                    width: 26
+                                    height: 26
+                                    radius: 13
+                                    color: Qt.rgba(0, 0, 0, 0.55)
+                                    visible: downloadProc.running
+                                    z: 5
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "downloading"
+                                        iconSize: 15
+                                        color: Appearance.colors.colPrimary
                                     }
                                 }
                             }

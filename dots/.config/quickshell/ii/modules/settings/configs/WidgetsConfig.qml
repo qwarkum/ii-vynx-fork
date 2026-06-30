@@ -271,6 +271,36 @@ Item {
                         widgetsConfigRoot.activeSubPage = Qt.resolvedUrl("widgets/DateDesktopWIdgetConfig.qml");
                     }
                 }
+
+                Item { Layout.preferredHeight: 24 } // Long spacing
+
+                // ── Inner Shadow Toggle ──────────────────────────────────────
+                ConfigSwitch {
+                    topLeftRadius: Appearance.rounding.full
+                    topRightRadius: Appearance.rounding.full
+                    bottomLeftRadius: Appearance.rounding.full
+                    bottomRightRadius: Appearance.rounding.full
+                    buttonIcon: "layers"
+                    text: Translation.tr("Widget Inner Shadows")
+                    checked: Config.options.background.widgets.enableInnerShadow
+                    onCheckedChanged: {
+                        Config.options.background.widgets.enableInnerShadow = checked;
+                    }
+                }
+
+                // ── Outer Shadow Toggle ──────────────────────────────────────
+                ConfigSwitch {
+                    topLeftRadius: Appearance.rounding.full
+                    topRightRadius: Appearance.rounding.full
+                    bottomLeftRadius: Appearance.rounding.full
+                    bottomRightRadius: Appearance.rounding.full
+                    buttonIcon: "wb_shade"
+                    text: Translation.tr("Widget Outer Shadows")
+                    checked: Config.options.background.widgets.enableShadows
+                    onCheckedChanged: {
+                        Config.options.background.widgets.enableShadows = checked;
+                    }
+                }
             }
         }
     }
