@@ -848,7 +848,7 @@ ContentPage {
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
                                             const scriptPath = `${Directories.scriptPath}/colors/download_wpe_wallpaper.py`;
-                                            downloadProc.command = ["python3", scriptPath, model.id];
+                                            downloadProc.command = ["python3", scriptPath, model.id, "--quality", "full"];
                                             downloadProc.running = true;
                                         }
                                     }
