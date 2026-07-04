@@ -70,6 +70,7 @@ Item {
             const isNotchActive = modeState.notchModeEnabled;
             const isExpanded = modeState.expanded;
             if (isNotchActive && !isExpanded) {
+                if (modeState._displayMode === "") return 0;
                 if (modeState._displayMode === "osd") {
                     return 72;
                 }
@@ -112,6 +113,7 @@ Item {
             const isNotchActive = modeState.notchModeEnabled;
             const isExpanded = modeState.expanded;
             if (isNotchActive && !isExpanded) {
+                if (modeState._displayMode === "") return 0;
                 if (modeState._displayMode === "osd") {
                     return 380;
                 }
@@ -153,7 +155,7 @@ Item {
             width: parent.width - 32
             anchors.centerIn: parent
             spacing: 0
-            opacity: (!modeState.notchModeEnabled || modeState.expanded || (modeState._displayMode !== "osd" && modeState._displayMode !== "notification")) ? 1.0 : 0.0
+            opacity: (!modeState.notchModeEnabled || modeState.expanded || (modeState._displayMode !== "" && modeState._displayMode !== "osd" && modeState._displayMode !== "notification")) ? 1.0 : 0.0
             visible: opacity > 0.01
             Behavior on opacity { NumberAnimation { duration: 200 } }
 

@@ -46,6 +46,16 @@ QtObject {
         return false;
     }
 
+    function isWidgetInLayout(widgetId) {
+        if (!Config.ready) return false;
+        const center = Config.options.bar.layouts.center;
+        if (!center) return false;
+        for (let i = 0; i < center.length; i++) {
+            if (center[i].id === widgetId) return true;
+        }
+        return false;
+    }
+
     readonly property bool isOsdOpenHere: {
         if (!GlobalStates.osdVolumeOpen) return false;
         const focusedScreenName = (Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0])?.name;
@@ -78,11 +88,13 @@ QtObject {
             // Skip workspaces here since we handled it above with higher priority
             if (modeId === "workspaces") continue;
 
-            if (isWidgetActive(modeId)) {
+            if (isWidgetActive(modeId) && isWidgetInLayout(modeId)) {
                 return modeId;
             }
         }
-        return "clock";
+        // Fallback: clock only if it's in the layout
+        if (isWidgetInLayout("clock")) return "clock";
+        return "";
     }
 
     readonly property string resolvedMode: _calculatedMode
