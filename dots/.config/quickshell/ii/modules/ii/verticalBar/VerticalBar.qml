@@ -11,6 +11,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 import qs.modules.ii.wrappedFrame
 
 Scope {
@@ -72,7 +73,7 @@ Scope {
                     property bool hasActiveWindows: false
                     property bool showBarBackground: barRoot.hasActiveWindows && Config.options.bar.barBackgroundStyle === 2 || Config.options.bar.barBackgroundStyle === 1
 
-                    Bar.BarThemes {
+                    BarThemes {
                         id: barThemes
                     }
                     property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
@@ -127,6 +128,39 @@ Scope {
                         item: hoverMaskRegion
                     }
                     color: "transparent"
+
+                    // ── Ultra-soft edge vignette (vertical) ───────────────────
+                    Rectangle {
+                        z: -20
+                        visible: Config.options.bar.barBackgroundStyle === 0
+                        anchors {
+                            top: parent.top
+                            bottom: parent.bottom
+                            left: !Config.options.bar.bottom ? parent.left : undefined
+                            right: Config.options.bar.bottom ? parent.right : undefined
+                        }
+                        readonly property real glowDepth: 220
+                        width: glowDepth
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop {
+                                position: 0.0
+                                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.07)
+                            }
+                            GradientStop {
+                                position: 0.25
+                                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.03)
+                            }
+                            GradientStop {
+                                position: 0.60
+                                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.01)
+                            }
+                            GradientStop {
+                                position: 1.0
+                                color: "transparent"
+                            }
+                        }
+                    }
 
                     // Positioning FULL SCREEN
                     anchors {

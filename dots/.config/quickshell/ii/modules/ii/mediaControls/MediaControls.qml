@@ -12,6 +12,7 @@ import Quickshell.Services.Mpris
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../bar" as Bar
+import "../bar/widgets/media"
 
 Scope {
     id: root
@@ -256,7 +257,7 @@ Scope {
 
                         Component {
                             id: expressiveComp
-                            Bar.ExpressiveMediaCard {
+                            ExpressiveMediaCard {
                                 player: delegateLoader.modelData
                             }
                         }

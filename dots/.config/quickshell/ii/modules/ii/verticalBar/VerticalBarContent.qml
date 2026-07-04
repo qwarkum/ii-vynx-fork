@@ -9,6 +9,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 
 Item { // Bar content region
     id: root
@@ -63,7 +64,7 @@ Item { // Bar content region
             target: barBackground
         }
     }
-    Bar.BarThemes {
+    BarThemes {
         id: barThemes
     }
     property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
@@ -71,9 +72,9 @@ Item { // Bar content region
     readonly property bool isDynamicIsland: Config.options.bar.cornerStyle === 3
     readonly property real frameThickness: Config.options.appearance.fakeScreenRounding === 3 ? Config.options.appearance.wrappedFrameThickness : 0
 
-    // === Transparent bar background: simple color gradient (no blur) ===
-    // Uses a semi-transparent solid color that fades from a subtle tint at the
-    // screen edge to fully transparent at the content edge.
+    // === Transparent bar background: soft vignette gradient ===
+    // Subtle tint at the screen edge that fades smoothly over ~35% of the
+    // bar, leaving the rest fully transparent for a clean float look.
     Rectangle {
         id: transparentGradientLayer
         z: -11
@@ -82,8 +83,18 @@ Item { // Bar content region
         readonly property bool barAtLeft: !Config.options.bar.bottom
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: transparentGradientLayer.barAtLeft ? 0.0 : 1.0; color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.30) }
-            GradientStop { position: transparentGradientLayer.barAtLeft ? 1.0 : 0.0; color: "transparent" }
+            GradientStop {
+                position: transparentGradientLayer.barAtLeft ? 0.00 : 1.00
+                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.18)
+            }
+            GradientStop {
+                position: transparentGradientLayer.barAtLeft ? 0.15 : 0.85
+                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.06)
+            }
+            GradientStop {
+                position: transparentGradientLayer.barAtLeft ? 0.35 : 0.65
+                color: "transparent"
+            }
         }
     }
 

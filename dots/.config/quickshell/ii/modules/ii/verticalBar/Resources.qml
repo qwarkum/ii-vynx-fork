@@ -4,6 +4,7 @@ import qs.modules.common.widgets
 import QtQuick
 import QtQuick.Layouts
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.popups.resources
 
 MouseArea {
     id: root
@@ -121,7 +122,7 @@ MouseArea {
         }
     }
 
-    Bar.ExpressiveResourcesPopup {
+    ExpressiveResourcesPopup {
         hoverTarget: root
         Component.onCompleted: {
             activeChanged.connect(() => {

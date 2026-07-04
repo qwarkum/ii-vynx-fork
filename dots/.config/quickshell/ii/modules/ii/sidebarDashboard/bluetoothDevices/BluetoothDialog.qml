@@ -12,7 +12,7 @@ import Quickshell.Bluetooth
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
-import "../../bar/cards"
+import "../../bar/shared/cards"
 
 WindowDialog {
     id: root

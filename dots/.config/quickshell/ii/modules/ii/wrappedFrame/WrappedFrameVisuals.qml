@@ -4,6 +4,7 @@ import Quickshell
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 
 Item {
     id: visualsRoot
@@ -44,7 +45,7 @@ Item {
     readonly property real totalTopPush: !hasTopFrame ? Math.max(0, Appearance.sizes.barHeight - visualsRoot.hBarHiddenAmount) : 0
     readonly property real totalBottomPush: !hasBottomFrame ? Math.max(0, Appearance.sizes.barHeight - visualsRoot.hBarHiddenAmount) : 0
 
-    Bar.BarThemes {
+    BarThemes {
         id: barThemes
     }
     property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)

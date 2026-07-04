@@ -8,6 +8,7 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 import qs.modules.ii.verticalBar as VBar
 import qs.modules.ii.sidebarPolicies as Policies
 import qs.modules.ii.sidebarDashboard as Dashboard
@@ -32,7 +33,7 @@ PanelWindow {
 
     readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3
 
-    Bar.BarThemes {
+    BarThemes {
         id: barThemes
     }
 
@@ -762,7 +763,7 @@ PanelWindow {
     Loader {
         id: osdDropLoader
         z: 11
-        active: GlobalStates.osdConnectActive && !GlobalStates.screenLocked
+        active: GlobalStates.osdConnectActive && !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable)
         sourceComponent: Component {
             OsdConnect.OsdDrop {
                 screen: topPanel.screen

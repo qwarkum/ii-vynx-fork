@@ -244,6 +244,9 @@ RippleButton {
             return normalHeight;
         return contentRow.implicitHeight + buttonVerticalPadding * 2;
     }
+    onImplicitHeightChanged: {
+        Quickshell.execDetached(["sh", "-c", "echo \"[DEBUG-H] name=" + itemName + " ih=" + implicitHeight + " crH=" + contentRow.implicitHeight + " ccH=" + contentColumn.implicitHeight + " fpLen=" + filePath.length + " clipLen=" + cliphistRawString.length + " entry=" + (entry?.name || "null") + "\" >> /tmp/search_debug.log"]);
+    }
     implicitWidth: contentRow.implicitWidth + root.buttonHorizontalPadding * 2
 
     Behavior on implicitHeight {
@@ -563,8 +566,7 @@ RippleButton {
                             }
 
                             MaterialSymbol {
-                                visible: root.contentType !== "" && root.contentType !== "hex-color" && root.contentType !== "clipboard"
-                                text: {
+                                readonly property string iconText: {
                                     switch (root.contentType) {
                                     case "url":
                                         return "link";
@@ -586,6 +588,8 @@ RippleButton {
                                         return "";
                                     }
                                 }
+                                visible: iconText !== ""
+                                text: iconText
                                 iconSize: Appearance.font.pixelSize.normal
                                 color: root.colForeground
                             }

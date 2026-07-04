@@ -8,6 +8,7 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.overview
 import qs.modules.ii.bar
+import qs.modules.ii.bar.shared
 
 // ── Animation strategy ──────────────────────────────────────────────────────
 // Caestelia-inspired: uses expressiveFastSpatial (spring overshoot y1=1.67)

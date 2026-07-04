@@ -539,6 +539,18 @@ Singleton {
                 property int dynamicIslandSpacingHorizontal: 48
                 property int dynamicIslandSpacingVertical: 16
                 property bool dynamicIslandLoadBalance: true
+                property JsonObject dynamicIsland: JsonObject {
+                    property JsonObject notchMode: JsonObject {
+                        property bool enable: false
+                        property var priorityList: ["music_player", "workspaces", "clock"]
+                        property var visibleWidgets: ["workspaces", "music_player", "clock"]
+                        property int workspaceSwitchDuration: 2000
+                        property bool expandOnHover: true
+                        property int expandAnimDuration: 350
+                        property int fadeDelay: 150
+                        property bool overlapApps: false
+                    }
+                }
                 property int barGroupStyle: 1 // 0: Pills | 1: Island (opaque) | 2: Transparent (or maybe line-separated in the future)
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
                 property bool useMaterialSymbolForTopLeftIcon: false
@@ -1296,6 +1308,13 @@ Singleton {
                 }
                 property list<var> worldClocks: []
                 property bool secondPrecision: false
+
+                property JsonObject alarms: JsonObject {
+                    property bool useFullscreenPopup: false
+                    property bool showAnalogClock: true
+                    property bool showWorldClocks: true
+                    property bool showAlarmsSection: true
+                }
             }
 
             property JsonObject updates: JsonObject {

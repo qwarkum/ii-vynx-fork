@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 
 Item {
     id: wrappedFrame
@@ -17,7 +18,7 @@ Item {
     property bool barVertical: Config.options.bar.vertical
     property bool barBottom: Config.options.bar.bottom
 
-    Bar.BarThemes {
+    BarThemes {
         id: barThemes
     }
     property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)

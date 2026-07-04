@@ -13,7 +13,7 @@ Scope {
 
     PanelWindow {
         id: root
-        property bool active: (Notifications.popupList.length > 0)
+        property bool active: (Notifications.popupList.length > 0) && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable)
         property bool keepVisible: false
 
         visible: keepVisible && !GlobalStates.screenLocked

@@ -3,6 +3,7 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.bar.shared
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -48,7 +49,7 @@ Item {
         }
     }
 
-    Bar.BarThemes {
+    BarThemes {
         id: barThemes
     }
     readonly property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
