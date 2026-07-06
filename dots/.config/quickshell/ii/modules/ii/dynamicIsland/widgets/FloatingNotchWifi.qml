@@ -34,7 +34,7 @@ RowLayout {
         font.pixelSize: Appearance.font.pixelSize.smaller
         font.bold: true
         color: Appearance.colors.colOnSurface
-        text: root.ssid !== "" ? root.ssid : Translation.tr("Wi-Fi Connected")
+        text: Network.networkName !== "" ? Network.networkName : (root.ssid !== "" ? root.ssid : Translation.tr("Wi-Fi Connected"))
         elide: Text.ElideRight
         maximumLineCount: 1
         wrapMode: Text.NoWrap

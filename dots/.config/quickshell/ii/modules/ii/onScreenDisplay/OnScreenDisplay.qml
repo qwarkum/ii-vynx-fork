@@ -18,7 +18,7 @@ Scope {
     property bool isStartup: true
     Timer {
         running: true
-        interval: 2000
+        interval: 500
         onTriggered: root.isStartup = false
     }
 
@@ -39,6 +39,10 @@ Scope {
         {
             id: "gamma",
             sourceUrl: "indicators/GammaIndicator.qml"
+        },
+        {
+            id: "keyboardBrightness",
+            sourceUrl: "indicators/KeyboardBrightnessIndicator.qml"
         },
     ]
 
@@ -85,15 +89,25 @@ Scope {
     }
 
     Connections {
+        target: KeyboardBacklight
+        function onCurrentValueChanged() {
+            if (root.isStartup) return;
+            root.protectionMessage = "";
+            root.currentIndicator = "keyboardBrightness";
+            root.triggerOsd();
+        }
+    }
+
+    Connections {
         target: Audio
         function onValueChanged() {
-            if (!Audio.ready || root.isStartup)
+            if (!Audio.ready || root.isStartup || GlobalStates.blockVolumeOsdForBluetooth)
                 return;
             root.currentIndicator = "volume";
             root.triggerOsd();
         }
         function onMutedChanged() {
-            if (!Audio.ready || root.isStartup)
+            if (!Audio.ready || root.isStartup || GlobalStates.blockVolumeOsdForBluetooth)
                 return;
             root.currentIndicator = "volume";
             root.triggerOsd();

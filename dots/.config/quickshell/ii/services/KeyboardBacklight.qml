@@ -99,6 +99,27 @@ Singleton {
         }
     }
 
+    FileView {
+        id: brightnessFileView
+        path: root.deviceName ? `/sys/class/leds/${root.deviceName}/brightness` : ""
+    }
+
+    Timer {
+        interval: 150
+        running: root.available && root.deviceName !== ""
+        repeat: true
+        onTriggered: {
+            brightnessFileView.reload()
+            const valStr = brightnessFileView.text().trim()
+            if (valStr.length > 0) {
+                const val = parseInt(valStr)
+                if (!isNaN(val) && val !== root.currentValue) {
+                    root.currentValue = val
+                }
+            }
+        }
+    }
+
     IpcHandler {
         target: "keyboardBacklight"
 

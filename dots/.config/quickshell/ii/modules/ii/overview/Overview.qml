@@ -89,7 +89,10 @@ Scope {
                         Timer {
                             id: exitAnimTimer
                             interval: root.animDurationExit + 30
-                            onTriggered: root.exitAnimating = false
+                            onTriggered: {
+                                root.exitAnimating = false;
+                                searchWidget.cancelSearch();
+                            }
                         }
 
                         Connections {
@@ -131,7 +134,7 @@ Scope {
                             left: true
                             right: true
                         }
-                        property int barSize: Config.options.bar.vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.barHeight
+                        property int barSize: Config.options.bar.vertical ? Appearance.sizes.verticalBarWindowWidth : Appearance.sizes.barHeight
                         property int margin: isZoomInStyle ? barSize : barSize * 2
                         margins {
                             top: -margin * 2

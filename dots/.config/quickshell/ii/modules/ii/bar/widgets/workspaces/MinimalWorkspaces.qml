@@ -10,6 +10,10 @@ import Quickshell.Hyprland
 
 Item {
     id: root
+
+    Layout.fillHeight: !vertical
+    Layout.fillWidth: vertical
+
     property bool vertical: false
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.QsWindow.window?.screen)
     

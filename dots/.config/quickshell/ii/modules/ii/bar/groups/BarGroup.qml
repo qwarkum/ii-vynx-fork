@@ -43,12 +43,11 @@ Item {
         id: gridLayout
         columns: root.vertical ? 1 : -1
         anchors {
-            verticalCenter: root.vertical ? undefined : parent.verticalCenter
-            horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+            top: parent.top
+            bottom: parent.bottom
             left: root.vertical ? undefined : parent.left
             right: root.vertical ? undefined : parent.right
-            top: root.vertical ? parent.top : undefined
-            bottom: root.vertical ? parent.bottom : undefined
+            horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
             topMargin: root.topPadding
             bottomMargin: root.bottomPadding
             leftMargin: root.leftPadding

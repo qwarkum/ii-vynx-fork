@@ -111,6 +111,26 @@ Singleton {
     property bool policiesPinned: false
     property bool policiesDetached: false
 
+    // Bluetooth connection OSD override
+    property bool blockVolumeOsdForBluetooth: false
+    Connections {
+        target: BluetoothStatus
+        ignoreUnknownSignals: true
+        function onDeviceConnected(device) {
+            root.blockVolumeOsdForBluetooth = true;
+            blockOsdTimer.restart();
+        }
+        function onDeviceDisconnected(device) {
+            root.blockVolumeOsdForBluetooth = true;
+            blockOsdTimer.restart();
+        }
+    }
+    property Timer blockOsdTimer: Timer {
+        id: blockOsdTimer
+        interval: 4000
+        onTriggered: root.blockVolumeOsdForBluetooth = false
+    }
+
     // Bluetooth connection popup
     property bool bluetoothConnectionPopupOpen: false
     property var bluetoothConnectionPopupDevice: null

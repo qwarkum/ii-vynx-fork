@@ -30,7 +30,7 @@ Item {
     property bool usingWrappedFrame: false
     property int frameThickness: 0
     property int barHeight: Appearance.sizes.barHeight
-    property int verticalBarWidth: Appearance.sizes.verticalBarWidth
+    property int verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
     property real barMargin: 0
     property real hBarHiddenAmount: 0
     property real vBarHiddenAmount: 0
@@ -63,6 +63,10 @@ Item {
         {
             id: "gamma",
             sourceUrl: "indicators/GammaIndicator.qml"
+        },
+        {
+            id: "keyboardBrightness",
+            sourceUrl: "indicators/KeyboardBrightnessIndicator.qml"
         }
     ]
 

@@ -35,6 +35,11 @@ Item {
     property bool showLocalSendDialog: false
     property bool editMode: false
 
+    readonly property bool isDynamicIslandTop: !Config.options.bar.vertical && !Config.options.bar.bottom && Config.options.bar.cornerStyle === 3
+    readonly property bool isDynamicIslandBottom: !Config.options.bar.vertical && Config.options.bar.bottom && Config.options.bar.cornerStyle === 3
+
+    property bool isLoadedOnLeft: false
+
     Connections {
         target: GlobalStates
         function onSidebarRightOpenChanged() {
@@ -58,10 +63,14 @@ Item {
     implicitWidth: sidebarRightBackground.implicitWidth
 
     Loader {
-        active: !GlobalStates.connectModeActive || GlobalStates.connectSidebarsSeparate
+        id: sidebarRightShadowLoader
+        active: !GlobalStates.connectModeActive || GlobalStates.connectSidebarsSeparate || root.isDynamicIslandTop || root.isDynamicIslandBottom
+        anchors.fill: sidebarRightBackground
         sourceComponent: Component {
-            StyledRectangularShadow {
+            StyledDropShadow {
                 target: sidebarRightBackground
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: sidebarRightBackground.opacity
             }
         }
     }
@@ -74,7 +83,14 @@ Item {
         color: Config.options.bar.expressiveColors ? activeTheme.barBackground : Appearance.colors.colLayer0
         border.width: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate) ? 0 : 1
         border.color: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate) ? "transparent" : Appearance.colors.colLayer0Border
-        radius: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate) ? 0 : Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+        readonly property bool isConnectDynamicIslandTop: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && root.isDynamicIslandTop
+        readonly property bool isConnectDynamicIslandBottom: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && root.isDynamicIslandBottom
+        readonly property real defaultRadius: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && !root.isDynamicIslandTop && !root.isDynamicIslandBottom) ? 0 : Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+        radius: isConnectDynamicIslandTop ? 0 : defaultRadius
+        topRightRadius: ((isConnectDynamicIslandTop && !root.isLoadedOnLeft) || (isConnectDynamicIslandBottom && root.isLoadedOnLeft)) ? 0 : defaultRadius
+        topLeftRadius: ((isConnectDynamicIslandTop && root.isLoadedOnLeft) || (isConnectDynamicIslandBottom && !root.isLoadedOnLeft)) ? 0 : defaultRadius
+        bottomRightRadius: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && !isConnectDynamicIslandBottom) ? 0 : ((isConnectDynamicIslandBottom && !root.isLoadedOnLeft) ? 0 : defaultRadius)
+        bottomLeftRadius: (GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && !isConnectDynamicIslandBottom) ? 0 : ((isConnectDynamicIslandBottom && root.isLoadedOnLeft) ? 0 : defaultRadius)
 
         ColumnLayout {
             anchors.fill: parent

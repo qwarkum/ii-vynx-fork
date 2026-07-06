@@ -64,7 +64,7 @@ Scope {
 
             readonly property bool barVertical: Config.options.bar.vertical
             readonly property bool barBottom: Config.options.bar.bottom
-            readonly property int barSize: barVertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.barHeight
+            readonly property int barSize: barVertical ? Appearance.sizes.verticalBarWindowWidth : Appearance.sizes.barHeight
             readonly property int gap: Appearance.gapsOut
 
             readonly property int padLeft: barVertical && !barBottom ? barSize : gap

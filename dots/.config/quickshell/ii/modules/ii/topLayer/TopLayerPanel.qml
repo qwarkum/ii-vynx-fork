@@ -31,7 +31,7 @@ PanelWindow {
         right: true
     }
 
-    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3
+    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !topPanel.barVertical)
 
     BarThemes {
         id: barThemes
@@ -54,6 +54,11 @@ PanelWindow {
     readonly property bool barBottom: Config.options.bar.bottom
     readonly property bool barOnLeft: barVertical && !barBottom
     readonly property bool barOnRight: barVertical && barBottom
+
+    readonly property bool isDynamicIslandTop: !topPanel.barVertical && !topPanel.barBottom && Config.options.bar.cornerStyle === 3
+    readonly property bool isDynamicIslandBottom: !topPanel.barVertical && topPanel.barBottom && Config.options.bar.cornerStyle === 3
+    readonly property real sidebarTopOffset: isDynamicIslandTop ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && !topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2)) ? Appearance.sizes.barHeight : 0)
+    readonly property real sidebarBottomOffset: isDynamicIslandBottom ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2)) ? Appearance.sizes.barHeight : 0)
 
     property real leftSidebarMaskWidth: 0
     property real rightSidebarMaskWidth: 0
@@ -90,6 +95,7 @@ PanelWindow {
         && GlobalStates.searchConnectActive
         && screen.name === GlobalStates.activeSearchMonitor
         && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable)
+        && !(Config.ready && Config.options.bar.floatingNotch.enable)
     readonly property bool osdOpenOnMonitor: GlobalStates.osdVolumeOpen && GlobalStates.osdConnectActive && screen.name === (Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0])?.name && !(Config.ready && Config.options.bar.floatingNotch.enable)
 
     readonly property bool hasFullscreenWindowOnMonitor: {
@@ -157,6 +163,9 @@ PanelWindow {
 
             leftSidebarMaskOffset: topPanel.leftSidebarMaskWidth
             rightSidebarMaskOffset: topPanel.rightSidebarMaskWidth
+
+            sidebarTopOffset: topPanel.sidebarTopOffset
+            sidebarBottomOffset: topPanel.sidebarBottomOffset
         }
     }
 
@@ -280,7 +289,7 @@ PanelWindow {
                             bottom: undefined
                         }
                         height: Appearance.rounding.screenRounding
-                        active: hBarItem.showBarBackground && Config.options.bar.cornerStyle === 0 && Config.options.appearance.fakeScreenRounding != 3
+                        active: hBarItem.showBarBackground && Config.options.bar.cornerStyle === 0 && !topPanel.usingWrappedFrame
 
                         states: State {
                             name: "bottom"
@@ -418,7 +427,7 @@ PanelWindow {
                     VBar.VerticalBarContent {
                         id: barContent
                         monitorIndex: vBarItem.monitorIndex
-                        implicitWidth: Appearance.sizes.verticalBarWidth
+                        implicitWidth: Appearance.sizes.verticalBarWindowWidth
                         width: implicitWidth
                         anchors {
                             top: parent.top
@@ -429,11 +438,11 @@ PanelWindow {
 
                         x: {
                             if (topPanel.barOnLeft) {
-                                let hide = (Config?.options.bar.autoHide.enable && !vBarItem.mustShow) ? -Appearance.sizes.verticalBarWidth : 0;
+                                let hide = (Config?.options.bar.autoHide.enable && !vBarItem.mustShow) ? -Appearance.sizes.verticalBarWindowWidth : 0;
                                 let push = (topPanel.leftSidebarActiveOnMonitor) ? GlobalStates.animatedLeftSidebarWidth : 0;
                                 return hide + push;
                             } else if (topPanel.barOnRight) {
-                                let hide = (Config?.options.bar.autoHide.enable && !vBarItem.mustShow) ? Appearance.sizes.verticalBarWidth : 0;
+                                let hide = (Config?.options.bar.autoHide.enable && !vBarItem.mustShow) ? Appearance.sizes.verticalBarWindowWidth : 0;
                                 let push = (topPanel.rightSidebarActiveOnMonitor) ? GlobalStates.animatedRightSidebarWidth : 0;
                                 return parent.width - width + hide - push;
                             }
@@ -455,7 +464,7 @@ PanelWindow {
                             right: undefined
                         }
                         width: Appearance.rounding.screenRounding
-                        active: vBarItem.showBarBackground && Config.options.bar.cornerStyle === 0 && Config.options.appearance.fakeScreenRounding != 3
+                        active: vBarItem.showBarBackground && Config.options.bar.cornerStyle === 0 && !topPanel.usingWrappedFrame
 
                         states: State {
                             name: "right"
@@ -516,7 +525,7 @@ PanelWindow {
                 }
 
                 property alias maskItem: hoverMaskRegion
-                property real hiddenAmount: (Config?.options.bar.autoHide.enable && !mustShow) ? Appearance.sizes.verticalBarWidth : 0
+                property real hiddenAmount: (Config?.options.bar.autoHide.enable && !mustShow) ? Appearance.sizes.verticalBarWindowWidth : 0
 
                 Behavior on hiddenAmount {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(vBarItem)
@@ -526,10 +535,14 @@ PanelWindow {
     }
 
     Loader {
-        active: !GlobalStates.connectModeActive
+        id: leftSidebarShadowLoader
+        active: !GlobalStates.connectModeActive || topPanel.isDynamicIslandTop || topPanel.isDynamicIslandBottom
+        anchors.fill: leftSidebar
         sourceComponent: Component {
-            StyledRectangularShadow {
+            StyledDropShadow {
                 target: leftSidebar
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: leftSidebar.opacity
             }
         }
     }
@@ -556,13 +569,20 @@ PanelWindow {
     Rectangle {
         id: leftSidebar
         x: -(width - GlobalStates.animatedLeftSidebarWidth)
-        y: (!topPanel.barVertical && !topPanel.barBottom && Config.options.bar.cornerStyle === 0) ? Appearance.sizes.barHeight : 0
+        y: topPanel.sidebarTopOffset
         width: Math.round(Math.max(GlobalStates.policiesWidth, GlobalStates.animatedLeftSidebarWidth))
-        height: Math.round((!topPanel.barVertical && Config.options.bar.cornerStyle === 0) ? (parent.height - Appearance.sizes.barHeight) : parent.height)
+        height: Math.round(parent.height - topPanel.sidebarTopOffset - topPanel.sidebarBottomOffset)
         color: Config.options.bar.expressiveColors ? activeTheme.barBackground : Appearance.colors.colLayer0
         border.width: GlobalStates.connectModeActive ? 0 : 1
         border.color: GlobalStates.connectModeActive ? "transparent" : Appearance.colors.colLayer0Border
-        radius: GlobalStates.connectModeActive ? 0 : Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+        readonly property bool isConnectDynamicIslandTop: GlobalStates.connectModeActive && topPanel.isDynamicIslandTop
+        readonly property bool isConnectDynamicIslandBottom: GlobalStates.connectModeActive && topPanel.isDynamicIslandBottom
+        readonly property real defaultRadius: (GlobalStates.connectModeActive && !topPanel.isDynamicIslandTop && !topPanel.isDynamicIslandBottom) ? 0 : Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+        radius: 0
+        topLeftRadius: isConnectDynamicIslandTop ? 0 : defaultRadius
+        topRightRadius: isConnectDynamicIslandBottom ? 0 : defaultRadius
+        bottomLeftRadius: (isConnectDynamicIslandBottom) ? 0 : (GlobalStates.connectModeActive ? 0 : defaultRadius)
+        bottomRightRadius: isConnectDynamicIslandBottom ? defaultRadius : (GlobalStates.connectModeActive ? 0 : defaultRadius)
         visible: topPanel.leftSidebarWarmOnMonitor && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarActiveOnMonitor) && !GlobalStates.connectSidebarsSeparate
 
         // GPU compositing during animation: prevents per-frame mask/Region recalc
@@ -590,6 +610,11 @@ PanelWindow {
                     }
                 } else {
                     return policiesContentComponent;
+                }
+            }
+            onLoaded: {
+                if (item && "isLoadedOnLeft" in item) {
+                    item.isLoadedOnLeft = true;
                 }
             }
         }
@@ -636,9 +661,9 @@ PanelWindow {
     Rectangle {
         id: rightSidebar
         x: parent.width - Math.round(GlobalStates.animatedRightSidebarWidth)
-        y: (!topPanel.barVertical && !topPanel.barBottom && Config.options.bar.cornerStyle === 0) ? Appearance.sizes.barHeight : 0
+        y: topPanel.sidebarTopOffset
         width: Math.round(GlobalStates.dashboardWidth)
-        height: Math.round((!topPanel.barVertical && Config.options.bar.cornerStyle === 0) ? (parent.height - Appearance.sizes.barHeight) : parent.height)
+        height: Math.round(parent.height - topPanel.sidebarTopOffset - topPanel.sidebarBottomOffset)
         color: "transparent"
         border.width: 0
         visible: topPanel.rightSidebarWarmOnMonitor && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarActiveOnMonitor) && !GlobalStates.connectSidebarsSeparate
@@ -652,7 +677,7 @@ PanelWindow {
         layer.enabled: GlobalStates.rightSidebarAnimating
 
         Loader {
-            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && (topPanel.rightSidebarActiveOnMonitor || Config?.options.sidebar.keepRightSidebarLoaded)
+            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate
             asynchronous: true
             anchors.fill: parent
             sourceComponent: {
@@ -669,15 +694,19 @@ PanelWindow {
                     return dashboardContentComponent;
                 }
             }
+            onLoaded: {
+                if (item && "isLoadedOnLeft" in item) {
+                    item.isLoadedOnLeft = false;
+                }
+            }
         }
     }
 
-    // Cantos decoradores de Workspace para o modo Hug no Connect Mode
     Loader {
         id: leftSidebarTopCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && Config.options.appearance.fakeScreenRounding != 3 && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
         x: GlobalStates.animatedLeftSidebarWidth
-        y: 0
+        y: topPanel.sidebarTopOffset
         width: Appearance.rounding.screenRounding
         height: Appearance.rounding.screenRounding
         sourceComponent: RoundCorner {
@@ -688,8 +717,35 @@ PanelWindow {
     }
 
     Loader {
+        id: leftSidebarOuterTopCornerShadowLoader
+        active: leftSidebarOuterTopCornerLoader.active
+        anchors.fill: leftSidebarOuterTopCornerLoader
+        sourceComponent: Component {
+            StyledDropShadow {
+                target: leftSidebarOuterTopCornerLoader
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: leftSidebar.opacity
+            }
+        }
+    }
+
+    Loader {
+        id: leftSidebarOuterTopCornerLoader
+        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        anchors.left: leftSidebar.left
+        anchors.bottom: leftSidebar.top
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.BottomLeft
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
         id: leftSidebarBottomCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && Config.options.appearance.fakeScreenRounding != 3 && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
         x: GlobalStates.animatedLeftSidebarWidth
         anchors.bottom: parent.bottom
         width: Appearance.rounding.screenRounding
@@ -703,10 +759,10 @@ PanelWindow {
 
     Loader {
         id: rightSidebarTopCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && Config.options.appearance.fakeScreenRounding != 3 && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
-        y: 0
+        y: topPanel.sidebarTopOffset
         width: Appearance.rounding.screenRounding
         height: Appearance.rounding.screenRounding
         sourceComponent: RoundCorner {
@@ -717,8 +773,35 @@ PanelWindow {
     }
 
     Loader {
+        id: rightSidebarOuterTopCornerShadowLoader
+        active: rightSidebarOuterTopCornerLoader.active
+        anchors.fill: rightSidebarOuterTopCornerLoader
+        sourceComponent: Component {
+            StyledDropShadow {
+                target: rightSidebarOuterTopCornerLoader
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: rightSidebar.opacity
+            }
+        }
+    }
+
+    Loader {
+        id: rightSidebarOuterTopCornerLoader
+        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        anchors.right: rightSidebar.right
+        anchors.bottom: rightSidebar.top
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.BottomRight
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
         id: rightSidebarBottomCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && Config.options.appearance.fakeScreenRounding != 3 && (!topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
         anchors.bottom: parent.bottom
@@ -731,11 +814,94 @@ PanelWindow {
         }
     }
 
+    Loader {
+        id: leftSidebarBottomBarCornerLoader
+        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        x: GlobalStates.animatedLeftSidebarWidth
+        y: parent.height - topPanel.sidebarBottomOffset - Appearance.rounding.screenRounding
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.BottomLeft
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
+        id: rightSidebarBottomBarCornerLoader
+        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        anchors.right: parent.right
+        anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
+        y: parent.height - topPanel.sidebarBottomOffset - Appearance.rounding.screenRounding
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.BottomRight
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
+        id: leftSidebarOuterBottomCornerLoader
+        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        anchors.left: leftSidebar.left
+        anchors.top: leftSidebar.bottom
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.TopLeft
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
+        id: leftSidebarOuterBottomCornerShadowLoader
+        active: leftSidebarOuterBottomCornerLoader.active
+        anchors.fill: leftSidebarOuterBottomCornerLoader
+        sourceComponent: Component {
+            StyledDropShadow {
+                target: leftSidebarOuterBottomCornerLoader
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: leftSidebar.opacity
+            }
+        }
+    }
+
+    Loader {
+        id: rightSidebarOuterBottomCornerLoader
+        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        anchors.right: rightSidebar.right
+        anchors.top: rightSidebar.bottom
+        width: Appearance.rounding.screenRounding
+        height: Appearance.rounding.screenRounding
+        sourceComponent: RoundCorner {
+            implicitSize: Appearance.rounding.screenRounding
+            corner: RoundCorner.CornerEnum.TopRight
+            color: Config.options.bar.expressiveColors ? topPanel.activeTheme.barBackground : Appearance.colors.colLayer0
+        }
+    }
+
+    Loader {
+        id: rightSidebarOuterBottomCornerShadowLoader
+        active: rightSidebarOuterBottomCornerLoader.active
+        anchors.fill: rightSidebarOuterBottomCornerLoader
+        sourceComponent: Component {
+            StyledDropShadow {
+                target: rightSidebarOuterBottomCornerLoader
+                radius: Math.round(0.9 * Appearance.sizes.elevationMargin)
+                opacity: rightSidebar.opacity
+            }
+        }
+    }
+
     // 4. Search Drop (Connect Mode integration)
     Loader {
         id: searchDropLoader
         z: 10
-        active: GlobalStates.searchConnectActive && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || (searchDropLoader.item && searchDropLoader.item.openProgress > 0.001))
+        active: GlobalStates.searchConnectActive && !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.floatingNotch.enable) && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || (searchDropLoader.item && searchDropLoader.item.openProgress > 0.001))
         focus: searchOpenOnMonitor
         sourceComponent: Component {
             SearchConnect.SearchDrop {
@@ -750,7 +916,7 @@ PanelWindow {
                 usingWrappedFrame: topPanel.usingWrappedFrame
                 frameThickness: Config.options.appearance.wrappedFrameThickness
                 barHeight: Appearance.sizes.barHeight
-                verticalBarWidth: Appearance.sizes.verticalBarWidth
+                verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
                 barMargin: topPanel.barMargin
                 hBarHiddenAmount: topPanel.hBarHiddenAmount
                 vBarHiddenAmount: topPanel.vBarHiddenAmount
@@ -778,7 +944,7 @@ PanelWindow {
                 usingWrappedFrame: topPanel.usingWrappedFrame
                 frameThickness: Config.options.appearance.wrappedFrameThickness
                 barHeight: Appearance.sizes.barHeight
-                verticalBarWidth: Appearance.sizes.verticalBarWidth
+                verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
                 barMargin: topPanel.barMargin
                 hBarHiddenAmount: topPanel.hBarHiddenAmount
                 vBarHiddenAmount: topPanel.vBarHiddenAmount
@@ -795,17 +961,17 @@ PanelWindow {
     Item {
         id: leftSidebarMaskItem
         x: 0
-        y: (!topPanel.barVertical && !topPanel.barBottom) ? Appearance.sizes.barHeight : 0
+        y: topPanel.sidebarTopOffset
         width: GlobalStates.animatedLeftSidebarWidth > 0 ? topPanel.leftSidebarMaskWidth : 0
-        height: (!topPanel.barVertical) ? (parent.height - Appearance.sizes.barHeight) : parent.height
+        height: parent.height - topPanel.sidebarTopOffset - topPanel.sidebarBottomOffset
     }
 
     Item {
         id: rightSidebarMaskItem
         x: parent.width - width
-        y: (!topPanel.barVertical && !topPanel.barBottom) ? Appearance.sizes.barHeight : 0
+        y: topPanel.sidebarTopOffset
         width: GlobalStates.animatedRightSidebarWidth > 0 ? topPanel.rightSidebarMaskWidth : 0
-        height: (!topPanel.barVertical) ? (parent.height - Appearance.sizes.barHeight) : parent.height
+        height: parent.height - topPanel.sidebarTopOffset - topPanel.sidebarBottomOffset
     }
 
     // Static corner mask items to prevent per-frame Region recalculation
@@ -815,6 +981,14 @@ PanelWindow {
         y: 0
         width: leftSidebarTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
         height: leftSidebarTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
+        id: leftSidebarOuterTopCornerMaskItem
+        x: leftSidebar.x
+        y: topPanel.sidebarTopOffset - (leftSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0)
+        width: leftSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: leftSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
     }
 
     Item {
@@ -834,11 +1008,51 @@ PanelWindow {
     }
 
     Item {
+        id: rightSidebarOuterTopCornerMaskItem
+        x: rightSidebar.x + rightSidebar.width - width
+        y: topPanel.sidebarTopOffset - (rightSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0)
+        width: rightSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: rightSidebarOuterTopCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
         id: rightSidebarBottomCornerMaskItem
         x: topPanel.width - topPanel.rightSidebarMaskWidth - width
         y: topPanel.height - height
         width: rightSidebarBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
         height: rightSidebarBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
+        id: leftSidebarBottomBarCornerMaskItem
+        x: topPanel.leftSidebarMaskWidth
+        y: parent.height - topPanel.sidebarBottomOffset - (leftSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0)
+        width: leftSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: leftSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
+        id: rightSidebarBottomBarCornerMaskItem
+        x: topPanel.width - topPanel.rightSidebarMaskWidth - width
+        y: parent.height - topPanel.sidebarBottomOffset - (rightSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0)
+        width: rightSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: rightSidebarBottomBarCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
+        id: leftSidebarOuterBottomCornerMaskItem
+        x: leftSidebar.x
+        y: leftSidebar.y + leftSidebar.height
+        width: leftSidebarOuterBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: leftSidebarOuterBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
+    }
+
+    Item {
+        id: rightSidebarOuterBottomCornerMaskItem
+        x: rightSidebar.x + rightSidebar.width - width
+        y: rightSidebar.y + rightSidebar.height
+        width: rightSidebarOuterBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
+        height: rightSidebarOuterBottomCornerLoader.active ? Appearance.rounding.screenRounding : 0
     }
 
     // Static mask item for search drop bounds
@@ -903,13 +1117,31 @@ PanelWindow {
             item: !GlobalStates.connectSidebarsSeparate ? leftSidebarTopCornerMaskItem : null
         }
         Region {
+            item: !GlobalStates.connectSidebarsSeparate ? leftSidebarOuterTopCornerMaskItem : null
+        }
+        Region {
             item: !GlobalStates.connectSidebarsSeparate ? leftSidebarBottomCornerMaskItem : null
         }
         Region {
             item: !GlobalStates.connectSidebarsSeparate ? rightSidebarTopCornerMaskItem : null
         }
         Region {
+            item: !GlobalStates.connectSidebarsSeparate ? rightSidebarOuterTopCornerMaskItem : null
+        }
+        Region {
             item: !GlobalStates.connectSidebarsSeparate ? rightSidebarBottomCornerMaskItem : null
+        }
+        Region {
+            item: !GlobalStates.connectSidebarsSeparate ? leftSidebarBottomBarCornerMaskItem : null
+        }
+        Region {
+            item: !GlobalStates.connectSidebarsSeparate ? leftSidebarOuterBottomCornerMaskItem : null
+        }
+        Region {
+            item: !GlobalStates.connectSidebarsSeparate ? rightSidebarBottomBarCornerMaskItem : null
+        }
+        Region {
+            item: !GlobalStates.connectSidebarsSeparate ? rightSidebarOuterBottomCornerMaskItem : null
         }
         Region {
             // Search drop

@@ -55,7 +55,7 @@ QtObject {
 
     // ── Frame ─────────────────────────────────────────────────────────────────
     readonly property real frameThickness: {
-        return Config.options.appearance.fakeScreenRounding === 3
+        return (Config.options.appearance.fakeScreenRounding === 3 && Config.options.bar.cornerStyle !== 3)
             ? Config.options.appearance.wrappedFrameThickness
             : 0;
     }

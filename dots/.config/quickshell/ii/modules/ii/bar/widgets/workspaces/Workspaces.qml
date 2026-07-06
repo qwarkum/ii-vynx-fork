@@ -17,6 +17,10 @@ import Qt5Compat.GraphicalEffects
 
 Item {
     id: root
+
+    Layout.fillHeight: !vertical
+    Layout.fillWidth: vertical
+
     property bool vertical: false
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.QsWindow.window?.screen)
     readonly property Toplevel activeWindow: ToplevelManager.activeToplevel

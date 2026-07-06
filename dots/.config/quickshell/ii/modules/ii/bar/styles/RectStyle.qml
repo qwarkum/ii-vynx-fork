@@ -3,6 +3,7 @@ import qs.modules.ii.bar.shared
 import qs.modules.ii.bar
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.UPower
 import qs
@@ -36,6 +37,14 @@ Item {
         anchors.fill: parent
         color: Qt.rgba(root.actualColor.r, root.actualColor.g, root.actualColor.b, 1.0)
         radius: 0
+
+        layer.enabled: Config.options.bar.dropShadow
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.28)
+            shadowVerticalOffset: Config.options.bar.bottom ? -4 : 4
+            shadowBlur: 1.0
+        }
     }
 
     Item {

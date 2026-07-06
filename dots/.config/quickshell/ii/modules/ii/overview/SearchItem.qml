@@ -17,6 +17,7 @@ RippleButton {
     id: root
     property var entry
     property string query
+    property bool openStateStable: false
     property bool entryShown: entry?.shown ?? true
     property string itemType: entry?.type ?? Translation.tr("App")
     property string itemName: entry?.name ?? ""
@@ -250,6 +251,7 @@ RippleButton {
     implicitWidth: contentRow.implicitWidth + root.buttonHorizontalPadding * 2
 
     Behavior on implicitHeight {
+        enabled: root.openStateStable
         NumberAnimation {
             duration: 250
             easing.type: Easing.BezierSpline

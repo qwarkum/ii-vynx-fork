@@ -535,13 +535,15 @@ Singleton {
 
                 property bool bottom: false // Instead of top
                 property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
+                property bool dropShadow: true // Show drop shadow under all bars
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property int dynamicIslandSpacingHorizontal: 48
                 property int dynamicIslandSpacingVertical: 16
                 property bool dynamicIslandLoadBalance: true
+                // [DEPRECATED] Legacy bar-integrated notchMode settings. Left here for layout compatibility.
                 property JsonObject dynamicIsland: JsonObject {
                     property JsonObject notchMode: JsonObject {
-                        property bool enable: false
+                        property bool enable: false // Disabled permanently
                         property var priorityList: ["music_player", "workspaces", "clock"]
                         property var visibleWidgets: ["workspaces", "music_player", "clock"]
                         property int workspaceSwitchDuration: 2000
@@ -553,8 +555,44 @@ Singleton {
                 }
                 property JsonObject floatingNotch: JsonObject {
                     property bool enable: false
-                    property bool autoHide: true
+                    property bool autoHide: false
                     property bool dropShadow: true
+
+                    // Disables
+                    property bool disableWorkspaces: false
+                    property bool disableKeyboard: false
+                    property bool disableWifi: false
+                    property bool disableBluetooth: false
+                    property bool disableMedia: false
+                    property bool disableNotification: false
+                    property bool disableOsd: false
+                    property bool disableRecording: false
+                    property bool disableTimer: false
+                    property bool disableClipboard: false
+                    property bool disableLocalSend: false
+                    property bool disableChecklist: true
+                    property bool checklistAlwaysVisible: false
+                    property bool checklistOnlyExpanded: false
+                    property bool disableCalendar: false
+                    property bool disableAudio: true
+                    property bool disableProgress: false
+
+                    // Contracted Heights
+                    property int heightHome: 36
+                    property int heightWorkspaces: 36
+                    property int heightKeyboard: 36
+                    property int heightWifi: 36
+                    property int heightBluetooth: 36
+                    property int heightMedia: 52
+                    property int heightNotification: 54
+                    property int heightRecording: 36
+                    property int heightTimer: 36
+                    property int heightClipboard: 36
+                    property int heightLocalSend: 42
+                    property int heightChecklist: 36
+                    property int heightCalendar: 36
+                    property int heightAudio: 36
+                    property int heightProgress: 48
                 }
                 property int barGroupStyle: 1 // 0: Pills | 1: Island (opaque) | 2: Transparent (or maybe line-separated in the future)
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons

@@ -75,6 +75,16 @@ Item {
         if (GlobalStates.overviewOpen) {
             root.openStateStable = false;
             openStableTimer.restart();
+            root.loadedResultsCount = 50;
+            if (root.alwaysListAppsMode) {
+                const allResults = LauncherSearch.results;
+                root.allSearchResults = allResults.slice(0, 15);
+                root.updateSearchSlots();
+                root.focusFirstItem();
+                resultsDebounce.restart();
+            } else {
+                root.rebuildSearchResults();
+            }
         }
     }
 
@@ -138,11 +148,10 @@ Item {
                 root.openStateStable = false;
                 openStableTimer.stop();
                 resultsDebounce.stop();
-                root.cancelSearch();
+                // cancelSearch is now handled at the end of the slide-out animation in Overview.qml
             }
         }
     }
-
 
     Connections {
         target: LauncherSearch
@@ -221,9 +230,6 @@ Item {
         }
 
         const isInitial = !root.searchSlotsInitialized;
-        for (let i = 0; i < slots.length; i++) {
-            if (slots[i]) slots[i].positionAnimationEnabled = !isInitial;
-        }
 
         const oldUids = [];
         for (let i = 0; i < slots.length; i++) {
@@ -235,7 +241,8 @@ Item {
 
         for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
             const oldUid = oldUids[slotIdx];
-            if (!oldUid) continue;
+            if (!oldUid)
+                continue;
             const newPos = newUids.indexOf(oldUid);
             if (newPos >= 0) {
                 slotToNewPos[slotIdx] = newPos;
@@ -244,7 +251,8 @@ Item {
         }
 
         for (let newPos = 0; newPos < newUids.length; newPos++) {
-            if (usedNewPositions.has(newPos)) continue;
+            if (usedNewPositions.has(newPos))
+                continue;
             for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
                 if (!(slotIdx in slotToNewPos)) {
                     slotToNewPos[slotIdx] = newPos;
@@ -256,16 +264,19 @@ Item {
 
         for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
             const slot = slots[slotIdx];
-            if (!slot) continue;
+            if (!slot)
+                continue;
             const newPos = slotToNewPos[slotIdx];
             if (newPos === undefined) {
                 slot.currentPosition = -1;
                 slot.uniqueId = "";
                 slot.hasData = false;
+                slot.positionAnimationEnabled = false;
             } else {
                 const uid = newUids[newPos];
                 const isPreserved = oldUids[slotIdx] === uid && oldUids[slotIdx] !== "";
                 slot.currentPosition = newPos;
+                slot.positionAnimationEnabled = !isInitial && isPreserved;
                 if (!isPreserved) {
                     slot.uniqueId = uid;
                     slot.hasData = true;
@@ -278,7 +289,6 @@ Item {
         }
 
         updateSearchPositions();
-        posDebounceTimer.restart();
     }
 
     function updateSearchPositions() {
@@ -286,13 +296,18 @@ Item {
         for (let i = 0; i < appResultsRepeater.count; i++) {
             const slot = appResultsRepeater.itemAt(i);
             if (slot && slot.hasData) {
-                slotEntries.push({slot: slot, pos: slot.currentPosition});
+                slotEntries.push({
+                    slot: slot,
+                    pos: slot.currentPosition
+                });
             }
         }
 
         appResults.count = slotEntries.length;
 
-        slotEntries.sort(function(a, b) { return a.pos - b.pos; });
+        slotEntries.sort(function (a, b) {
+            return a.pos - b.pos;
+        });
 
         const SPACING = 2;
         let yPos = appResults.topMargin;
@@ -404,7 +419,7 @@ Item {
             return baseW;
         }
         implicitHeight: {
-            let bottomMargin = GlobalStates.searchConnectActive ? 16 : 10;
+            let bottomMargin = (GlobalStates.searchConnectActive && !root.inNotchMode) ? 16 : 0;
             if (root.isBluetoothMode)
                 return bluetoothPanelLoader.item ? bluetoothPanelLoader.item.implicitHeight + searchBar.height + searchBar.verticalPadding * 2 + bottomMargin : 520;
             if (root.isClipboardMode)
@@ -422,7 +437,7 @@ Item {
 
         Behavior on implicitWidth {
             id: searchWidthBehavior
-            enabled: !root.inNotchMode || root.openStateStable
+            enabled: !root.inNotchMode
             NumberAnimation {
                 duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
@@ -432,7 +447,7 @@ Item {
 
         Behavior on implicitHeight {
             id: searchHeightBehavior
-            enabled: !root.inNotchMode || root.openStateStable
+            enabled: !root.inNotchMode
             NumberAnimation {
                 duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
@@ -444,8 +459,8 @@ Item {
             id: gridLayout
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: GlobalStates.searchConnectActive ? 24 : 0
-            anchors.rightMargin: GlobalStates.searchConnectActive ? 24 : 0
+            anchors.leftMargin: (GlobalStates.searchConnectActive && !root.inNotchMode) ? 24 : 0
+            anchors.rightMargin: (GlobalStates.searchConnectActive && !root.inNotchMode) ? 24 : 0
             anchors.top: parent.top
             columns: 1
             clip: true
@@ -584,13 +599,14 @@ Item {
             Item {
                 visible: root.showResults && !root.isAnySpecialMode
                 Layout.fillWidth: true
-                implicitHeight: root.showSkeletons ? searchSkeletons.implicitHeight + (GlobalStates.searchConnectActive ? 16 : 20) : Math.min(600, appResults.contentHeight + appResults.topMargin + appResults.bottomMargin)
+                implicitHeight: root.showSkeletons ? searchSkeletons.implicitHeight + ((GlobalStates.searchConnectActive && !root.inNotchMode) ? 16 : 0) : Math.min(600, appResults.contentHeight + appResults.topMargin + appResults.bottomMargin)
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
 
                 Behavior on implicitHeight {
                     // Disabled during active debounce to avoid layout thrashing
-                    // while the user is still typing rapidly
-                    enabled: !resultsDebounce.running
+                    // while the user is still typing rapidly. Also disabled in notch mode
+                    // since the notch parent container animates its height itself.
+                    enabled: !resultsDebounce.running && !root.inNotchMode
                     NumberAnimation {
                         duration: Appearance.animation.elementMove.duration
                         easing.type: Easing.BezierSpline
@@ -617,7 +633,7 @@ Item {
                     property int count: 0
                     readonly property real contentHeight: _contentAreaHeight
                     readonly property real topMargin: 10
-                    readonly property real bottomMargin: GlobalStates.searchConnectActive ? 16 : 10
+                    readonly property real bottomMargin: (GlobalStates.searchConnectActive && !root.inNotchMode) ? 16 : 0
                     readonly property bool atYBeginning: appResultsFlick.contentY <= 0
                     readonly property bool atYEnd: appResultsFlick.contentY + appResultsFlick.height >= _contentAreaHeight
                     property real contentY: appResultsFlick.contentY
@@ -631,7 +647,8 @@ Item {
                     }
 
                     readonly property Item currentItem: {
-                        if (currentIndex < 0) return null;
+                        if (currentIndex < 0)
+                            return null;
                         for (var i = 0; i < appResultsRepeater.count; i++) {
                             var s = appResultsRepeater.itemAt(i);
                             if (s && s.currentPosition === currentIndex && s.hasData) {
@@ -719,7 +736,8 @@ Item {
                                         var parentSlot = ci.parent;
                                         if (parentSlot) {
                                             var visY = parentSlot.y - appResultsFlick.contentY;
-                                            if (visY <= appResults.topMargin + 36) return "white";
+                                            if (visY <= appResults.topMargin + 36)
+                                                return "white";
                                         }
                                     }
                                     return appResults.atYBeginning ? "white" : "transparent";
@@ -730,7 +748,8 @@ Item {
                                         var parentSlot = ci.parent;
                                         if (parentSlot) {
                                             var visBottom = parentSlot.y - appResultsFlick.contentY + parentSlot.height;
-                                            if (visBottom >= appResultsFlick.height - appResults.bottomMargin - 36) return "white";
+                                            if (visBottom >= appResultsFlick.height - appResults.bottomMargin - 36)
+                                                return "white";
                                         }
                                     }
                                     return appResults.atYEnd ? "white" : "transparent";
@@ -807,16 +826,6 @@ Item {
                             }
                         }
 
-                        // Debounce timer for position recalculation after height animations settle
-                        Timer {
-                            id: posDebounceTimer
-                            interval: 260
-                            repeat: false
-                            onTriggered: {
-                                root.updateSearchPositions();
-                            }
-                        }
-
                         Item {
                             id: appResultsContainer
                             width: parent.width
@@ -845,15 +854,6 @@ Item {
                                     visible: hasData
                                     opacity: hasData ? 1.0 : 0.0
 
-                                    Behavior on y {
-                                        enabled: slotDelegate.positionAnimationEnabled
-                                        NumberAnimation {
-                                            duration: 220
-                                            easing.type: Easing.BezierSpline
-                                            easing.bezierCurve: Appearance.animationCurves.emphasized
-                                        }
-                                    }
-
                                     Behavior on opacity {
                                         NumberAnimation {
                                             duration: 180
@@ -881,12 +881,13 @@ Item {
                                         listIndex: slotDelegate.currentPosition
                                         listCount: appResults.count
                                         listCurrentIndex: appResults.currentIndex
+                                        openStateStable: root.openStateStable
 
                                         Connections {
                                             target: searchItem
                                             function onImplicitHeightChanged() {
                                                 if (slotDelegate.hasData) {
-                                                    posDebounceTimer.restart();
+                                                    Qt.callLater(root.updateSearchPositions);
                                                 }
                                             }
                                         }
@@ -962,7 +963,6 @@ Item {
                         }
                     }
                 }
-
 
                 ColumnLayout {
                     id: searchSkeletons

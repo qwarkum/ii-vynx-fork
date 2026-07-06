@@ -3,6 +3,7 @@ import qs.modules.ii.bar.shared
 import qs.modules.ii.bar
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import qs
 import qs.services
@@ -96,6 +97,14 @@ Item {
             top: !Config.options.bar.bottom ? parent.top : undefined
             bottom: Config.options.bar.bottom ? parent.bottom : undefined
             horizontalCenter: parent.horizontalCenter
+        }
+
+        layer.enabled: Config.options.bar.dropShadow
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.28)
+            shadowVerticalOffset: Config.options.bar.bottom ? -4 : 4
+            shadowBlur: 1.0
         }
 
         height: {

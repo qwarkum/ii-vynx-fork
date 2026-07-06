@@ -37,7 +37,7 @@ Scope {
             : ExclusionMode.Normal
 
         property real targetZone: Appearance.sizes.baseBarHeight + (Config.options.bar.cornerStyle === 1 ? Appearance.sizes.hyprlandGapsOut : 0)
-        property real minZone: Config.options.appearance.fakeScreenRounding === 3 ? Config.options.appearance.wrappedFrameThickness : 0
+        property real minZone: (Config.options.appearance.fakeScreenRounding === 3 && Config.options.bar.cornerStyle !== 3) ? Config.options.appearance.wrappedFrameThickness : 0
 
         exclusiveZone: {
             if (barRoot.hasFullscreenWindowOnMonitor) return 0;
@@ -184,7 +184,7 @@ Scope {
 
         // ── WrappedFrame visuals (fake screen rounding) ───────────────────────
         Loader {
-            active: Config.options.appearance.fakeScreenRounding == 3
+            active: Config.options.appearance.fakeScreenRounding == 3 && Config.options.bar.cornerStyle !== 3
             anchors.fill: parent
             opacity: barRoot.hasFullscreenWindowOnMonitor ? 0.0 : 1.0
             Behavior on opacity {
@@ -230,10 +230,11 @@ Scope {
             Item {
                 id: hoverMaskRegion
                 readonly property real glowExtend: Config.options.bar.barBackgroundStyle === 0 ? 100 : 0
+                readonly property real shadowExtend: Config.options.bar.dropShadow ? 24 : 0
                 anchors {
                     fill: barContent
-                    topMargin:    -Math.max(Config.options.bar.autoHide.hoverRegionWidth, glowExtend) - (barContent.verticalTopOffset ?? 0)
-                    bottomMargin: -Math.max(Config.options.bar.autoHide.hoverRegionWidth, glowExtend) - (barContent.verticalBottomOffset ?? 0)
+                    topMargin:    -Math.max(Config.options.bar.autoHide.hoverRegionWidth, glowExtend, shadowExtend) - (barContent.verticalTopOffset ?? 0)
+                    bottomMargin: -Math.max(Config.options.bar.autoHide.hoverRegionWidth, glowExtend, shadowExtend) - (barContent.verticalBottomOffset ?? 0)
                 }
             }
 

@@ -33,6 +33,9 @@ import qs.modules.ii.verticalBar as Vertical
 Item {
     id: rootItem
 
+    Layout.fillHeight: !vertical
+    Layout.fillWidth: vertical
+
     property int barSection // 0: left, 1: center, 2: right
     property var list
     required property var modelData
@@ -40,6 +43,98 @@ Item {
     property var originalIndex: index
     property bool vertical: false
     property bool highlighted: false
+
+    // ── Smooth Slide and Move Animations ──────────────────────────────────────
+    property real oldX: x
+    property real oldY: y
+    property bool isReady: false
+    resources: [
+        Translate {
+            id: entryTranslation
+            x: rootItem.vertical ? 15 : 0
+            y: rootItem.vertical ? 0 : 15
+        },
+        Translate {
+            id: moveTranslation
+        },
+        Translate {
+            id: verticalTranslation
+            y: 0
+        }
+    ]
+
+    ParallelAnimation {
+        id: entryAnimation
+        running: true
+        NumberAnimation {
+            target: entryTranslation
+            property: rootItem.vertical ? "x" : "y"
+            from: rootItem.vertical ? 15 : 15
+            to: 0
+            duration: 400
+            easing.type: Easing.OutExpo
+        }
+        NumberAnimation {
+            target: wrapper
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            duration: 350
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    NumberAnimation {
+        id: moveXAnimation
+        target: moveTranslation
+        property: "x"
+        to: 0
+        duration: 350
+        easing.type: Easing.OutExpo
+    }
+
+    NumberAnimation {
+        id: moveYAnimation
+        target: moveTranslation
+        property: "y"
+        to: 0
+        duration: 350
+        easing.type: Easing.OutExpo
+    }
+
+    onXChanged: {
+        if (rootItem.isReady) {
+            let delta = rootItem.oldX - x;
+            if (Math.abs(delta) > 1) {
+                moveXAnimation.from = moveTranslation.x + delta;
+                moveXAnimation.restart();
+            }
+        }
+        rootItem.oldX = x;
+    }
+
+    onYChanged: {
+        if (rootItem.isReady) {
+            let delta = rootItem.oldY - y;
+            if (Math.abs(delta) > 1) {
+                moveYAnimation.from = moveTranslation.y + delta;
+                moveYAnimation.restart();
+            }
+        }
+        rootItem.oldY = y;
+    }
+
+    Timer {
+        id: readyTimer
+        interval: 100
+        running: true
+        repeat: false
+        onTriggered: {
+            rootItem.oldX = rootItem.x;
+            rootItem.oldY = rootItem.y;
+            rootItem.isReady = true;
+        }
+    }
 
     // ── Notch Mode Integration ───────────────────────────────────────────────
     property var modeState: null
@@ -257,7 +352,11 @@ Item {
         id: wrapper
         vertical: rootItem.vertical
         anchors {
-            verticalCenter:   rootItem.vertical ? rootItem.verticalCenter : undefined
+            top: rootItem.vertical ? undefined : parent.top
+            bottom: rootItem.vertical ? undefined : parent.bottom
+            left: rootItem.vertical ? parent.left : undefined
+            right: rootItem.vertical ? parent.right : undefined
+            verticalCenter: rootItem.vertical ? rootItem.verticalCenter : undefined
             horizontalCenter: (rootItem.isNotchMode || rootItem.vertical) ? undefined : rootItem.horizontalCenter
         }
 
@@ -265,10 +364,11 @@ Item {
             ? (rootItem.parent ? (rootItem.parent.width / 2 - rootItem.x - wrapper.implicitWidth / 2) : 0)
             : 0
 
-        transform: Translate {
-            id: verticalTranslation
-            y: 0
-        }
+        transform: [
+            entryTranslation,
+            moveTranslation,
+            verticalTranslation
+        ]
 
         readonly property bool paddingless: registry.isPaddingless(modelData.id, rootItem.isExpressive)
         padding:       paddingless ? 0 : 5
@@ -286,10 +386,29 @@ Item {
             active: true
             sourceComponent: resolveComponent(modelData.id, rootItem.vertical, rootItem.widgetStyle)
             onLoaded: {
-                if (item && item.hasOwnProperty("onActivatedColor")) {
-                    item.onActivatedColor = Qt.binding(() => groupTheme.colOnBackgroundHighlight);
+                if (item) {
+                    if (item.hasOwnProperty("onActivatedColor")) {
+                        item.onActivatedColor = Qt.binding(() => groupTheme.colOnBackgroundHighlight);
+                    }
+                    if (!rootItem.vertical) {
+                        if (item.Layout !== undefined && item.Layout.fillHeight) {
+                            item.height = Qt.binding(() => itemLoader.height);
+                        }
+                    } else {
+                        if (item.Layout !== undefined && item.Layout.fillWidth) {
+                            item.width = Qt.binding(() => itemLoader.width);
+                        } else if (wrapper.paddingless) {
+                            item.width = Qt.binding(() => Appearance.sizes.verticalBarWidth - 8);
+                        }
+
+                        if (item.implicitWidth === item.implicitHeight) {
+                            item.height = Qt.binding(() => item.width);
+                        }
+                    }
                 }
             }
+            Layout.fillHeight: item ? ((item.Layout !== undefined && item.Layout.fillHeight) || false) : false
+            Layout.fillWidth: item ? ((item.Layout !== undefined && item.Layout.fillWidth) || false) : false
         }
     }
 

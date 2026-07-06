@@ -187,242 +187,6 @@ Item {
                 }
             }
 
-            ConfigSwitch {
-                buttonIcon: "balance"
-                text: Translation.tr("Automatic load balancing")
-                visible: Config.options.bar.cornerStyle === 3
-                checked: Config.options.bar.dynamicIslandLoadBalance
-                onCheckedChanged: {
-                    Config.options.bar.dynamicIslandLoadBalance = checked;
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "water_drop"
-                text: Translation.tr("Floating Dynamic Island")
-                checked: Config.options.bar.floatingNotch.enable
-                onCheckedChanged: {
-                    Config.options.bar.floatingNotch.enable = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Enables an independent, floating Dynamic Island at the top of the screen")
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "visibility_off"
-                text: Translation.tr("Floating Island auto-hide")
-                visible: Config.options.bar.floatingNotch.enable
-                checked: Config.options.bar.floatingNotch.autoHide
-                onCheckedChanged: {
-                    Config.options.bar.floatingNotch.autoHide = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Hides the island at the top of the screen, revealing it on hover")
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "filter_drama"
-                text: Translation.tr("Floating Island drop-shadow")
-                visible: Config.options.bar.floatingNotch.enable
-                checked: Config.options.bar.floatingNotch.dropShadow
-                onCheckedChanged: {
-                    Config.options.bar.floatingNotch.dropShadow = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Shows a drop shadow underneath the floating island")
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "compress"
-                text: Translation.tr("Notch Mode")
-                visible: Config.options.bar.cornerStyle === 3
-                checked: Config.options.bar.dynamicIsland.notchMode.enable
-                onCheckedChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.enable = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Collapses the Dynamic Island into a smart single-mode pill, expanding on hover")
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "ads_click"
-                text: Translation.tr("Notch Expand on hover")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-                checked: Config.options.bar.dynamicIsland.notchMode.expandOnHover
-                onCheckedChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.expandOnHover = checked;
-                }
-            }
-
-            ConfigSpinBox {
-                icon: "timer"
-                text: Translation.tr("Notch Workspace Switch Duration (ms)")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-                value: Config.options.bar.dynamicIsland.notchMode.workspaceSwitchDuration
-                from: 500
-                to: 10000
-                stepSize: 250
-                onValueChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.workspaceSwitchDuration = value;
-                }
-            }
-
-            ConfigSpinBox {
-                icon: "speed"
-                text: Translation.tr("Notch Expand Animation Duration (ms)")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-                value: Config.options.bar.dynamicIsland.notchMode.expandAnimDuration
-                from: 100
-                to: 2000
-                stepSize: 50
-                onValueChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.expandAnimDuration = value;
-                }
-            }
-
-            ConfigSpinBox {
-                icon: "blur_on"
-                text: Translation.tr("Notch Fade Delay (ms)")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-                value: Config.options.bar.dynamicIsland.notchMode.fadeDelay
-                from: 0
-                to: 1000
-                stepSize: 25
-                onValueChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.fadeDelay = value;
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "fullscreen"
-                text: Translation.tr("Overlay over apps (don't reserve space)")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-                checked: Config.options.bar.dynamicIsland.notchMode.overlapApps
-                onCheckedChanged: {
-                    Config.options.bar.dynamicIsland.notchMode.overlapApps = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Lets other maximized applications fill the screen area underneath the bar")
-                }
-            }
-
-            ContentSubsection {
-                title: Translation.tr("Notch Active Triggers")
-                icon: "priority_high"
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    ConfigSwitch {
-                        buttonIcon: "music_note"
-                        text: Translation.tr("Music Player trigger")
-                        checked: Config.options.bar.dynamicIsland.notchMode.priorityList.indexOf("music_player") !== -1
-                        onCheckedChanged: {
-                            let list = Array.from(Config.options.bar.dynamicIsland.notchMode.priorityList);
-                            let idx = list.indexOf("music_player");
-                            if (checked) {
-                                if (idx === -1) list.unshift("music_player");
-                            } else {
-                                if (idx !== -1) list.splice(idx, 1);
-                            }
-                            Config.options.bar.dynamicIsland.notchMode.priorityList = list;
-                        }
-                    }
-
-                    ConfigSwitch {
-                        buttonIcon: "workspaces"
-                        text: Translation.tr("Workspaces switch trigger")
-                        checked: Config.options.bar.dynamicIsland.notchMode.priorityList.indexOf("workspaces") !== -1
-                        onCheckedChanged: {
-                            let list = Array.from(Config.options.bar.dynamicIsland.notchMode.priorityList);
-                            let idx = list.indexOf("workspaces");
-                            if (checked) {
-                                if (idx === -1) {
-                                    let clockIdx = list.indexOf("clock");
-                                    if (clockIdx !== -1) {
-                                        list.splice(clockIdx, 0, "workspaces");
-                                    } else {
-                                        list.push("workspaces");
-                                    }
-                                }
-                            } else {
-                                if (idx !== -1) list.splice(idx, 1);
-                            }
-                            Config.options.bar.dynamicIsland.notchMode.priorityList = list;
-                        }
-                    }
-
-                    ConfigSwitch {
-                        buttonIcon: "nest_clock_farsight_analog"
-                        text: Translation.tr("Clock fallback mode")
-                        checked: Config.options.bar.dynamicIsland.notchMode.priorityList.indexOf("clock") !== -1
-                        onCheckedChanged: {
-                            let list = Array.from(Config.options.bar.dynamicIsland.notchMode.priorityList);
-                            let idx = list.indexOf("clock");
-                            if (checked) {
-                                if (idx === -1) list.push("clock");
-                            } else {
-                                if (idx !== -1) list.splice(idx, 1);
-                            }
-                            Config.options.bar.dynamicIsland.notchMode.priorityList = list;
-                        }
-                    }
-                }
-            }
-
-            ContentSubsection {
-                title: Translation.tr("Notch Allowed Widgets")
-                icon: "visibility"
-                tooltip: Translation.tr("Select widgets that can be displayed when the notch is expanded")
-                visible: Config.options.bar.cornerStyle === 3 && Config.options.bar.dynamicIsland.notchMode.enable
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    Repeater {
-                        model: {
-                            let centerLayout = Config.options.bar.layouts.center;
-                            let list = [];
-                            for (let i = 0; i < centerLayout.length; i++) {
-                                let comp = BarComponentRegistry.getComponent(centerLayout[i].id);
-                                if (comp) {
-                                    list.push(comp);
-                                }
-                            }
-                            return list;
-                        }
-                        delegate: ConfigSwitch {
-                            required property var modelData
-                            buttonIcon: modelData.icon
-                            text: Translation.tr(modelData.title)
-                            checked: Config.options.bar.dynamicIsland.notchMode.visibleWidgets.indexOf(modelData.id) !== -1
-                            onCheckedChanged: {
-                                let list = Array.from(Config.options.bar.dynamicIsland.notchMode.visibleWidgets);
-                                let idx = list.indexOf(modelData.id);
-                                if (checked) {
-                                    if (idx === -1) {
-                                        list.push(modelData.id);
-                                        Config.options.bar.dynamicIsland.notchMode.visibleWidgets = list;
-                                    }
-                                } else {
-                                    if (idx !== -1) {
-                                        list.splice(idx, 1);
-                                        Config.options.bar.dynamicIsland.notchMode.visibleWidgets = list;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             ContentSubsection {
                 title: Translation.tr("Group style")
                 icon: "group_work"
@@ -468,6 +232,18 @@ Item {
                 }
                 StyledToolTip {
                     text: Translation.tr("Use expressive solid layer colors")
+                }
+            }
+
+            ConfigSwitch {
+                buttonIcon: "filter_drama"
+                text: Translation.tr("Bar drop-shadow")
+                checked: Config.options.bar.dropShadow
+                onCheckedChanged: {
+                    Config.options.bar.dropShadow = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Shows a soft drop shadow underneath the status bar")
                 }
             }
 
@@ -543,6 +319,7 @@ Item {
                 }
             }
         }
+
 
         // ── Top Left Brand Icon ───────────────────────────────────────────
         ContentSection {

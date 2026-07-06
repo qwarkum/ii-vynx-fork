@@ -55,7 +55,7 @@ Scope {
 
                     exclusiveZone: (Config?.options.bar.autoHide.enable && !Config?.options.bar.autoHide.pushWindows) ? minZone : Math.max(minZone, targetZone - (barRoot ? barRoot.hiddenAmount : 0))
 
-                    implicitWidth: Appearance.sizes.verticalBarWidth + Appearance.rounding.screenRounding
+                    implicitWidth: Appearance.sizes.verticalBarWindowWidth + Appearance.rounding.screenRounding
                     color: "transparent"
                     mask: Region {}
                 }
@@ -114,7 +114,7 @@ Scope {
                     }
                     property bool superShow: false
                     property bool mustShow: hoverRegion.containsMouse || superShow || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen
-                    property real hiddenAmount: (Config?.options.bar.autoHide.enable && !mustShow) ? Appearance.sizes.verticalBarWidth : 0
+                    property real hiddenAmount: (Config?.options.bar.autoHide.enable && !mustShow) ? Appearance.sizes.verticalBarWindowWidth : 0
                     Behavior on hiddenAmount {
                         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(barRoot)
                     }
@@ -201,17 +201,18 @@ Scope {
 
                         Item {
                             id: hoverMaskRegion
+                            readonly property real shadowExtend: Config.options.bar.dropShadow ? 24 : 0
                             anchors {
                                 fill: barContent
-                                leftMargin: -Config.options.bar.autoHide.hoverRegionWidth
-                                rightMargin: -Config.options.bar.autoHide.hoverRegionWidth
+                                leftMargin: -Math.max(Config.options.bar.autoHide.hoverRegionWidth, shadowExtend)
+                                rightMargin: -Math.max(Config.options.bar.autoHide.hoverRegionWidth, shadowExtend)
                             }
                         }
 
                         VerticalBarContent {
                             id: barContent
                             monitorIndex: barRoot.monitorIndex
-                            implicitWidth: Appearance.sizes.verticalBarWidth
+                            implicitWidth: Appearance.sizes.verticalBarWindowWidth
                             anchors {
                                 top: parent.top
                                 bottom: parent.bottom

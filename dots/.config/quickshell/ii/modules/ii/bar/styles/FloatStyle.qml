@@ -3,6 +3,7 @@ import qs.modules.ii.bar.shared
 import qs.modules.ii.bar
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.UPower
 import qs
@@ -31,15 +32,6 @@ Item {
         animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(root)
     }
 
-    Loader {
-        active: root.showBarBackground && Config.options.bar.floatStyleShadow
-        anchors.fill: barBackground
-        sourceComponent: StyledRectangularShadow {
-            anchors.fill: undefined
-            target: barBackground
-        }
-    }
-
     Rectangle {
         id: barBackground
         anchors {
@@ -48,31 +40,29 @@ Item {
             margins: Appearance.sizes.hyprlandGapsOut
         }
 
-        color: Qt.rgba(root.actualColor.r, root.actualColor.g, root.actualColor.b, 1.0)
+        color: root.actualColor
 
-        radius: Appearance.rounding.windowRounding
+        radius: Appearance.rounding.full
 
-        border.width: 1
-        border.color: root.showBarBackground ? Appearance.colors.colLayer0Border : "transparent"
-
-        Behavior on width { NumberAnimation { duration: 450; easing.type: Easing.OutExpo } }
         Behavior on radius { NumberAnimation { duration: 450; easing.type: Easing.OutExpo } }
-    }
 
-    Item {
-        id: leftStopper
-        anchors { top: barBackground.top; bottom: barBackground.bottom; left: barBackground.left; leftMargin: 4 }
-        width: 1
-    }
-    Item {
-        id: rightStopper
-        anchors { top: barBackground.top; bottom: barBackground.bottom; right: barBackground.right }
-        width: 1
+        layer.enabled: Config.options.bar.dropShadow
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.28)
+            shadowVerticalOffset: Config.options.bar.bottom ? -4 : 4
+            shadowBlur: 1.0
+        }
     }
 
     RowLayout {
         id: leftSection
-        anchors { top: barBackground.top; bottom: barBackground.bottom; left: leftStopper.right }
+        anchors {
+            top: barBackground.top
+            bottom: barBackground.bottom
+            left: barBackground.left
+            leftMargin: Appearance.sizes.hyprlandGapsOut
+        }
         spacing: 4
         Repeater {
             id: leftRepeater
@@ -126,7 +116,12 @@ Item {
 
     RowLayout {
         id: rightSection
-        anchors { top: barBackground.top; bottom: barBackground.bottom; right: rightStopper.left; rightMargin: 4 }
+        anchors {
+            top: barBackground.top
+            bottom: barBackground.bottom
+            right: barBackground.right
+            rightMargin: Appearance.sizes.hyprlandGapsOut
+        }
         spacing: 8
         Repeater {
             id: rightRepeater

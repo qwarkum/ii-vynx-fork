@@ -36,7 +36,7 @@ import qs.modules.ii.dynamicIsland
 
 Scope {
     property bool barExtraCondition: true
-    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3
+    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !Config.options.bar.vertical)
     readonly property bool barBot: Config.options.bar.bottom
     readonly property bool barVert: Config.options.bar.vertical
 
@@ -74,12 +74,15 @@ Scope {
         component: MediaControls {}
     }
     PanelLoader {
+        extraCondition: !Config.options.bar.floatingNotch.enable
         component: BluetoothConnectionPopup {}
     }
     PanelLoader {
+        extraCondition: !Config.options.bar.floatingNotch.enable
         component: KeyboardLayoutTransitionPopup {}
     }
     PanelLoader {
+        extraCondition: !Config.options.bar.floatingNotch.enable
         component: LocalSendPopup {}
     }
     PanelLoader {

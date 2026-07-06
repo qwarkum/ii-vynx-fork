@@ -87,7 +87,12 @@ FloatingWindow {
             icon: "widgets",
             component: "modules/settings/configs/WidgetsConfig.qml"
         },
-        // Group 3 – Tools & Overlays (indices 10..13)
+        {
+            name: Translation.tr("Dynamic Island"),
+            icon: "water_drop",
+            component: "modules/settings/configs/DynamicIslandConfig.qml"
+        },
+        // Group 3 – Tools & Overlays (indices 11..14)
         {
             name: Translation.tr("System Overlays"),
             icon: "picture_in_picture",
@@ -108,7 +113,7 @@ FloatingWindow {
             icon: "help",
             component: "modules/settings/configs/CheatSheetConfig.qml"
         },
-        // Group 4 – System & Services (indices 15..19)
+        // Group 4 – System & Services (indices 16..20)
         {
             name: Translation.tr("Hyprland Rules"),
             icon: "rule",
@@ -158,7 +163,7 @@ FloatingWindow {
         },
         {
             name: Translation.tr("Modules"),
-            pages: [5, 6, 7, 8, 9].map(i => ({
+            pages: [5, 6, 7, 8, 9, 10].map(i => ({
                         name: pages[i].name,
                         icon: pages[i].icon,
                         pageIndex: i
@@ -166,7 +171,7 @@ FloatingWindow {
         },
         {
             name: Translation.tr("Tools & Overlays"),
-            pages: [10, 11, 12, 13, 14].map(i => ({
+            pages: [11, 12, 13, 14, 15].map(i => ({
                         name: pages[i].name,
                         icon: pages[i].icon,
                         pageIndex: i
@@ -174,7 +179,7 @@ FloatingWindow {
         },
         {
             name: Translation.tr("System & Services"),
-            pages: [15, 16, 17, 18].map(i => ({
+            pages: [16, 17, 18, 19, 20].map(i => ({
                         name: pages[i].name,
                         icon: pages[i].icon,
                         pageIndex: i
