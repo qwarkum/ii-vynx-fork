@@ -1,5 +1,6 @@
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.utils
 import qs.services
 import qs
 import qs.modules.common.functions
@@ -13,27 +14,30 @@ import Qt5Compat.GraphicalEffects
 Item {
     id: root
 
+    Layout.fillHeight: true
+
     property bool vertical: false
-    readonly property int artSize: Appearance.sizes.baseBarHeight - Appearance.rounding.small
-    readonly property int textMaxWidth: Appearance.sizes.baseBarHeight * 6
-    readonly property int lyricsCustomSize: Config.options.bar.mediaPlayer.lyrics.customSize
-    readonly property bool useFixedSize: Config.options.bar.mediaPlayer.useFixedSize
-    readonly property int customSize: Config.options.bar.mediaPlayer.customSize
-    readonly property bool lyricsEnabled: Config.options.bar.mediaPlayer.lyrics.enable
-    readonly property bool useGradientMask: Config.options.bar.mediaPlayer.lyrics.useGradientMask
-    readonly property string lyricsStyle: Config.options.bar.mediaPlayer.lyrics.style
-    readonly property bool artworkEnabled: Config.options.bar.mediaPlayer.artwork.enable
-    readonly property int visBarCount: 5
-    readonly property int visBarWidth: Appearance.rounding.unsharpen
-    readonly property int visBarGap: Appearance.rounding.unsharpen
-    readonly property int visMaxH: Appearance.sizes.baseBarHeight - Appearance.rounding.small
 
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || Translation.tr("No media")
     readonly property string trackArtist: activePlayer?.trackArtist ?? ""
     readonly property bool hasTrack: (activePlayer?.trackTitle ?? "").length > 0
+    readonly property bool playing: activePlayer ? activePlayer.playbackState === MprisPlaybackState.Playing : false
 
-    readonly property var artUrl: MprisController.artUrl
+    property int customSize: Config.options.bar.mediaPlayer.customSize
+    property int lyricsCustomSize: Config.options.bar.mediaPlayer.lyrics.customSize
+    property bool useFixedSize: Config.options.bar.mediaPlayer.useFixedSize
+    readonly property bool lyricsEnabled: Config.options.bar.mediaPlayer.lyrics.enable
+    readonly property bool useGradientMask: Config.options.bar.mediaPlayer.lyrics.useGradientMask
+    readonly property string lyricsStyle: Config.options.bar.mediaPlayer.lyrics.style
+    readonly property bool artworkEnabled: Config.options.bar.mediaPlayer.artwork.enable
+
+    readonly property int artSize: Appearance.sizes.baseBarHeight - 8
+    readonly property int barWidth: Math.max(4, Math.min(8, artSize / 5))
+    readonly property int visualizerWidth: 4 * barWidth + 3 * 1
+    readonly property int spacing: 4
+
+    readonly property string artUrl: MprisController.artUrl
     readonly property bool isLocalArt: artUrl.startsWith("file://")
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: Qt.md5(artUrl)
@@ -42,22 +46,33 @@ Item {
     readonly property string artSource: {
         if (!artUrl) return "";
         if (isLocalArt) return artUrl;
-        return artDownloaded ? Qt.resolvedUrl(artFilePath) : "";
+        return artDownloaded ? Qt.resolvedUrl(artFilePath) : artUrl;
     }
 
-    Layout.fillHeight: true
-    implicitWidth: {
-        if (!hasTrack) return 0;
-        if (lyricsEnabled && LyricsService.hasSyncedLines) return lyricsCustomSize;
-        if (useFixedSize) return customSize;
-        let w = 0;
-        if (artworkEnabled) w += artSize + Appearance.rounding.small;
-        if (textColumn.visible) w += textColumn.width + Appearance.rounding.small;
-        if (audioVisualizer.visible) w += audioVisualizer.width;
-        return w;
+    TextMetrics {
+        id: titleMetrics
+        font.family: Appearance.font.family.main
+        font.pixelSize: Appearance.font.pixelSize.smaller
+        font.weight: Font.DemiBold
+        text: cleanedTitle
     }
+
+    TextMetrics {
+        id: artistMetrics
+        font.family: Appearance.font.family.main
+        font.pixelSize: Appearance.font.pixelSize.smallest
+        text: trackArtist
+    }
+
+    readonly property int textWidth: Math.max(titleMetrics.advanceWidth, artistMetrics.advanceWidth)
+    readonly property int calculatedPillWidth: Math.min(textWidth + 24, Config.options.bar.mediaPlayer.maxSize)
+
+    implicitWidth: (lyricsEnabled && LyricsService.hasSyncedLines)
+        ? lyricsCustomSize
+        : useFixedSize
+            ? customSize
+            : (calculatedPillWidth + (artworkEnabled ? artSize + spacing : 0) + (hasTrack ? spacing + visualizerWidth : 0))
     implicitHeight: Appearance.sizes.baseBarHeight
-    visible: implicitWidth > 0
 
     Behavior on implicitWidth {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(root)
@@ -65,15 +80,6 @@ Item {
 
     Component.onCompleted: {
         LyricsService.initiliazeLyrics();
-        if (typeof rootItem !== "undefined") {
-            rootItem.toggleVisible(hasTrack);
-        }
-    }
-
-    onHasTrackChanged: {
-        if (typeof rootItem !== "undefined") {
-            rootItem.toggleVisible(hasTrack);
-        }
     }
 
     onArtFilePathChanged: {
@@ -85,19 +91,14 @@ Item {
             artDownloaded = true;
             return;
         }
-        artDownloader.targetFile = artUrl;
-        artDownloader.artFilePath = artFilePath;
-        artDownloader.artTempPath = artFilePath + ".tmp";
         artDownloaded = false;
+        artDownloader.command = ["bash", "-c", `[ -f '${artFilePath}' ] || (mkdir -p '${artDownloadLocation}' && curl -4 -sSL '${artUrl}' -o '${artFilePath}.tmp' && mv '${artFilePath}.tmp' '${artFilePath}')`]
         artDownloader.running = true;
     }
 
     Process {
         id: artDownloader
-        property string targetFile: root.artUrl
-        property string artFilePath: root.artFilePath
-        property string artTempPath: root.artFilePath + ".tmp"
-        command: ["bash", "-c", `[ -f ${artFilePath} ] || (curl -4 -sSL '${targetFile}' -o '${artTempPath}' && mv '${artTempPath}' '${artFilePath}')`]
+        running: false
         onExited: {
             artDownloaded = true;
         }
@@ -110,10 +111,50 @@ Item {
         onTriggered: activePlayer.positionChanged()
     }
 
+    // Real Cava Visualizer integration
+    property var visualizerPoints: []
+
+    readonly property real bar0Val: visualizerPoints.length > 5 ? visualizerPoints[3] / 1000.0 : 0
+    readonly property real bar1Val: visualizerPoints.length > 11 ? visualizerPoints[9] / 1000.0 : 0
+    readonly property real bar2Val: visualizerPoints.length > 18 ? visualizerPoints[16] / 1000.0 : 0
+    readonly property real bar3Val: visualizerPoints.length > 28 ? visualizerPoints[25] / 1000.0 : 0
+
+    function getBarHeight(index) {
+        let minH = barWidth;
+        if (!root.playing)
+            return minH; // Reset to perfect circle when paused
+        let val = 0;
+        if (index === 0)
+            val = bar0Val;
+        else if (index === 1)
+            val = bar1Val;
+        else if (index === 2)
+            val = bar2Val;
+        else if (index === 3)
+            val = bar3Val;
+
+        let norm = Math.min(1.0, Math.max(0.0, val));
+        let maxH = artSize - 10;
+        return minH + norm * (maxH - minH);
+    }
+
+    Process {
+        id: cavaProc
+        running: root.playing
+        command: ["cava", "-p", `${FileUtils.trimFileProtocol(Directories.scriptPath)}/cava/raw_output_config.txt`]
+        stdout: SplitParser {
+            onRead: data => {
+                let points = data.split(";").map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+                root.visualizerPoints = points;
+            }
+        }
+    }
+
     MouseArea {
+        id: mediaMouseArea
         anchors.fill: parent
-        acceptedButtons: Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton | Qt.RightButton | Qt.LeftButton
         hoverEnabled: !Config.options.bar.tooltips.clickToShow
+        acceptedButtons: Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton | Qt.RightButton | Qt.LeftButton
         cursorShape: Qt.PointingHandCursor
         onEntered: {
             GlobalStates.setMediaWidgetHovered(true);
@@ -143,180 +184,149 @@ Item {
         }
     }
 
-    Item {
-        id: albumArtColumn
-        anchors.left: parent.left
-        anchors.verticalCenter: parent.verticalCenter
-        width: root.artworkEnabled ? root.artSize : 0
-        height: root.artworkEnabled ? root.artSize : 0
+    RowLayout {
+        anchors.fill: parent
+        spacing: root.spacing
 
-        MaterialShape {
-            anchors.fill: parent
-            shape: MaterialShape.Shape.Cookie12Sided
-            implicitSize: root.artSize
-            color: Appearance.colors.colPrimaryContainer
+        // Left Side: Album Art (12-sided Material Shape)
+        Item {
+            id: compactArtContainer
+            visible: root.artworkEnabled
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredWidth: root.artSize
+            Layout.preferredHeight: root.artSize
+
+            MaterialShape {
+                id: compactCookieMask
+                anchors.fill: parent
+                shapeString: "Cookie9Sided"
+                color: Appearance.colors.colSurfaceContainerHighest
+                visible: false
+            }
+
+            Item {
+                anchors.fill: parent
+                layer.enabled: true
+                layer.effect: OpacityMask {
+                    maskSource: compactCookieMask
+                }
+
+                Image {
+                    anchors.fill: parent
+                    source: root.artSource
+                    fillMode: Image.PreserveAspectCrop
+                    visible: root.artSource !== ""
+                    cache: false
+                    antialiasing: true
+                    sourceSize.width: root.artSize
+                    sourceSize.height: root.artSize
+                }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "music_note"
+                    iconSize: Appearance.font.pixelSize.normal
+                    color: Appearance.colors.colOnSurfaceVariant
+                    visible: root.artSource === ""
+                }
+            }
         }
 
+        // Center Side: Rounded Rectangle (Pill) containing metadata or lyrics
         Rectangle {
-            anchors.fill: parent
-            color: "transparent"
-            visible: root.artSource.length > 0
+            id: compactTextContainer
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.artSize
+            Layout.alignment: Qt.AlignVCenter
+            color: Appearance.colors.colSurfaceContainerHighest
+            radius: Appearance.rounding.verysmall
+            clip: true
 
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: albumArtColumn.width
-                    height: albumArtColumn.height
-                    radius: Appearance.rounding.full
+            readonly property bool hasLyrics: root.lyricsEnabled && LyricsService.hasSyncedLines
+
+            // Synced lyrics view (1 line or 3 lines with edge fade)
+            Loader {
+                id: compactLyricsLoader
+                anchors.fill: parent
+                anchors.margins: 4
+                active: compactTextContainer.hasLyrics
+                visible: active
+                sourceComponent: LyricScroller {
+                    id: lyricScroller
+                    anchors.fill: parent
+                    textAlign: "left"
+                    rowHeight: 16
+                    halfVisibleLines: 1
+                    useGradientMask: true
+                    defaultLyricsSize: Appearance.font.pixelSize.smallest
                 }
             }
 
-            Image {
-                anchors.fill: parent
-                source: root.artSource
-                fillMode: Image.PreserveAspectCrop
-                cache: false
-                antialiasing: true
-                sourceSize.width: root.artSize
-                sourceSize.height: root.artSize
-            }
-        }
+            // Standard metadata display (Song + Artist in two lines)
+            ColumnLayout {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 0
+                visible: !compactLyricsLoader.visible
 
-        MaterialSymbol {
-            anchors.centerIn: parent
-            visible: root.artSource.length === 0
-            fill: 1
-            text: "music_note"
-            iconSize: Appearance.font.pixelSize.normal
-            color: Appearance.colors.colOnSecondaryContainer
-        }
-    }
+                StyledText {
+                    id: titleText
+                    Layout.fillWidth: true
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.weight: Font.DemiBold
+                    text: root.cleanedTitle
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
+                    color: Appearance.colors.colOnSurface
+                }
 
-    Rectangle {
-        id: textColumn
-        anchors.left: albumArtColumn.right
-        anchors.leftMargin: root.artworkEnabled ? Appearance.rounding.small : 0
-        anchors.verticalCenter: parent.verticalCenter
-        height: root.artSize
-        width: {
-            let w = titleText.implicitWidth;
-            if (artistText.implicitWidth > w) w = artistText.implicitWidth;
-            return w + Appearance.rounding.small * 2;
-        }
-        radius: Appearance.rounding.windowRounding
-        color: Appearance.colors.colSecondaryContainer
-        visible: root.hasTrack && !(root.lyricsEnabled && LyricsService.hasSyncedLines)
-
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.leftMargin: Appearance.rounding.small
-            anchors.rightMargin: Appearance.rounding.small
-            spacing: 0
-
-            StyledText {
-                id: titleText
-                Layout.fillWidth: true
-                text: root.cleanedTitle
-                font.pixelSize: Appearance.font.pixelSize.normal
-                font.weight: Font.DemiBold
-                color: Appearance.colors.colOnSecondaryContainer
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignLeft
-            }
-
-            StyledText {
-                id: artistText
-                Layout.fillWidth: true
-                text: root.trackArtist
-                font.pixelSize: Appearance.font.pixelSize.smaller
-                font.weight: Font.Light
-                color: Appearance.colors.colOnSecondaryContainer
-                opacity: 0.7
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignLeft
-            }
-        }
-    }
-
-    Loader {
-        id: lyricsItemLoader
-        active: root.lyricsEnabled && root.hasTrack
-        anchors.left: albumArtColumn.right
-        anchors.leftMargin: root.artworkEnabled ? Appearance.rounding.small : 0
-        anchors.verticalCenter: parent.verticalCenter
-        width: root.lyricsCustomSize
-        height: root.artSize
-
-        sourceComponent: Item {
-            id: lyricsItem
-
-            Loader {
-                active: root.lyricsStyle == "static"
-                anchors.fill: parent
-                sourceComponent: LyricsStatic {
-                    anchors.fill: parent
+                StyledText {
+                    id: artistText
+                    Layout.fillWidth: true
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: Appearance.colors.colSubtext
+                    text: root.trackArtist
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
                     horizontalAlignment: Text.AlignLeft
                 }
             }
-
-            Loader {
-                active: root.lyricsStyle == "scroller"
-                anchors.fill: parent
-                sourceComponent: LyricScroller {
-                    anchors.fill: parent
-                    visible: root.lyricsStyle == "scroller" && LyricsService.hasSyncedLines
-                    defaultLyricsSize: Appearance.font.pixelSize.smallest
-                    useGradientMask: root.useGradientMask
-                    halfVisibleLines: 1
-                    downScale: 0.98
-                    rowHeight: 10
-                    gradientDensity: 0.25
-                }
-            }
-        }
-    }
-
-    Item {
-        id: audioVisualizer
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        width: visBarCount * visBarWidth + (visBarCount - 1) * visBarGap
-        height: root.artSize
-        visible: root.hasTrack
-
-        readonly property bool isPlaying: root.activePlayer?.isPlaying ?? false
-        property list<real> barHeights: [0.2, 0.25, 0.3, 0.22, 0.18]
-
-        Timer {
-            running: audioVisualizer.isPlaying
-            repeat: true
-            interval: 150
-            onTriggered: {
-                audioVisualizer.barHeights = [
-                    0.4 + Math.random() * 0.6,
-                    0.5 + Math.random() * 0.5,
-                    0.6 + Math.random() * 0.4,
-                    0.45 + Math.random() * 0.55,
-                    0.35 + Math.random() * 0.65
-                ]
-            }
         }
 
-        Repeater {
-            model: visBarCount
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                x: index * (visBarWidth + visBarGap)
-                width: visBarWidth
-                height: visMaxH * audioVisualizer.barHeights[index]
-                radius: visBarWidth / 2
-                color: Appearance.m3colors.m3primary
+        // Right Side: Cava Visualizer (4 bars)
+        Item {
+            id: compactVisualizerContainer
+            visible: root.hasTrack
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredWidth: root.visualizerWidth
+            Layout.preferredHeight: root.artSize
 
-                Behavior on height {
-                    NumberAnimation {
-                        duration: Appearance.animation.elementMoveFast.duration
-                        easing.type: Appearance.animation.elementMoveFast.type
-                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            Row {
+                id: compactVisualizerRow
+                anchors.centerIn: parent
+                height: parent.height
+                spacing: 1
+
+                Repeater {
+                    model: 4
+                    Rectangle {
+                        required property int index
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: root.barWidth
+                        height: root.getBarHeight(index)
+                        radius: root.barWidth / 2
+                        color: Appearance.colors.colPrimary
+
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: 85
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
                 }
             }

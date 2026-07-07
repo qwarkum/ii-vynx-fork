@@ -1,5 +1,6 @@
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.utils
 import qs.services
 import qs
 import qs.modules.common.functions
@@ -7,21 +8,32 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell.Services.Mpris
+import Quickshell
+import Quickshell.Io
 
 MouseArea {
     id: root
 
     readonly property int artSize: Appearance.sizes.verticalBarWidth - Appearance.rounding.small * 2
-    readonly property int visBarCount: 5
-    readonly property int visBarWidth: Appearance.rounding.unsharpen
-    readonly property int visBarGap: Appearance.rounding.unsharpen
-    readonly property int visMaxH: Appearance.rounding.small * 3
+    readonly property int barWidth: Math.max(4, Math.min(8, artSize / 5))
+    readonly property int visualizerWidth: 4 * barWidth + 3 * 1
+    readonly property int spacing: Appearance.rounding.small
 
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property bool hasTrack: (activePlayer?.trackTitle ?? "").length > 0
+    readonly property bool playing: activePlayer ? activePlayer.playbackState === MprisPlaybackState.Playing : false
 
-    readonly property var artUrl: MprisController.artUrl
-    readonly property string artSource: artUrl || ""
+    readonly property string artUrl: MprisController.artUrl
+    readonly property bool isLocalArt: artUrl.startsWith("file://")
+    property string artDownloadLocation: Directories.coverArt
+    property string artFileName: Qt.md5(artUrl)
+    property string artFilePath: `${artDownloadLocation}/${artFileName}`
+    property bool artDownloaded: false
+    readonly property string artSource: {
+        if (!artUrl) return "";
+        if (isLocalArt) return artUrl;
+        return artDownloaded ? Qt.resolvedUrl(artFilePath) : artUrl;
+    }
 
     Layout.fillHeight: true
     implicitWidth: Appearance.sizes.verticalBarWidth
@@ -58,6 +70,28 @@ MouseArea {
         }
     }
 
+    onArtFilePathChanged: {
+        if (!artUrl || artUrl.length === 0) {
+            artDownloaded = false;
+            return;
+        }
+        if (isLocalArt) {
+            artDownloaded = true;
+            return;
+        }
+        artDownloaded = false;
+        artDownloader.command = ["bash", "-c", `[ -f '${artFilePath}' ] || (mkdir -p '${artDownloadLocation}' && curl -4 -sSL '${artUrl}' -o '${artFilePath}.tmp' && mv '${artFilePath}.tmp' '${artFilePath}')`]
+        artDownloader.running = true;
+    }
+
+    Process {
+        id: artDownloader
+        running: false
+        onExited: {
+            artDownloaded = true;
+        }
+    }
+
     Timer {
         running: activePlayer?.playbackState == MprisPlaybackState.Playing
         interval: Config.options.resources.updateInterval
@@ -65,11 +99,51 @@ MouseArea {
         onTriggered: activePlayer.positionChanged()
     }
 
+    // Real Cava Visualizer integration
+    property var visualizerPoints: []
+
+    readonly property real bar0Val: visualizerPoints.length > 5 ? visualizerPoints[3] / 1000.0 : 0
+    readonly property real bar1Val: visualizerPoints.length > 11 ? visualizerPoints[9] / 1000.0 : 0
+    readonly property real bar2Val: visualizerPoints.length > 18 ? visualizerPoints[16] / 1000.0 : 0
+    readonly property real bar3Val: visualizerPoints.length > 28 ? visualizerPoints[25] / 1000.0 : 0
+
+    function getBarHeight(index) {
+        let minH = barWidth;
+        if (!root.playing)
+            return minH; // Reset to perfect circle when paused
+        let val = 0;
+        if (index === 0)
+            val = bar0Val;
+        else if (index === 1)
+            val = bar1Val;
+        else if (index === 2)
+            val = bar2Val;
+        else if (index === 3)
+            val = bar3Val;
+
+        let norm = Math.min(1.0, Math.max(0.0, val));
+        let maxH = root.artSize - 10;
+        return minH + norm * (maxH - minH);
+    }
+
+    Process {
+        id: cavaProc
+        running: root.playing
+        command: ["cava", "-p", `${FileUtils.trimFileProtocol(Directories.scriptPath)}/cava/raw_output_config.txt`]
+        stdout: SplitParser {
+            onRead: data => {
+                let points = data.split(";").map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+                root.visualizerPoints = points;
+            }
+        }
+    }
+
     ColumnLayout {
         id: columnLayout
         anchors.centerIn: parent
-        spacing: Appearance.rounding.small
+        spacing: root.spacing
 
+        // Album Art in 12-sided shape
         Item {
             id: albumArtVert
             Layout.alignment: Qt.AlignHCenter
@@ -77,86 +151,69 @@ MouseArea {
             Layout.preferredHeight: root.artSize
 
             MaterialShape {
+                id: compactCookieMask
                 anchors.fill: parent
-                shape: MaterialShape.Shape.Cookie12Sided
-                implicitSize: root.artSize
+                shapeString: "Cookie12Sided"
                 color: Appearance.colors.colPrimaryContainer
+                visible: false
             }
 
-            Rectangle {
+            Item {
                 anchors.fill: parent
-                color: "transparent"
-                visible: root.artSource.length > 0
-
                 layer.enabled: true
                 layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: albumArtVert.width
-                        height: albumArtVert.height
-                        radius: Appearance.rounding.full
-                    }
+                    maskSource: compactCookieMask
                 }
 
                 Image {
                     anchors.fill: parent
                     source: root.artSource
                     fillMode: Image.PreserveAspectCrop
+                    visible: root.artSource !== ""
                     cache: false
                     antialiasing: true
                     sourceSize.width: root.artSize
                     sourceSize.height: root.artSize
                 }
-            }
 
-            MaterialSymbol {
-                anchors.centerIn: parent
-                visible: root.artSource.length === 0
-                fill: 1
-                text: "music_note"
-                iconSize: Appearance.font.pixelSize.normal
-                color: Appearance.colors.colOnSecondaryContainer
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "music_note"
+                    iconSize: Appearance.font.pixelSize.normal
+                    color: Appearance.colors.colOnSecondaryContainer
+                    visible: root.artSource === ""
+                }
             }
         }
 
+        // Cava Visualizer
         Item {
             id: audioVisualizerVert
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: visBarCount * visBarWidth + (visBarCount - 1) * visBarGap
-            Layout.preferredHeight: visMaxH
+            Layout.preferredWidth: root.visualizerWidth
+            Layout.preferredHeight: root.artSize
 
-            readonly property bool isPlaying: root.activePlayer?.isPlaying ?? false
-            property list<real> barHeights: [0.2, 0.25, 0.3, 0.22, 0.18]
+            Row {
+                id: compactVisualizerRow
+                anchors.centerIn: parent
+                height: parent.height
+                spacing: 1
 
-            Timer {
-                running: audioVisualizerVert.isPlaying
-                repeat: true
-                interval: 150
-                onTriggered: {
-                    audioVisualizerVert.barHeights = [
-                        0.4 + Math.random() * 0.6,
-                        0.5 + Math.random() * 0.5,
-                        0.6 + Math.random() * 0.4,
-                        0.45 + Math.random() * 0.55,
-                        0.35 + Math.random() * 0.65
-                    ]
-                }
-            }
+                Repeater {
+                    model: 4
+                    Rectangle {
+                        required property int index
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: root.barWidth
+                        height: root.getBarHeight(index)
+                        radius: root.barWidth / 2
+                        color: Appearance.colors.colPrimary
 
-            Repeater {
-                model: visBarCount
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: index * (visBarWidth + visBarGap)
-                    width: visBarWidth
-                    height: visMaxH * audioVisualizerVert.barHeights[index]
-                    radius: visBarWidth / 2
-                    color: Appearance.m3colors.m3primary
-
-                    Behavior on height {
-                        NumberAnimation {
-                            duration: Appearance.animation.elementMoveFast.duration
-                            easing.type: Appearance.animation.elementMoveFast.type
-                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: 85
+                                easing.type: Easing.OutCubic
+                            }
                         }
                     }
                 }

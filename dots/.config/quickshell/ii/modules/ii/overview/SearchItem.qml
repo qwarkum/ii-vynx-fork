@@ -17,7 +17,6 @@ RippleButton {
     id: root
     property var entry
     property string query
-    property bool openStateStable: false
     property bool entryShown: entry?.shown ?? true
     property string itemType: entry?.type ?? Translation.tr("App")
     property string itemName: entry?.name ?? ""
@@ -109,8 +108,8 @@ RippleButton {
     }
 
     property int listIndex: 0
-    property int listCount: 1
-    property int listCurrentIndex: -1
+    property int listCount: ListView.view ? ListView.view.count : 1
+    property int listCurrentIndex: ListView.view ? ListView.view.currentIndex : -1
 
     readonly property bool isFirst: listIndex === 0
     readonly property bool isLast: listIndex === listCount - 1
@@ -245,13 +244,9 @@ RippleButton {
             return normalHeight;
         return contentRow.implicitHeight + buttonVerticalPadding * 2;
     }
-    onImplicitHeightChanged: {
-        Quickshell.execDetached(["sh", "-c", "echo \"[DEBUG-H] name=" + itemName + " ih=" + implicitHeight + " crH=" + contentRow.implicitHeight + " ccH=" + contentColumn.implicitHeight + " fpLen=" + filePath.length + " clipLen=" + cliphistRawString.length + " entry=" + (entry?.name || "null") + "\" >> /tmp/search_debug.log"]);
-    }
     implicitWidth: contentRow.implicitWidth + root.buttonHorizontalPadding * 2
 
     Behavior on implicitHeight {
-        enabled: root.openStateStable
         NumberAnimation {
             duration: 250
             easing.type: Easing.BezierSpline
@@ -568,7 +563,8 @@ RippleButton {
                             }
 
                             MaterialSymbol {
-                                readonly property string iconText: {
+                                visible: root.contentType !== "" && root.contentType !== "hex-color" && root.contentType !== "clipboard"
+                                text: {
                                     switch (root.contentType) {
                                     case "url":
                                         return "link";
@@ -590,8 +586,6 @@ RippleButton {
                                         return "";
                                     }
                                 }
-                                visible: iconText !== ""
-                                text: iconText
                                 iconSize: Appearance.font.pixelSize.normal
                                 color: root.colForeground
                             }
@@ -1024,13 +1018,6 @@ RippleButton {
         }
     }
 
-    function replayEntryAnimation() {
-        entryOpacity = 0.0;
-        entryScale = 0.94;
-        entryTranslateY = -20;
-        entryAnim.restart();
-    }
-
     onClicked: {
         if (root.actionPanelOpen) {
             root.actionPanelOpen = false;
@@ -1065,12 +1052,8 @@ RippleButton {
                 root.clicked();
             }
             event.accepted = true;
-        } else if (event.key === Qt.Key_Escape) {
-            if (root.actionPanelOpen) {
-                root.actionPanelOpen = false;
-            } else {
-                GlobalStates.overviewOpen = false;
-            }
+        } else if (event.key === Qt.Key_Escape && root.actionPanelOpen) {
+            root.actionPanelOpen = false;
             event.accepted = true;
         } else if (root.actionPanelOpen && event.key === Qt.Key_Left) {
             root.actionSelectedIndex = Math.max(0, root.actionSelectedIndex - 1);
@@ -1124,6 +1107,6 @@ RippleButton {
     }
 
     Component.onCompleted: {
-        // Delegate will trigger replayEntryAnimation() when data is assigned
+        entryAnim.start();
     }
 }

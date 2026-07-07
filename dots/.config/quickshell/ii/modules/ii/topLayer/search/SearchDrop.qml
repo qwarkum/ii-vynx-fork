@@ -7,8 +7,6 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.overview
-import qs.modules.ii.bar
-import qs.modules.ii.bar.shared
 
 // ── Animation strategy ──────────────────────────────────────────────────────
 // Caestelia-inspired: uses expressiveFastSpatial (spring overshoot y1=1.67)
@@ -21,11 +19,6 @@ Item {
     focus: true
     width: screenWidth
     height: screenHeight
-
-    BarThemes {
-        id: barThemes
-    }
-    readonly property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
@@ -58,10 +51,10 @@ Item {
     property bool usingWrappedFrame: false
     property int frameThickness: 0
     property int barHeight: Appearance.sizes.barHeight
-    property int verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
-    property real barMargin: 0
+    property int verticalBarWidth: Appearance.sizes.verticalBarWidth
     property real hBarHiddenAmount: 0
     property real vBarHiddenAmount: 0
+    property real barMargin: 0
     property real animatedLeftSidebarWidth: 0
     property real animatedRightSidebarWidth: 0
     property bool leftSidebarActiveOnMonitor: false
@@ -76,22 +69,18 @@ Item {
 
     property var searchWidgetRef: null
 
-    readonly property bool isOverviewVisible: root.isOpen && LauncherSearch.query === "" && !GlobalStates.searchOnlyMode && !Config.options.search.alwaysListApps && (Config?.options.overview.enable ?? true)
+    readonly property bool isOverviewVisible: root.isOpen
+        && (root.searchWidgetRef ? root.searchWidgetRef.searchingText === "" : true)
+        && !GlobalStates.searchOnlyMode
+        && !Config.options.search.alwaysListApps
+        && (Config?.options.overview.enable ?? true)
 
     readonly property bool isScrollingLayout: Persistent.states.hyprland.layout === "scrolling"
-    readonly property real launcherContentWidth: {
-        if (Config.options.bar.dynamicIsland.notchMode.enable)
-            return GlobalStates.activeSearchWidth;
-        return searchWidgetRef ? searchWidgetRef.implicitWidth : 0;
-    }
-    readonly property real launcherContentHeight: {
-        if (Config.options.bar.dynamicIsland.notchMode.enable)
-            return GlobalStates.activeSearchHeight;
-        return searchWidgetRef ? searchWidgetRef.implicitHeight : 0;
-    }
+    readonly property real launcherContentWidth: searchWidgetRef ? searchWidgetRef.implicitWidth : 0
+    readonly property real launcherContentHeight: searchWidgetRef ? searchWidgetRef.implicitHeight : 0
 
-    property real lastActiveW: Config.options.bar.dynamicIsland.notchMode.enable ? (Config.options.search.baseWidth + (GlobalStates.searchConnectActive ? 48 : 0)) : 360
-    property real lastActiveH: Config.options.bar.dynamicIsland.notchMode.enable ? (GlobalStates.searchConnectActive ? 68 : 60) : 120
+    property real lastActiveW: 360
+    property real lastActiveH: 120
 
     onLauncherContentWidthChanged: {
         if (launcherContentWidth > 0)
@@ -208,10 +197,8 @@ Item {
         x: positioner.anchorX
         y: positioner.anchorY
         width: dropState.targetW
-        height: Config.options.bar.dynamicIsland.notchMode.enable
-            ? (root.isWidgetActive ? dropState.targetH : 0)
-            : root.animHeight
-        visible: height > 0.001
+        height: root.animHeight
+        visible: root.animHeight > 0.001
 
         // Publish drop bounds to GlobalStates for background blur exclusion
         onXChanged: root._updateBlurExclusion()
@@ -222,7 +209,6 @@ Item {
         // ── Notch background (unclipped) ─────────────────────────────────────
         Notch {
             id: dropNotch
-            visible: !Config.options.bar.dynamicIsland.notchMode.enable
             width: dropContainer.width
             height: dropContainer.height   // = animHeight, always matches clip edge
             y: barBottom ? (dropContainer.height - height) : 0
@@ -232,7 +218,7 @@ Item {
             // animHeight * 0.8 reaches windowRounding quickly without overshoot.
             topRadius: Math.min(_wr, root.animHeight * 0.8)
             bottomRadius: Math.min(_wr, root.animHeight)
-            fillColor: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            fillColor: Appearance.colors.colBackgroundSurfaceContainer
             transform: Scale {
                 xScale: 1
                 yScale: barBottom ? -1 : 1
@@ -248,14 +234,17 @@ Item {
         // Corner enum semantics for "drop below bar" layout:
         //   Left side:  BottomRight fills bottom-right quadrant → arc faces inward → concave ✓
         //   Right side: BottomLeft  fills bottom-left  quadrant → arc faces inward → concave ✓
-        readonly property real _cornerRadius: Math.min(Appearance.rounding.windowRounding, root.animHeight)
+        readonly property real _cornerRadius: Math.min(
+            Appearance.rounding.windowRounding,
+            root.animHeight
+        )
         readonly property bool _showCorners: !root.barVertical && root.animHeight > 0.5
 
         RoundCorner {
             id: topLeftCorner
             visible: false
             implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            color: Appearance.colors.colLayer0
             corner: RoundCorner.CornerEnum.BottomRight
             anchors.right: parent.left
             anchors.top: parent.top
@@ -265,7 +254,7 @@ Item {
             id: topRightCorner
             visible: false
             implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            color: Appearance.colors.colLayer0
             corner: RoundCorner.CornerEnum.BottomLeft
             anchors.left: parent.right
             anchors.top: parent.top
@@ -274,20 +263,21 @@ Item {
         // barBottom variant: corners at the BOTTOM edge (drop grows upward)
         RoundCorner {
             id: bottomLeftCorner
-            visible: dropContainer._showCorners && root.barBottom && !Config.options.bar.dynamicIsland.notchMode.enable
+            visible: dropContainer._showCorners && root.barBottom
             implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            color: Appearance.colors.colLayer0
             corner: RoundCorner.CornerEnum.TopRight
             extendHorizontal: true
             extendVertical: true
             anchors.right: parent.left
             anchors.bottom: parent.bottom
         }
+
         RoundCorner {
             id: bottomRightCorner
-            visible: dropContainer._showCorners && root.barBottom && !Config.options.bar.dynamicIsland.notchMode.enable
+            visible: dropContainer._showCorners && root.barBottom
             implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            color: Appearance.colors.colLayer0
             corner: RoundCorner.CornerEnum.TopLeft
             extendHorizontal: true
             extendVertical: true
@@ -312,8 +302,8 @@ Item {
 
                 Loader {
                     id: searchWidgetLoader
-                    active: !Config.options.bar.dynamicIsland.notchMode.enable
-                    focus: root.isOpen && !Config.options.bar.dynamicIsland.notchMode.enable
+                    active: root.isWidgetActive
+                    focus: root.isOpen
                     anchors.fill: parent
                     sourceComponent: Component {
                         SearchWidget {
@@ -389,7 +379,7 @@ Item {
         anchors.top: dropContainer.bottom
         anchors.topMargin: 10
         anchors.horizontalCenter: parent.horizontalCenter
-        active: !root.isScrollingLayout
+        active: root.isWidgetActive && !root.isScrollingLayout
         visible: opacity > 0.01
 
         opacity: root.isOverviewVisible ? 1.0 : 0.0
@@ -424,7 +414,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        active: root.isScrollingLayout
+        active: root.isWidgetActive && root.isScrollingLayout
         visible: opacity > 0.01
 
         opacity: root.isOverviewVisible ? 1.0 : 0.0
@@ -465,7 +455,13 @@ Item {
 
         const topR = dropNotch.topRadius;
         const bottomR = dropNotch.bottomRadius;
-        if (GlobalStates.searchDropActive !== active || GlobalStates.searchDropExclusionX !== sx || GlobalStates.searchDropExclusionY !== sy || GlobalStates.searchDropExclusionWidth !== sw || GlobalStates.searchDropExclusionHeight !== sh || GlobalStates.searchDropTopRadius !== topR || GlobalStates.searchDropBottomRadius !== bottomR) {
+        if (GlobalStates.searchDropActive !== active
+            || GlobalStates.searchDropExclusionX !== sx
+            || GlobalStates.searchDropExclusionY !== sy
+            || GlobalStates.searchDropExclusionWidth !== sw
+            || GlobalStates.searchDropExclusionHeight !== sh
+            || GlobalStates.searchDropTopRadius !== topR
+            || GlobalStates.searchDropBottomRadius !== bottomR) {
             GlobalStates.searchDropActive = active;
             GlobalStates.searchDropExclusionX = sx;
             GlobalStates.searchDropExclusionY = sy;

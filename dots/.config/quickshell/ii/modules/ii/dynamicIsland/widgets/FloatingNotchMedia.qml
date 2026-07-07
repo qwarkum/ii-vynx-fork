@@ -422,7 +422,7 @@ Item {
         Rectangle {
             id: maskRect
             anchors.fill: parent
-            radius: Appearance.rounding.windowRounding + 4
+            radius: Appearance.rounding.windowRounding
             visible: false
         }
 

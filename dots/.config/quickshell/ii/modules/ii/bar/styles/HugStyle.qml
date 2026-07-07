@@ -35,7 +35,7 @@ Item {
     Rectangle {
         id: barBackground
         anchors.fill: parent
-        color: Qt.rgba(root.actualColor.r, root.actualColor.g, root.actualColor.b, 1.0)
+        color: root.actualColor
         radius: 0
 
         layer.enabled: Config.options.bar.dropShadow

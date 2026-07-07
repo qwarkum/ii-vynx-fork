@@ -50,15 +50,16 @@ PanelWindow {
     }
 
     readonly property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
-    readonly property bool barVertical: Config.options.bar.vertical
-    readonly property bool barBottom: Config.options.bar.bottom
+    readonly property bool hasBarOnThisMonitor: GlobalStates.isScreenAllowedForBar(topPanel.screen)
+    readonly property bool barVertical: Config.options.bar.vertical && hasBarOnThisMonitor
+    readonly property bool barBottom: Config.options.bar.bottom && hasBarOnThisMonitor
     readonly property bool barOnLeft: barVertical && !barBottom
     readonly property bool barOnRight: barVertical && barBottom
 
-    readonly property bool isDynamicIslandTop: !topPanel.barVertical && !topPanel.barBottom && Config.options.bar.cornerStyle === 3
-    readonly property bool isDynamicIslandBottom: !topPanel.barVertical && topPanel.barBottom && Config.options.bar.cornerStyle === 3
-    readonly property real sidebarTopOffset: isDynamicIslandTop ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && !topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2)) ? Appearance.sizes.barHeight : 0)
-    readonly property real sidebarBottomOffset: isDynamicIslandBottom ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2)) ? Appearance.sizes.barHeight : 0)
+    readonly property bool isDynamicIslandTop: !topPanel.barVertical && !topPanel.barBottom && Config.options.bar.cornerStyle === 3 && hasBarOnThisMonitor
+    readonly property bool isDynamicIslandBottom: !topPanel.barVertical && topPanel.barBottom && Config.options.bar.cornerStyle === 3 && hasBarOnThisMonitor
+    readonly property real sidebarTopOffset: isDynamicIslandTop ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && !topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && hasBarOnThisMonitor) ? Appearance.sizes.barHeight : 0)
+    readonly property real sidebarBottomOffset: isDynamicIslandBottom ? (Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut) : ((!topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && hasBarOnThisMonitor) ? Appearance.sizes.barHeight : 0)
 
     property real leftSidebarMaskWidth: 0
     property real rightSidebarMaskWidth: 0
@@ -172,7 +173,7 @@ PanelWindow {
     // 2. Horizontal Bar Visual Layer
     Loader {
         id: horizontalBarLoader
-        active: !topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && (!Config.options.bar.onlyShowOnSingleMonitor || (topPanel.screen && topPanel.screen.name === Config.options.bar.singleMonitorName))
+        active: !topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && hasBarOnThisMonitor
         anchors.fill: parent
         sourceComponent: Component {
             Item {
@@ -364,7 +365,7 @@ PanelWindow {
     // 3. Vertical Bar Visual Layer
     Loader {
         id: verticalBarLoader
-        active: topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && (!Config.options.bar.onlyShowOnSingleMonitor || (topPanel.screen && topPanel.screen.name === Config.options.bar.singleMonitorName))
+        active: topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && hasBarOnThisMonitor
         anchors.fill: parent
         sourceComponent: Component {
             Item {
@@ -595,7 +596,7 @@ PanelWindow {
         layer.enabled: GlobalStates.leftSidebarAnimating
 
         Loader {
-            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && !GlobalStates.policiesDetached
+            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && !GlobalStates.policiesDetached && topPanel.leftSidebarWarmOnMonitor
             asynchronous: true
             anchors.fill: parent
             sourceComponent: {
@@ -623,8 +624,9 @@ PanelWindow {
     // Detached Sidebar Policies Window
     // Disabled in Float+Connect mode — sidebars remain separate PanelWindows
     Loader {
-        active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && GlobalStates.policiesDetached
+        active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && GlobalStates.policiesDetached && topPanel.screen.name === GlobalStates.effectiveLeftMonitor
         sourceComponent: FloatingWindow {
+            screen: topPanel.screen
             color: "transparent"
             visible: true
             width: GlobalStates.policiesWidth
@@ -677,7 +679,7 @@ PanelWindow {
         layer.enabled: GlobalStates.rightSidebarAnimating
 
         Loader {
-            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate
+            active: GlobalStates.connectModeActive && !GlobalStates.connectSidebarsSeparate && topPanel.rightSidebarWarmOnMonitor
             asynchronous: true
             anchors.fill: parent
             sourceComponent: {
@@ -915,8 +917,8 @@ PanelWindow {
                 barOnRight: topPanel.barOnRight
                 usingWrappedFrame: topPanel.usingWrappedFrame
                 frameThickness: Config.options.appearance.wrappedFrameThickness
-                barHeight: Appearance.sizes.barHeight
-                verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
+                barHeight: hasBarOnThisMonitor ? Appearance.sizes.barHeight : 0
+                verticalBarWidth: hasBarOnThisMonitor ? Appearance.sizes.verticalBarWindowWidth : 0
                 barMargin: topPanel.barMargin
                 hBarHiddenAmount: topPanel.hBarHiddenAmount
                 vBarHiddenAmount: topPanel.vBarHiddenAmount
@@ -943,8 +945,8 @@ PanelWindow {
                 barOnRight: topPanel.barOnRight
                 usingWrappedFrame: topPanel.usingWrappedFrame
                 frameThickness: Config.options.appearance.wrappedFrameThickness
-                barHeight: Appearance.sizes.barHeight
-                verticalBarWidth: Appearance.sizes.verticalBarWindowWidth
+                barHeight: hasBarOnThisMonitor ? Appearance.sizes.barHeight : 0
+                verticalBarWidth: hasBarOnThisMonitor ? Appearance.sizes.verticalBarWindowWidth : 0
                 barMargin: topPanel.barMargin
                 hBarHiddenAmount: topPanel.hBarHiddenAmount
                 vBarHiddenAmount: topPanel.vBarHiddenAmount

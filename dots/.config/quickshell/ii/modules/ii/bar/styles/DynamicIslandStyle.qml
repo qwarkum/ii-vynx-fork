@@ -56,15 +56,13 @@ Item {
     readonly property var modeState: modeState
 
     readonly property var activeNotchCurve: {
-        if (!modeState.notchModeEnabled)
-            return null;
         if (modeState._displayMode === "clock" || modeState._displayMode === "")
             return Appearance.animationCurves.emphasized;
         return Appearance.animationCurves.emphasizedDecel;
     }
 
     readonly property bool searchStable: modeState._displayMode === "search" && (searchWidgetLoader.item ? searchWidgetLoader.item.openStateStable : false)
-    readonly property bool isSearchModeActive: (modeState._displayMode === "search") || searchWidgetLoader.visible
+    readonly property bool isSearchModeActive: (modeState._displayMode === "search") || searchWidgetLoader.visible || root.isSearchActiveHere
 
     readonly property real verticalTopOffset: Config.options.bar.bottom ? Math.max(0, barBackground.height - parent.height) : 0
     readonly property real verticalBottomOffset: !Config.options.bar.bottom ? Math.max(0, barBackground.height - parent.height) : 0

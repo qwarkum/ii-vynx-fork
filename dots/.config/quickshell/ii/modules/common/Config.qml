@@ -438,7 +438,7 @@ Singleton {
                         property real x: 100
                         property real y: 100
                     }
-                    property bool enableInnerShadow: true
+                    property bool enableInnerShadow: false
                     property bool enableShadows: true
                 }
                 property bool scaleLargeWallpapers: true
@@ -535,7 +535,7 @@ Singleton {
 
                 property bool bottom: false // Instead of top
                 property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
-                property bool dropShadow: true // Show drop shadow under all bars
+                property bool dropShadow: false // Show drop shadow under all bars
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property int dynamicIslandSpacingHorizontal: 48
                 property int dynamicIslandSpacingVertical: 16
@@ -556,7 +556,7 @@ Singleton {
                 property JsonObject floatingNotch: JsonObject {
                     property bool enable: false
                     property bool autoHide: false
-                    property bool dropShadow: true
+                    property bool dropShadow: false
 
                     // Disables
                     property bool disableWorkspaces: false

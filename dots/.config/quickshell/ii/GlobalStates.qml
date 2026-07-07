@@ -53,6 +53,24 @@ Singleton {
     property string activeLeftSidebarMonitor: ""
     property string activeRightSidebarMonitor: ""
 
+    function isScreenAllowedForBar(screen) {
+        if (!screen) return false;
+        if (!Config.ready) return true;
+        if (Config.options.bar.onlyShowOnSingleMonitor) {
+            return screen.name === Config.options.bar.singleMonitorName;
+        }
+        const list = Config.options.bar.screenList;
+        if (list && list.length > 0) {
+            return list.includes(screen.name);
+        }
+        return true;
+    }
+
+    readonly property var allowedScreens: {
+        if (!Config.ready) return Quickshell.screens;
+        return Quickshell.screens.filter(screen => root.isScreenAllowedForBar(screen));
+    }
+
     readonly property string effectiveLeftMonitor: {
         if (!Config.ready) return "";
         switch (Config.options.sidebar.position) {
@@ -143,7 +161,8 @@ Singleton {
     property rect mediaPopupRect: Qt.rect(0, 0, 0, 0)
     property bool mediaWidgetHovered: false
     property Timer mediaWidgetHoverTimer: Timer {
-        interval: 100
+        id: mediaWidgetHoverTimer
+        interval: 4000
         repeat: false
         onTriggered: {
             root.mediaWidgetHovered = false;
