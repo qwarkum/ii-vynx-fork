@@ -21,9 +21,9 @@ WindowDialog {
     }
 
     WindowDialogButtonRow {
-        Layout.leftMargin: -16
-        Layout.rightMargin: -16
-        Layout.bottomMargin: -16
+        Layout.leftMargin: 0
+        Layout.rightMargin: 0
+        Layout.bottomMargin: -8
         // Details button with only a border and no fill
         RippleButton {
             id: detailsBtn

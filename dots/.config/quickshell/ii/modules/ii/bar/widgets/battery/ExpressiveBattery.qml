@@ -35,11 +35,12 @@ MouseArea {
 
     Rectangle {
         id: pill
-        anchors.centerIn: parent
+        anchors.centerIn: vertical ? undefined : parent
+        anchors.fill: vertical ? parent : undefined
         color: Appearance.colors.colSecondaryContainer
         radius: Config.options.bar.barGroupStyle === 1 ? Appearance.rounding.windowRounding : Appearance.rounding.full
         implicitWidth: vertical ? Appearance.sizes.verticalBarWidth - 8 : batteryIcon.implicitWidth
-        implicitHeight: vertical ? batteryIcon.implicitHeight : Appearance.sizes.baseBarHeight - 8
+        implicitHeight: vertical ? parent.height : Appearance.sizes.baseBarHeight - 8
 
         Loader {
             id: batteryIcon

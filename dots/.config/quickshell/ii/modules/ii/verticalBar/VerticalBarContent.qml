@@ -252,7 +252,7 @@ Item { // Bar content region
 
         ColumnLayout { // Bottom items
             id: bottomSectionLayout
-            spacing: 8
+            spacing: 4
             Repeater {
                 model: Config.options.bar.layouts.right
                 delegate: Bar.BarComponent {
@@ -377,7 +377,7 @@ Item { // Bar content region
             bottom: barBackground.bottom
             bottomMargin: (Config.options.bar.cornerStyle === 1) ? Appearance.sizes.hyprlandGapsOut : Math.ceil(Appearance.rounding.screenRounding / 2.5)
         }
-        spacing: 8
+        spacing: 4
 
         Repeater {
             id: rightRepeater

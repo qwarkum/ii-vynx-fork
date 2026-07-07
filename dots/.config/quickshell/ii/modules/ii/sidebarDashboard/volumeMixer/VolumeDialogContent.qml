@@ -50,17 +50,17 @@ StyledFlickable {
 
     Layout.fillWidth: true
     Layout.fillHeight: true
-    Layout.topMargin: -32
+    Layout.topMargin: -16
     Layout.bottomMargin: 0
-    Layout.leftMargin: -32
-    Layout.rightMargin: -32
+    Layout.leftMargin: 0
+    Layout.rightMargin: 0
 
     contentHeight: mainLayout.implicitHeight + 36
     clip: true
 
     ColumnLayout {
         id: mainLayout
-        width: root.width - 32
+        width: root.width
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 20
@@ -80,6 +80,9 @@ StyledFlickable {
             Layout.fillWidth: true
             spacing: 4
             visible: root.hasDevices
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 24
 
             Repeater {
                 model: ScriptModel {
@@ -122,6 +125,7 @@ StyledFlickable {
             Layout.fillWidth: true
             spacing: 4
             visible: root.hasApps
+            anchors.topMargin: 24
 
             Repeater {
                 model: ScriptModel {

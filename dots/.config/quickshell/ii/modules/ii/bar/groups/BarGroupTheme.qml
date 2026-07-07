@@ -55,15 +55,15 @@ QtObject {
     }
 
     // ── Colors ────────────────────────────────────────────────────────────────
-    readonly property color colBackground: Config.options.bar.expressiveColors
-        ? activeTheme.componentBackground
-        : (barGroupStyle === 0
-            ? Appearance.colors.colLayer1
-            : (barGroupStyle === 1 && barBackgroundStyle === 1)
-                ? Appearance.colors.colLayer1
-                : (barGroupStyle === 1)
-                    ? Appearance.m3colors.m3surfaceContainerLow
-                    : "transparent")
+    readonly property color colBackground: {
+        if (Config.options.bar.expressiveColors) return activeTheme.componentBackground;
+        if (Config.options.bar.expressiveGroupColor && (barGroupStyle === 0 || barGroupStyle === 1))
+            return Appearance.colors.colPrimaryContainer;
+        if (barGroupStyle === 0) return Appearance.colors.colLayer1;
+        if (barGroupStyle === 1 && barBackgroundStyle === 1) return Appearance.colors.colLayer1;
+        if (barGroupStyle === 1) return Appearance.m3colors.m3surfaceContainerLow;
+        return "transparent";
+    }
 
     readonly property color colBackgroundHighlight: {
         if (Config.options.bar.expressiveColors) return activeTheme.highlight;

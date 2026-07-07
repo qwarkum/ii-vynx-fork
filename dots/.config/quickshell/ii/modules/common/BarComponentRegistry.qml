@@ -104,6 +104,8 @@ Singleton {
             id: "system_tray",
             icon: "system_update_alt",
             title: "System tray",
+            styleConfigKey: "systray",
+            styleOptions: defaultStyleOptions,
             configPage: "SystemTrayConfig.qml"
         },
         {

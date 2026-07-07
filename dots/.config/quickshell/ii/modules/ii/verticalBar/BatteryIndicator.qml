@@ -253,11 +253,7 @@ MouseArea {
                             z: 0
 
                             Rectangle {
-                                y: 3
-                                anchors.left: parent.left
-
-                                height: 8
-                                width: batteryContainer.width - 9
+                                anchors.fill: parent
                                 radius: 2
 
                                 color: {

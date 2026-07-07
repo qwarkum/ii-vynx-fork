@@ -333,7 +333,7 @@ Item {
             }
             RowLayout {
                 id: rightSectionLayout
-                spacing: 8
+                spacing: 4
                 opacity: (!modeState.notchModeEnabled || modeState.expanded || (modeState._displayMode === "workspaces" && Config.options.bar.layouts.right.some(e => e.id === "workspaces"))) ? 1.0 : 0.0
                 visible: opacity > 0.01
                 Behavior on opacity {

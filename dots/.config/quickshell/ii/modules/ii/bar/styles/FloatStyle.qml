@@ -122,7 +122,7 @@ Item {
             right: barBackground.right
             rightMargin: Appearance.sizes.hyprlandGapsOut
         }
-        spacing: 8
+        spacing: 4
         Repeater {
             id: rightRepeater
             model: Config.options.bar.layouts.right

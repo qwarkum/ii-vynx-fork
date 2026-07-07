@@ -115,7 +115,7 @@ Item {
     RowLayout {
         id: rightSection
         anchors { top: parent.top; bottom: parent.bottom; right: rightStopper.left; rightMargin: 4 }
-        spacing: 8
+        spacing: 4
         Repeater {
             id: rightRepeater
             model: Config.options.bar.layouts.right

@@ -18,7 +18,7 @@ Item {
     Rectangle {
         id: pill
         anchors.centerIn: parent
-        color: Appearance.colors.colLayer1
+        color: Appearance.colors.colSecondaryContainer
         radius: Config.options.bar.barGroupStyle === 1 ? Appearance.rounding.windowRounding : Appearance.rounding.full
         implicitWidth: vertical ? Appearance.sizes.verticalBarWidth - 8 : (tray.implicitWidth > 0 ? tray.implicitWidth + 12 : 0)
         implicitHeight: vertical ? (tray.implicitHeight > 0 ? tray.implicitHeight + 12 : 0) : Appearance.sizes.baseBarHeight - 8

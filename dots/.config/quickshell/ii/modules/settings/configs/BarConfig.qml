@@ -205,6 +205,19 @@ Item {
                 }
             }
 
+            ConfigSwitch {
+                buttonIcon: "colorize"
+                text: Translation.tr("Expressive group color")
+                checked: Config.options.bar.expressiveGroupColor
+                visible: Config.options.bar.barGroupStyle !== 2
+                onCheckedChanged: {
+                    Config.options.bar.expressiveGroupColor = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Use primary container color for pill/island group backgrounds")
+                }
+            }
+
             ContentSubsection {
                 title: Translation.tr("Bar background style")
                 icon: "format_paint"
