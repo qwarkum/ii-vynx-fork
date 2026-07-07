@@ -17,6 +17,8 @@ ColumnLayout {
 
     readonly property var conf: Config.options.lock.notifications
     readonly property string criticalUrgency: NotificationUrgency.Critical.toString()
+    readonly property bool onTop: conf.position.startsWith("top")
+    readonly property bool onLeft: conf.position.endsWith("left")
 
     property double lockTime: 0
     // The Loader in LockSurface activates when the session gets locked
@@ -71,36 +73,80 @@ ColumnLayout {
         return 0; // The count pill already covers every remaining notification
     }
 
+    // Flat, ordered list of everything to render. Newest sits closest to the
+    // screen edge: stacking is newest-first on top, flipped when on the bottom
+    readonly property var displayItems: {
+        const items = fullyShown.map(notif => ({
+            kind: "full",
+            notif: notif
+        }));
+        redactedGroups.forEach(group => items.push({
+            kind: "redacted",
+            group: group
+        }));
+        if (conf.privacy === "countOnly" && redactedRest.length > 0)
+            items.push({
+                kind: "countPill"
+            });
+        if (overflowCount > 0)
+            items.push({
+                kind: "overflow"
+            });
+        return onTop ? items : items.reverse();
+    }
+
     width: 380
     spacing: 8
     visible: filtered.length > 0
 
     Repeater {
-        model: root.fullyShown
-        delegate: FullCard {}
-    }
+        model: root.displayItems
+        delegate: Loader {
+            id: itemLoader
+            required property var modelData
+            readonly property bool isCard: modelData.kind === "full" || modelData.kind === "redacted"
 
-    Repeater {
-        model: root.redactedGroups
-        delegate: RedactedCard {}
-    }
+            Layout.fillWidth: isCard
+            Layout.alignment: root.onLeft ? Qt.AlignLeft : Qt.AlignRight
+            Layout.leftMargin: (!isCard && root.onLeft) ? 10 : 0
+            Layout.rightMargin: (!isCard && !root.onLeft) ? 10 : 0
+            sourceComponent: {
+                switch (itemLoader.modelData.kind) {
+                case "full":
+                    return fullComponent;
+                case "redacted":
+                    return redactedComponent;
+                case "countPill":
+                    return pillComponent;
+                default:
+                    return overflowComponent;
+                }
+            }
 
-    Loader {
-        Layout.alignment: Qt.AlignRight
-        active: root.conf.privacy === "countOnly" && root.redactedRest.length > 0
-        visible: active
-        sourceComponent: CountPill {}
-    }
-
-    Loader {
-        Layout.alignment: Qt.AlignRight
-        Layout.rightMargin: 10
-        active: root.overflowCount > 0
-        visible: active
-        sourceComponent: StyledText {
-            text: Translation.tr("+%1 more").arg(root.overflowCount)
-            font.pixelSize: Appearance.font.pixelSize.small
-            color: Appearance.colors.colOnSurfaceVariant
+            Component {
+                id: fullComponent
+                FullCard {
+                    notif: itemLoader.modelData.notif
+                }
+            }
+            Component {
+                id: redactedComponent
+                RedactedCard {
+                    group: itemLoader.modelData.group
+                }
+            }
+            Component {
+                id: pillComponent
+                CountPill {}
+            }
+            Component {
+                id: overflowComponent
+                StyledText {
+                    text: Translation.tr("+%1 more").arg(root.overflowCount)
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
+            }
         }
     }
 
@@ -111,9 +157,8 @@ ColumnLayout {
 
     component FullCard: Card {
         id: fullCard
-        required property var modelData
+        required property var notif
 
-        Layout.fillWidth: true
         implicitHeight: fullCardRow.implicitHeight + 20
 
         RowLayout {
@@ -126,10 +171,10 @@ ColumnLayout {
 
             NotificationAppIcon {
                 Layout.alignment: Qt.AlignTop
-                appIcon: fullCard.modelData.appIcon
-                summary: fullCard.modelData.summary
-                image: fullCard.modelData.image
-                urgency: fullCard.modelData.urgency === root.criticalUrgency ? NotificationUrgency.Critical : NotificationUrgency.Normal
+                appIcon: fullCard.notif.appIcon
+                summary: fullCard.notif.summary
+                image: fullCard.notif.image
+                urgency: fullCard.notif.urgency === root.criticalUrgency ? NotificationUrgency.Critical : NotificationUrgency.Normal
             }
 
             ColumnLayout {
@@ -142,13 +187,13 @@ ColumnLayout {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: fullCard.modelData.appName
+                        text: fullCard.notif.appName
                         elide: Text.ElideRight
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         color: Appearance.colors.colOnSurfaceVariant
                     }
                     StyledText {
-                        text: NotificationUtils.getFriendlyNotifTimeString(fullCard.modelData.time)
+                        text: NotificationUtils.getFriendlyNotifTimeString(fullCard.notif.time)
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         color: Appearance.colors.colOnSurfaceVariant
                     }
@@ -156,7 +201,7 @@ ColumnLayout {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: fullCard.modelData.summary
+                    text: fullCard.notif.summary
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                     font.weight: Font.Medium
@@ -166,7 +211,7 @@ ColumnLayout {
                 StyledText {
                     Layout.fillWidth: true
                     visible: text.length > 0
-                    text: fullCard.modelData.body
+                    text: fullCard.notif.body
                     textFormat: Text.PlainText
                     wrapMode: Text.Wrap
                     elide: Text.ElideRight
@@ -180,9 +225,8 @@ ColumnLayout {
 
     component RedactedCard: Card {
         id: redactedCard
-        required property var modelData
+        required property var group
 
-        Layout.fillWidth: true
         implicitHeight: redactedCardRow.implicitHeight + 20
 
         RowLayout {
@@ -194,7 +238,7 @@ ColumnLayout {
             spacing: 10
 
             NotificationAppIcon {
-                appIcon: redactedCard.modelData.appIcon
+                appIcon: redactedCard.group.appIcon
             }
 
             ColumnLayout {
@@ -203,14 +247,14 @@ ColumnLayout {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: redactedCard.modelData.appName
+                    text: redactedCard.group.appName
                     elide: Text.ElideRight
                     font.weight: Font.Medium
                     color: Appearance.colors.colOnLayer1
                 }
                 StyledText {
                     Layout.fillWidth: true
-                    text: redactedCard.modelData.count === 1 ? Translation.tr("1 new notification") : Translation.tr("%1 new notifications").arg(redactedCard.modelData.count)
+                    text: redactedCard.group.count === 1 ? Translation.tr("1 new notification") : Translation.tr("%1 new notifications").arg(redactedCard.group.count)
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colOnSurfaceVariant
                 }

@@ -98,9 +98,13 @@ MouseArea {
 
     // Notifications (read-only)
     Loader {
+        readonly property bool notifsOnTop: Config.options.lock.notifications.position.startsWith("top")
+        readonly property bool notifsOnLeft: Config.options.lock.notifications.position.endsWith("left")
         anchors {
-            top: parent.top
-            right: parent.right
+            top: notifsOnTop ? parent.top : undefined
+            bottom: notifsOnTop ? undefined : parent.bottom
+            left: notifsOnLeft ? parent.left : undefined
+            right: notifsOnLeft ? undefined : parent.right
             margins: 20
         }
         active: Config.options.lock.notifications.enable

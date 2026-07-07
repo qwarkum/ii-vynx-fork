@@ -86,6 +86,41 @@ ContentPage {
         }
 
         ContentSubsection {
+            title: Translation.tr("Position")
+            icon: "picture_in_picture"
+            Layout.fillWidth: true
+
+            ConfigSelectionArray {
+                currentValue: Config.options.lock.notifications.position
+                onSelected: newValue => {
+                    Config.options.lock.notifications.position = newValue;
+                }
+                options: [
+                    {
+                        displayName: Translation.tr("Top left"),
+                        icon: "north_west",
+                        value: "top_left"
+                    },
+                    {
+                        displayName: Translation.tr("Top right"),
+                        icon: "north_east",
+                        value: "top_right"
+                    },
+                    {
+                        displayName: Translation.tr("Bottom left"),
+                        icon: "south_west",
+                        value: "bottom_left"
+                    },
+                    {
+                        displayName: Translation.tr("Bottom right"),
+                        icon: "south_east",
+                        value: "bottom_right"
+                    }
+                ]
+            }
+        }
+
+        ContentSubsection {
             title: Translation.tr("Privacy level")
             icon: "visibility"
             Layout.fillWidth: true

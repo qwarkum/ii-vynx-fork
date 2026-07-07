@@ -942,6 +942,7 @@ Singleton {
                 property bool materialShapeChars: true
                 property JsonObject notifications: JsonObject {
                     property bool enable: false // Off by default: showing notifications on the lock screen is a privacy trade-off
+                    property string position: "top_right" // "top_left" | "top_right" | "bottom_left" | "bottom_right"
                     property string privacy: "redacted" // "full" | "redacted" | "countOnly"
                     property bool onlySinceLock: true // Only show notifications that arrived while locked
                     property int maxShown: 5
