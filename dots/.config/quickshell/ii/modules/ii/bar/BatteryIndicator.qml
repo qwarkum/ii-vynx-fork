@@ -20,6 +20,7 @@ MouseArea {
     readonly property bool isCritical: percentage <= Config.options.battery.critical / 100
     readonly property bool effectivelyCharging: root.isCharging || root.isPluggedIn
     readonly property bool chargeLimitReached: Battery.chargeLimitReached
+    readonly property bool showCheck: root.chargeLimitReached || (root.isFull && root.effectivelyCharging)
 
     readonly property bool isPowerSaving: PowerProfiles.profile === PowerProfile.PowerSaver
     readonly property bool isPerformance: PowerProfiles.profile === PowerProfile.Performance
@@ -256,14 +257,14 @@ MouseArea {
             }
 
             MaterialSymbol {
-                visible: root.effectivelyCharging || root.chargeLimitReached
+                visible: root.effectivelyCharging || root.showCheck
 
                 anchors.top: parent.top
-                anchors.topMargin: root.chargeLimitReached ? -3 : -5
+                anchors.topMargin: root.showCheck ? -3 : -5
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
 
-                text: root.chargeLimitReached ? "check" : "bolt"
+                text: root.showCheck ? "check" : "bolt"
                 iconSize: 17
                 fill: 1
                 color: Appearance.colors.colLayer0
@@ -271,14 +272,14 @@ MouseArea {
             }
 
             MaterialSymbol {
-                visible: root.effectivelyCharging || root.chargeLimitReached
+                visible: root.effectivelyCharging || root.showCheck
 
                 anchors.top: parent.top
-                anchors.topMargin: root.chargeLimitReached ? -4 : -6
+                anchors.topMargin: root.showCheck ? -4 : -6
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
 
-                text: root.chargeLimitReached ? "check" : "bolt"
+                text: root.showCheck ? "check" : "bolt"
                 iconSize: 16
                 fill: 1
                 color: root.textColor
