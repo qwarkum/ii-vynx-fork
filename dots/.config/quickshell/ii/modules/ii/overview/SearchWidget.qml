@@ -51,7 +51,7 @@ Item {
         const total = root.getFilteredResultsCount();
         if (loadedResultsCount < total) {
             loadedResultsCount = Math.min(total, loadedResultsCount + 50);
-            resultModel.values = root.processResults(LauncherSearch.results);
+            appResults.applyResultDiff(root.processResults(LauncherSearch.results));
         }
     }
 
@@ -74,7 +74,7 @@ Item {
                         // Show first 15 immediately for instant response,
                         // then load the rest after a short delay
                         const allResults = LauncherSearch.results;
-                        resultModel.values = allResults.slice(0, 15);
+                        appResults.applyResultDiff(allResults.slice(0, 15));
                         root.focusFirstItem();
                         resultsDebounce.restart();
                     });
@@ -580,6 +580,67 @@ Item {
                         }
                     }
 
+                    // ── Diff-based model update: triggers move/add/remove transitions ──
+                    function applyResultDiff(newItems) {
+                        // Build lookup of current keys in order
+                        var oldKeys = [];
+                        for (var i = 0; i < resultModel.count; i++)
+                            oldKeys.push(resultModel.get(i).key);
+
+                        var newKeys = newItems.map(function(x) { return x.key; });
+
+                        // 1. Remove items no longer in newKeys
+                        var toRemove = [];
+                        for (var i = 0; i < oldKeys.length; i++) {
+                            if (newKeys.indexOf(oldKeys[i]) === -1)
+                                toRemove.push(oldKeys[i]);
+                        }
+                        for (var ri = 0; ri < toRemove.length; ri++) {
+                            for (var j = 0; j < resultModel.count; j++) {
+                                if (resultModel.get(j).key === toRemove[ri]) {
+                                    resultModel.remove(j);
+                                    break;
+                                }
+                            }
+                        }
+
+                        // 2. Insert new items not yet in model
+                        var currentKeys = [];
+                        for (var i = 0; i < resultModel.count; i++)
+                            currentKeys.push(resultModel.get(i).key);
+
+                        for (var ni = 0; ni < newItems.length; ni++) {
+                            var item = newItems[ni];
+                            if (currentKeys.indexOf(item.key) === -1) {
+                                var insertAt = Math.min(ni, resultModel.count);
+                                resultModel.insert(insertAt, {
+                                    key: item.key,
+                                    modelRef: item
+                                });
+                                currentKeys.splice(insertAt, 0, item.key);
+                            }
+                        }
+
+                        // 3. Move items into correct order
+                        for (var mi = 0; mi < newKeys.length; mi++) {
+                            var currentPos = -1;
+                            for (var ci = 0; ci < resultModel.count; ci++) {
+                                if (resultModel.get(ci).key === newKeys[mi]) {
+                                    currentPos = ci;
+                                    break;
+                                }
+                            }
+                            if (currentPos !== -1 && currentPos !== mi) {
+                                resultModel.move(currentPos, mi, 1);
+                            }
+                        }
+
+                        // 4. Sync model data (update modelRef for any changed item)
+                        for (var si = 0; si < newItems.length && si < resultModel.count; si++) {
+                            resultModel.setProperty(si, "modelRef", newItems[si]);
+                        }
+                    }
+
                     Connections {
                         target: root
                         function onSearchingTextChanged() {
@@ -596,7 +657,7 @@ Item {
                         interval: 150
                         repeat: false
                         onTriggered: {
-                            resultModel.values = root.processResults(LauncherSearch.results);
+                            appResults.applyResultDiff(root.processResults(LauncherSearch.results));
                         }
                     }
 
@@ -607,7 +668,7 @@ Item {
                             // Immediately show first 15 results for snappy visual feedback
                             const immediate = root.processResults(LauncherSearch.results);
                             const quickSlice = immediate.length > 15 ? immediate.slice(0, 15) : immediate;
-                            resultModel.values = quickSlice;
+                            appResults.applyResultDiff(quickSlice);
                             root.focusFirstItem();
                             // Schedule full result delivery after debounce
                             if (immediate.length > 15)
@@ -615,12 +676,12 @@ Item {
                         }
                     }
 
-                    model: ScriptModel {
+                    model: ListModel {
                         id: resultModel
-                        objectProp: "key"
-                        Component.onCompleted: {
-                            values = root.processResults(LauncherSearch.results);
-                        }
+                    }
+
+                    Component.onCompleted: {
+                        applyResultDiff(root.processResults(LauncherSearch.results));
                     }
 
                     delegate: SearchItem {
@@ -631,8 +692,18 @@ Item {
                         required property var modelData
                         anchors.left: parent?.left
                         anchors.right: parent?.right
-                        entry: modelData
+                        // modelData is {key, modelRef} from ListModel — pass the actual result object
+                        entry: modelData.modelRef
                         query: StringUtils.cleanOnePrefix(root.searchingText, [Config.options.search.prefix.action, Config.options.search.prefix.app, Config.options.search.prefix.clipboard, Config.options.search.prefix.emojis, Config.options.search.prefix.math, Config.options.search.prefix.shellCommand, Config.options.search.prefix.webSearch])
+
+                        // Animate y when ListView repositions this delegate (via move/displaced)
+                        Behavior on y {
+                            NumberAnimation {
+                                duration: 220
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Appearance.animationCurves.emphasized
+                            }
+                        }
 
                         Connections {
                             target: root
@@ -670,6 +741,51 @@ Item {
                                 event.accepted = true;
                                 root.focusSearchInput();
                             }
+                        }
+                    }
+
+                    // ── Reorder animation: items jump to new positions as results change ──
+                    move: Transition {
+                        NumberAnimation {
+                            properties: "y"
+                            duration: 220
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Appearance.animationCurves.emphasized
+                        }
+                    }
+
+                    displaced: Transition {
+                        NumberAnimation {
+                            properties: "y"
+                            duration: 220
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Appearance.animationCurves.emphasized
+                        }
+                    }
+
+                    add: Transition {
+                        ParallelAnimation {
+                            NumberAnimation {
+                                property: "opacity"
+                                from: 0.0; to: 1.0
+                                duration: 180
+                                easing.type: Easing.OutQuad
+                            }
+                            NumberAnimation {
+                                property: "y"
+                                duration: 220
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                            }
+                        }
+                    }
+
+                    remove: Transition {
+                        NumberAnimation {
+                            property: "opacity"
+                            to: 0.0
+                            duration: 120
+                            easing.type: Easing.OutQuad
                         }
                     }
                 }
