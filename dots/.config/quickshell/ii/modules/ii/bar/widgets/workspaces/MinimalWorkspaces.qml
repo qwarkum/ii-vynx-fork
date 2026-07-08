@@ -362,20 +362,25 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.NoButton
+        acceptedButtons: Qt.RightButton | Qt.BackButton
         onWheel: (wheel) => {
             wheel.accepted = true;
-            if (dynamicWorkspaces) {
-                // In dynamic mode, scroll through existing workspaces (skipping empty)
+            if (root.dynamicWorkspaces) {
                 if (wheel.angleDelta.y > 0) Hyprland.dispatch("hl.dsp.focus({workspace = 'r-1'})");
                 else Hyprland.dispatch("hl.dsp.focus({workspace = 'r+1'})");
             } else {
-                // In pagination mode, scroll through all IDs (1, 2, 3...)
-                let nextId = activeWsId + (wheel.angleDelta.y > 0 ? -1 : 1);
+                let nextId = root.activeWsId + (wheel.angleDelta.y > 0 ? -1 : 1);
                 if (nextId < 1) return;
                 Hyprland.dispatch("hl.dsp.focus({ workspace = '" + nextId + "' })");
             }
+        }
+        onClicked: event => {
+            if (event.button === Qt.RightButton)
+                GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        }
+        onPressed: event => {
+            if (event.button === Qt.BackButton)
+                Hyprland.dispatch(`hl.dsp.workspace.toggle_special("special")`);
         }
     }
 }

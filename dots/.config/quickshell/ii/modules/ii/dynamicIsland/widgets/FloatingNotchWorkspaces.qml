@@ -29,6 +29,8 @@ Item {
                 return "../../bar/widgets/workspaces/MinimalWorkspaces.qml";
             if (root.workspaceStyle === "expressive")
                 return "../../bar/widgets/workspaces/ExpressiveWorkspaces.qml";
+            if (root.workspaceStyle === "dock")
+                return "../../bar/widgets/workspaces/DockWorkspaces.qml";
             return "../../bar/widgets/workspaces/Workspaces.qml";
         }
         onLoaded: {

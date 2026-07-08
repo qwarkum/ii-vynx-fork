@@ -256,6 +256,7 @@ Item {
             case "workspaces":
                 if (isMin) return workspaceCompMinimal;
                 if (isExp) return workspaceCompExpressive;
+                if (style === "dock") return workspaceCompDock;
                 return workspaceComp;
             case "music_player":
                 if (isExp) return musicPlayerCompExpressive;
@@ -452,6 +453,7 @@ Item {
     Component { id: clockCompExpressive;          ExpressiveClockWidget      { vertical: rootItem.vertical } }
     Component { id: workspaceCompMinimal;         MinimalWorkspaces          { vertical: rootItem.vertical } }
     Component { id: workspaceCompExpressive;      ExpressiveWorkspaces       { vertical: rootItem.vertical } }
+    Component { id: workspaceCompDock;            DockWorkspaces             { vertical: rootItem.vertical } }
     Component { id: systemMonitorCompExpressive;  ExpressiveResources        { vertical: rootItem.vertical } }
     Component { id: policiesPanelButtonExpressive; ExpressivePoliciesPanelButton { vertical: rootItem.vertical } }
     Component { id: dashboardPanelButtonExpressive;     ExpressiveDashboardPanelButton { vertical: false } }

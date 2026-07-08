@@ -57,7 +57,7 @@ Item {
     // ── Sizing ────────────────────────────────────────────────────────────────
     readonly property real barDimension: vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.baseBarHeight
     readonly property real containerThickness: Math.max(16, barDimension - 16)
-    readonly property real shapeDiameter: Math.max(6, containerThickness - 10)
+    readonly property real shapeDiameter: Math.max(6, containerThickness - 5)
     readonly property real pillLength: shapeDiameter * 1.5
 
     // ── Computed Model ────────────────────────────────────────────────────────
@@ -105,10 +105,18 @@ Item {
     implicitHeight: vertical ? container.implicitHeight : Appearance.sizes.baseBarHeight
 
     Behavior on implicitWidth {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        NumberAnimation {
+            duration: Appearance.animation.elementResize.duration
+            easing.type: Appearance.animation.elementResize.type
+            easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+        }
     }
     Behavior on implicitHeight {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        NumberAnimation {
+            duration: Appearance.animation.elementResize.duration
+            easing.type: Appearance.animation.elementResize.type
+            easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+        }
     }
 
     // ── Functions ─────────────────────────────────────────────────────────────
@@ -189,27 +197,34 @@ Item {
         function onSuperReleaseMightTriggerChanged() { showNumbersTimer.stop(); }
     }
 
-    // ── Scroll Wheel ──────────────────────────────────────────────────────────
+    // ── Mouse Area (wheel, right-click, back button) ─────────────────────────
     MouseArea {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.NoButton
+        acceptedButtons: Qt.RightButton | Qt.BackButton
         onWheel: wheel => {
             wheel.accepted = true;
-            if (dynamicWorkspaces) {
+            if (root.dynamicWorkspaces) {
                 if (wheel.angleDelta.y > 0)
                     Hyprland.dispatch("hl.dsp.focus({workspace = 'r-1'})");
                 else
                     Hyprland.dispatch("hl.dsp.focus({workspace = 'r+1'})");
             } else {
-                let nextId = activeWsId + (wheel.angleDelta.y > 0 ? -1 : 1);
+                let nextId = root.activeWsId + (wheel.angleDelta.y > 0 ? -1 : 1);
                 if (nextId < 1) return;
-                if (useWorkspaceMap) {
-                    const nextMonitorStart = workspaceMap[monitorIndex + 1] ?? (workspaceMap[monitorIndex] + workspacesShown);
-                    if (nextId < workspaceOffset + 1 || nextId > nextMonitorStart) return;
+                if (root.useWorkspaceMap) {
+                    const nextMonitorStart = root.workspaceMap[root.monitorIndex + 1] ?? (root.workspaceMap[root.monitorIndex] + root.workspacesShown);
+                    if (nextId < root.workspaceOffset + 1 || nextId > nextMonitorStart) return;
                 }
                 Hyprland.dispatch("hl.dsp.focus({ workspace = '" + nextId + "' })");
             }
+        }
+        onClicked: event => {
+            if (event.button === Qt.RightButton)
+                GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        }
+        onPressed: event => {
+            if (event.button === Qt.BackButton)
+                Hyprland.dispatch(`hl.dsp.workspace.toggle_special("special")`);
         }
     }
 
@@ -225,10 +240,18 @@ Item {
         implicitHeight: vertical ? (listView.contentHeight + 10) : containerThickness
 
         Behavior on implicitWidth {
-            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+            NumberAnimation {
+                duration: Appearance.animation.elementResize.duration
+                easing.type: Appearance.animation.elementResize.type
+                easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+            }
         }
         Behavior on implicitHeight {
-            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+            NumberAnimation {
+                duration: Appearance.animation.elementResize.duration
+                easing.type: Appearance.animation.elementResize.type
+                easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+            }
         }
 
         ListView {
@@ -303,17 +326,37 @@ Item {
                 readonly property bool isOccupied: root.workspaceOccupied[wsId] ?? false
                 readonly property bool isShowingScratchpad: root.scratchpadOpen && isActive
 
-                readonly property real targetWidth: root.vertical ? shapeDiameter : (isActive ? pillLength : shapeDiameter)
-                readonly property real targetHeight: root.vertical ? (isActive ? pillLength : shapeDiameter) : shapeDiameter
-
-                width: targetWidth
-                height: targetHeight
+                width: root.vertical ? shapeDiameter : (isActive ? pillLength : shapeDiameter)
+                height: root.vertical ? (isActive ? pillLength : shapeDiameter) : shapeDiameter
 
                 Behavior on width {
-                    animation: Appearance.animation.elementMoveSmall.numberAnimation.createObject(this)
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveSmall.duration
+                        easing.type: Appearance.animation.elementMoveSmall.type
+                        easing.bezierCurve: Appearance.animation.elementMoveSmall.bezierCurve
+                    }
                 }
                 Behavior on height {
-                    animation: Appearance.animation.elementMoveSmall.numberAnimation.createObject(this)
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveSmall.duration
+                        easing.type: Appearance.animation.elementMoveSmall.type
+                        easing.bezierCurve: Appearance.animation.elementMoveSmall.bezierCurve
+                    }
+                }
+
+                Behavior on x {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMove.duration
+                        easing.type: Appearance.animation.elementMove.type
+                        easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                    }
+                }
+                Behavior on y {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMove.duration
+                        easing.type: Appearance.animation.elementMove.type
+                        easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                    }
                 }
 
                 HoverHandler {
@@ -330,10 +373,18 @@ Item {
                     opacity: root.resolveCircleOpacity(isActive, isShowingScratchpad, hover.hovered, isOccupied)
 
                     Behavior on color {
-                        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                        ColorAnimation {
+                            duration: Appearance.animation.elementMoveFast.duration
+                            easing.type: Appearance.animation.elementMoveFast.type
+                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                        }
                     }
                     Behavior on opacity {
-                        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                        NumberAnimation {
+                            duration: Appearance.animation.elementMoveFast.duration
+                            easing.type: Appearance.animation.elementMoveFast.type
+                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                        }
                     }
 
                     StyledText {
@@ -342,20 +393,33 @@ Item {
                         font.pixelSize: Math.max(7, shapeDiameter - 4)
                         font.weight: isActive ? Font.Bold : Font.Normal
                         font.family: Appearance.font.family.numbers
+
                         color: root.resolveTextColor(isActive, isShowingScratchpad, isOccupied)
                         opacity: root.showNumbers ? 1.0 : 0.0
 
                         Behavior on opacity {
-                            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                            NumberAnimation {
+                                duration: Appearance.animation.elementMoveFast.duration
+                                easing.type: Appearance.animation.elementMoveFast.type
+                                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                            }
                         }
                         Behavior on color {
-                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                            ColorAnimation {
+                                duration: Appearance.animation.elementMoveFast.duration
+                                easing.type: Appearance.animation.elementMoveFast.type
+                                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                            }
                         }
                     }
                 }
 
+                readonly property real hitAreaPadding: 6
+
                 MouseArea {
-                    anchors.fill: parent
+                    anchors.centerIn: parent
+                    width: parent.width + hitAreaPadding * 2
+                    height: parent.height + hitAreaPadding * 2
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton
                     onClicked: {
