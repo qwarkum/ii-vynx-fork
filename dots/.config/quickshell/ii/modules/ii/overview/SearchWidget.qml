@@ -97,6 +97,11 @@ Item {
     implicitWidth: searchWidgetContent.implicitWidth + (GlobalStates.searchConnectActive ? 0 : Appearance.sizes.elevationMargin * 2)
     implicitHeight: searchWidgetContent.implicitHeight + (GlobalStates.searchConnectActive ? 0 : Appearance.sizes.elevationMargin * 2)
 
+    // Signals to DynamicIslandStyle that the open animation is stable (no active resize)
+    // When true, the DI pill disables its own behaviors and follows SearchWidget's animations directly.
+    // In notch mode we always return false so the DI pill remains responsible for all animations.
+    readonly property bool openStateStable: root.inNotchMode ? false : (!searchHeightBehavior.animation.running && !searchWidthBehavior.animation.running)
+
     function focusFirstItem() {
         if (root.isBluetoothMode) {} else if (root.isClipboardMode) {} else if (root.isTranslatorMode) {
             if (translatorPanelLoader.item)
@@ -230,7 +235,9 @@ Item {
             else
                 baseW = Math.max(Config.options.search.baseWidth, gridLayout.implicitWidth);
 
-            if (GlobalStates.searchConnectActive)
+            // In notch mode, the DI container already provides horizontal spacing.
+            // Only add the 48px offset in non-notch connect mode.
+            if (GlobalStates.searchConnectActive && !root.inNotchMode)
                 return baseW + 48;
             return baseW;
         }
@@ -251,6 +258,8 @@ Item {
 
         Behavior on implicitWidth {
             id: searchWidthBehavior
+            // In notch mode, DI pill drives sizing — disable internal animation to avoid double-animation
+            enabled: !root.inNotchMode
             NumberAnimation {
                 duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
@@ -260,6 +269,8 @@ Item {
 
         Behavior on implicitHeight {
             id: searchHeightBehavior
+            // In notch mode, DI pill drives sizing — disable internal animation to avoid double-animation
+            enabled: !root.inNotchMode
             NumberAnimation {
                 duration: Appearance.animation.elementMove.duration
                 easing.type: Easing.BezierSpline
@@ -271,8 +282,9 @@ Item {
             id: gridLayout
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: GlobalStates.searchConnectActive ? 24 : 0
-            anchors.rightMargin: GlobalStates.searchConnectActive ? 24 : 0
+            // In notch mode the DI container provides spacing — adding margins here would double-pad
+            anchors.leftMargin: (GlobalStates.searchConnectActive && !root.inNotchMode) ? 24 : 0
+            anchors.rightMargin: (GlobalStates.searchConnectActive && !root.inNotchMode) ? 24 : 0
             anchors.top: parent.top
             columns: 1
             clip: true
@@ -388,10 +400,21 @@ Item {
             }
 
             Item {
-                visible: root.showResults && !root.isAnySpecialMode
+                // Use opacity-driven visibility so results fade out before collapsing on close
+                readonly property bool resultsActive: root.showResults && !root.isAnySpecialMode
+                opacity: resultsActive ? 1.0 : 0.0
+                visible: opacity > 0.01
                 Layout.fillWidth: true
                 implicitHeight: root.showSkeletons ? searchSkeletons.implicitHeight + (GlobalStates.searchConnectActive ? 16 : 20) : Math.min(600, appResults.contentHeight + appResults.topMargin + appResults.bottomMargin)
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                    }
+                }
 
                 Behavior on implicitHeight {
                     // Disabled during active debounce to avoid layout thrashing
@@ -738,8 +761,9 @@ Item {
 
             Loader {
                 id: clipboardPanelLoader
-                visible: root.isClipboardMode
-                active: root.isClipboardMode
+                // Keep active during fade-out to prevent layout jumps mid-animation
+                active: root.isClipboardMode || opacity > 0.01
+                visible: opacity > 0.01
                 Layout.fillWidth: true
                 source: "ClipboardPanel.qml"
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
@@ -763,8 +787,9 @@ Item {
 
             Loader {
                 id: bluetoothPanelLoader
-                visible: root.isBluetoothMode
-                active: root.isBluetoothMode
+                // Keep active during fade-out to prevent layout jumps mid-animation
+                active: root.isBluetoothMode || opacity > 0.01
+                visible: opacity > 0.01
                 Layout.fillWidth: true
                 source: "BluetoothPanel.qml"
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
@@ -788,8 +813,9 @@ Item {
 
             Loader {
                 id: translatorPanelLoader
-                visible: root.isTranslatorMode
-                active: root.isTranslatorMode
+                // Keep active during fade-out to prevent layout jumps mid-animation
+                active: root.isTranslatorMode || opacity > 0.01
+                visible: opacity > 0.01
                 Layout.fillWidth: true
                 source: "TranslatorPanel.qml"
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
@@ -824,8 +850,9 @@ Item {
 
             Loader {
                 id: mediaDownloaderPanelLoader
-                visible: root.isMediaDownloaderMode
-                active: root.isMediaDownloaderMode
+                // Keep active during fade-out to prevent layout jumps mid-animation
+                active: root.isMediaDownloaderMode || opacity > 0.01
+                visible: opacity > 0.01
                 Layout.fillWidth: true
                 source: "MediaDownloaderPanel.qml"
                 Layout.row: root.overviewPosition == "bottom" ? 0 : 1
