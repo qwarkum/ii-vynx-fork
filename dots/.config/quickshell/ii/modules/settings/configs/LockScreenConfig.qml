@@ -172,6 +172,18 @@ ContentPage {
             }
         }
 
+        ConfigSpinBox {
+            icon: "zoom_in"
+            text: Translation.tr("Notification size (%)")
+            value: Config.options.lock.notifications.zoomPercent
+            from: 50
+            to: 200
+            stepSize: 10
+            onValueChanged: {
+                Config.options.lock.notifications.zoomPercent = value;
+            }
+        }
+
         ContentSubsection {
             title: Translation.tr("App rules")
             icon: "apps"

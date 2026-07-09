@@ -946,6 +946,7 @@ Singleton {
                     property string privacy: "redacted" // "full" | "redacted" | "countOnly"
                     property bool onlySinceLock: true // Only show notifications that arrived while locked
                     property int maxShown: 5
+                    property int zoomPercent: 100 // 50-200, step 10
                     property string defaultPolicy: "show" // "show" | "hide" — apps without an explicit rule
                     property list<string> alwaysShowApps: [] // App names, case-insensitive match
                     property list<string> neverShowApps: []
@@ -973,6 +974,7 @@ Singleton {
             property JsonObject notifications: JsonObject {
                 property int timeout: 7000
                 property string position: "top_right"
+                property int zoomPercent: 100 // 50-200, step 10
                 property JsonObject monitor: JsonObject {
                     property bool enable: false
                     property string name: "" // Name of the monitor to show notifications on, like "eDP-1". Find out with 'hyprctl monitors' command

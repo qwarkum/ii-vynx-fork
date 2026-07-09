@@ -19,6 +19,7 @@ ColumnLayout {
     readonly property string criticalUrgency: NotificationUrgency.Critical.toString()
     readonly property bool onTop: conf.position.startsWith("top")
     readonly property bool onLeft: conf.position.endsWith("left")
+    readonly property real zoom: conf.zoomPercent / 100
 
     property double lockTime: 0
     // The Loader in LockSurface activates when the session gets locked
@@ -97,7 +98,7 @@ ColumnLayout {
         return onTop ? items : items.reverse();
     }
 
-    width: 380
+    width: 380 * zoom
     spacing: 8
     visible: filtered.length > 0
 
@@ -145,7 +146,7 @@ ColumnLayout {
                 id: overflowComponent
                 StyledText {
                     text: Translation.tr("+%1 more").arg(root.overflowCount)
-                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.pixelSize: Appearance.font.pixelSize.small * root.zoom
                     color: Appearance.colors.colOnSurfaceVariant
                 }
             }
@@ -153,7 +154,7 @@ ColumnLayout {
     }
 
     component Card: Rectangle {
-        radius: Appearance.rounding.normal
+        radius: Appearance.rounding.normal * root.zoom
         color: ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainer, 0.08)
     }
 
@@ -161,18 +162,19 @@ ColumnLayout {
         id: fullCard
         required property var notif
 
-        implicitHeight: fullCardRow.implicitHeight + 20
+        implicitHeight: fullCardRow.implicitHeight + 20 * root.zoom
 
         RowLayout {
             id: fullCardRow
             anchors {
                 fill: parent
-                margins: 10
+                margins: 10 * root.zoom
             }
-            spacing: 10
+            spacing: 10 * root.zoom
 
             NotificationAppIcon {
                 Layout.alignment: Qt.AlignTop
+                implicitSize: 38 * root.zoom
                 appIcon: fullCard.notif.appIcon
                 summary: fullCard.notif.summary
                 image: fullCard.notif.image
@@ -181,22 +183,22 @@ ColumnLayout {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: 2 * root.zoom
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: 6 * root.zoom
 
                     StyledText {
                         Layout.fillWidth: true
                         text: fullCard.notif.appName
                         elide: Text.ElideRight
-                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.pixelSize: Appearance.font.pixelSize.smaller * root.zoom
                         color: Appearance.colors.colOnSurfaceVariant
                     }
                     StyledText {
                         text: NotificationUtils.getFriendlyNotifTimeString(fullCard.notif.time)
-                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.pixelSize: Appearance.font.pixelSize.smaller * root.zoom
                         color: Appearance.colors.colOnSurfaceVariant
                     }
                 }
@@ -207,6 +209,7 @@ ColumnLayout {
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                     font.weight: Font.Medium
+                    font.pixelSize: Appearance.font.pixelSize.small * root.zoom
                     color: Appearance.colors.colOnLayer1
                 }
 
@@ -218,7 +221,7 @@ ColumnLayout {
                     wrapMode: Text.Wrap
                     elide: Text.ElideRight
                     maximumLineCount: 2
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: Appearance.font.pixelSize.smaller * root.zoom
                     color: Appearance.colors.colOnSurfaceVariant
                 }
             }
@@ -229,35 +232,37 @@ ColumnLayout {
         id: redactedCard
         required property var group
 
-        implicitHeight: redactedCardRow.implicitHeight + 20
+        implicitHeight: redactedCardRow.implicitHeight + 20 * root.zoom
 
         RowLayout {
             id: redactedCardRow
             anchors {
                 fill: parent
-                margins: 10
+                margins: 10 * root.zoom
             }
-            spacing: 10
+            spacing: 10 * root.zoom
 
             NotificationAppIcon {
+                implicitSize: 38 * root.zoom
                 appIcon: redactedCard.group.appIcon
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: 2 * root.zoom
 
                 StyledText {
                     Layout.fillWidth: true
                     text: redactedCard.group.appName
                     elide: Text.ElideRight
                     font.weight: Font.Medium
+                    font.pixelSize: Appearance.font.pixelSize.small * root.zoom
                     color: Appearance.colors.colOnLayer1
                 }
                 StyledText {
                     Layout.fillWidth: true
                     text: redactedCard.group.count === 1 ? Translation.tr("1 new notification") : Translation.tr("%1 new notifications").arg(redactedCard.group.count)
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: Appearance.font.pixelSize.smaller * root.zoom
                     color: Appearance.colors.colOnSurfaceVariant
                 }
             }
@@ -265,24 +270,25 @@ ColumnLayout {
     }
 
     component CountPill: Card {
-        implicitWidth: pillRow.implicitWidth + 28
-        implicitHeight: pillRow.implicitHeight + 14
+        implicitWidth: pillRow.implicitWidth + 28 * root.zoom
+        implicitHeight: pillRow.implicitHeight + 14 * root.zoom
         radius: Appearance.rounding.full
 
         RowLayout {
             id: pillRow
             anchors.centerIn: parent
-            spacing: 6
+            spacing: 6 * root.zoom
 
             MaterialSymbol {
                 fill: 1
                 text: "notifications"
-                iconSize: Appearance.font.pixelSize.huge
+                iconSize: Appearance.font.pixelSize.huge * root.zoom
                 color: Appearance.colors.colOnSurfaceVariant
             }
             StyledText {
                 text: root.redactedRest.length
                 font.weight: Font.Medium
+                font.pixelSize: Appearance.font.pixelSize.small * root.zoom
                 color: Appearance.colors.colOnLayer1
             }
         }
