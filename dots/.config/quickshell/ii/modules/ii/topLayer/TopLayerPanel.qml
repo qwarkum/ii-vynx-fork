@@ -153,7 +153,8 @@ PanelWindow {
     // 1. Wrapped Frame Visuals
     Loader {
         id: frameLoader
-        active: topPanel.usingWrappedFrame && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen)
+        active: topPanel.usingWrappedFrame && !GlobalStates.screenLocked
+        visible: !topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen
         anchors.fill: parent
         sourceComponent: Frame.WrappedFrameVisuals {
             showBarBackground: horizontalBarLoader.item ? horizontalBarLoader.item.showBarBackground : (verticalBarLoader.item ? verticalBarLoader.item.showBarBackground : false)
@@ -173,7 +174,8 @@ PanelWindow {
     // 2. Horizontal Bar Visual Layer
     Loader {
         id: horizontalBarLoader
-        active: !topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && hasBarOnThisMonitor
+        active: !topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && hasBarOnThisMonitor
+        visible: !topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen
         anchors.fill: parent
         sourceComponent: Component {
             Item {
@@ -182,7 +184,7 @@ PanelWindow {
 
                 property int monitorIndex: Quickshell.screens.indexOf(topPanel.screen)
                 property bool hasActiveWindows: false
-                property bool showBarBackground: hasActiveWindows && Config.options.bar.barBackgroundStyle === 2 || Config.options.bar.barBackgroundStyle === 1
+                property bool showBarBackground: (hasActiveWindows && Config.options.bar.barBackgroundStyle === 2) || Config.options.bar.barBackgroundStyle === 1 || Config.options.bar.barBackgroundStyle === 3
 
                 Connections {
                     enabled: Config.options.bar.barBackgroundStyle === 2
@@ -365,7 +367,8 @@ PanelWindow {
     // 3. Vertical Bar Visual Layer
     Loader {
         id: verticalBarLoader
-        active: topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && (!topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) && hasBarOnThisMonitor
+        active: topPanel.barVertical && GlobalStates.barOpen && !GlobalStates.screenLocked && hasBarOnThisMonitor
+        visible: !topPanel.hasFullscreenWindowOnMonitor || GlobalStates.overviewOpen || GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen
         anchors.fill: parent
         sourceComponent: Component {
             Item {
@@ -374,7 +377,7 @@ PanelWindow {
 
                 property int monitorIndex: Quickshell.screens.indexOf(topPanel.screen)
                 property bool hasActiveWindows: false
-                property bool showBarBackground: hasActiveWindows && Config.options.bar.barBackgroundStyle === 2 || Config.options.bar.barBackgroundStyle === 1
+                property bool showBarBackground: (hasActiveWindows && Config.options.bar.barBackgroundStyle === 2) || Config.options.bar.barBackgroundStyle === 1 || Config.options.bar.barBackgroundStyle === 3
 
                 Connections {
                     enabled: Config.options.bar.barBackgroundStyle === 2
@@ -706,7 +709,8 @@ PanelWindow {
 
     Loader {
         id: leftSidebarTopCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         y: topPanel.sidebarTopOffset
         width: Appearance.rounding.screenRounding
@@ -733,7 +737,8 @@ PanelWindow {
 
     Loader {
         id: leftSidebarOuterTopCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         anchors.left: leftSidebar.left
         anchors.bottom: leftSidebar.top
         width: Appearance.rounding.screenRounding
@@ -747,7 +752,8 @@ PanelWindow {
 
     Loader {
         id: leftSidebarBottomCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         anchors.bottom: parent.bottom
         width: Appearance.rounding.screenRounding
@@ -761,7 +767,8 @@ PanelWindow {
 
     Loader {
         id: rightSidebarTopCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0) && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
         y: topPanel.sidebarTopOffset
@@ -789,7 +796,8 @@ PanelWindow {
 
     Loader {
         id: rightSidebarOuterTopCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: rightSidebar.right
         anchors.bottom: rightSidebar.top
         width: Appearance.rounding.screenRounding
@@ -803,7 +811,8 @@ PanelWindow {
 
     Loader {
         id: rightSidebarBottomCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
         anchors.bottom: parent.bottom
@@ -818,7 +827,8 @@ PanelWindow {
 
     Loader {
         id: leftSidebarBottomBarCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         y: parent.height - topPanel.sidebarBottomOffset - Appearance.rounding.screenRounding
         width: Appearance.rounding.screenRounding
@@ -832,7 +842,8 @@ PanelWindow {
 
     Loader {
         id: rightSidebarBottomBarCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
         y: parent.height - topPanel.sidebarBottomOffset - Appearance.rounding.screenRounding
@@ -847,7 +858,8 @@ PanelWindow {
 
     Loader {
         id: leftSidebarOuterBottomCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor)
+        active: topPanel.leftSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         anchors.left: leftSidebar.left
         anchors.top: leftSidebar.bottom
         width: Appearance.rounding.screenRounding
@@ -874,7 +886,8 @@ PanelWindow {
 
     Loader {
         id: rightSidebarOuterBottomCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame && (!topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor)
+        active: topPanel.rightSidebarActiveOnMonitor && topPanel.isDynamicIslandBottom && !topPanel.usingWrappedFrame
+        visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: rightSidebar.right
         anchors.top: rightSidebar.bottom
         width: Appearance.rounding.screenRounding

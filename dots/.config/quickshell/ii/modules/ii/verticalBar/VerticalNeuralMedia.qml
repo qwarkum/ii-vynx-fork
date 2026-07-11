@@ -14,10 +14,11 @@ import Quickshell.Io
 MouseArea {
     id: root
 
-    readonly property int artSize: Appearance.sizes.verticalBarWidth - Appearance.rounding.small * 2
-    readonly property int barWidth: Math.max(4, Math.min(8, artSize / 5))
-    readonly property int visualizerWidth: 4 * barWidth + 3 * 1
-    readonly property int spacing: Appearance.rounding.small
+    readonly property int pillWidth: Appearance.sizes.verticalBarWidth - 8
+    readonly property int pillHeight: pillWidth * 2
+    readonly property int barThickness: Math.max(5, Math.floor(pillWidth / 3.5))
+    readonly property int barGap: 2
+    readonly property int maxBarLength: pillWidth - 8
 
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property bool hasTrack: (activePlayer?.trackTitle ?? "").length > 0
@@ -35,9 +36,10 @@ MouseArea {
         return artDownloaded ? Qt.resolvedUrl(artFilePath) : artUrl;
     }
 
-    Layout.fillHeight: true
     implicitWidth: Appearance.sizes.verticalBarWidth
-    implicitHeight: columnLayout.implicitHeight + Appearance.rounding.small * 2
+    implicitHeight: pillHeight
+    width: implicitWidth
+    height: implicitHeight
     visible: hasTrack
 
     cursorShape: Qt.PointingHandCursor
@@ -99,7 +101,6 @@ MouseArea {
         onTriggered: activePlayer.positionChanged()
     }
 
-    // Real Cava Visualizer integration
     property var visualizerPoints: []
 
     readonly property real bar0Val: visualizerPoints.length > 5 ? visualizerPoints[3] / 1000.0 : 0
@@ -107,10 +108,10 @@ MouseArea {
     readonly property real bar2Val: visualizerPoints.length > 18 ? visualizerPoints[16] / 1000.0 : 0
     readonly property real bar3Val: visualizerPoints.length > 28 ? visualizerPoints[25] / 1000.0 : 0
 
-    function getBarHeight(index) {
-        let minH = barWidth;
+    function getBarLength(index) {
+        let minW = barThickness;
         if (!root.playing)
-            return minH; // Reset to perfect circle when paused
+            return minW;
         let val = 0;
         if (index === 0)
             val = bar0Val;
@@ -122,8 +123,7 @@ MouseArea {
             val = bar3Val;
 
         let norm = Math.min(1.0, Math.max(0.0, val));
-        let maxH = root.artSize - 10;
-        return minH + norm * (maxH - minH);
+        return minW + norm * (maxBarLength - minW);
     }
 
     Process {
@@ -138,82 +138,88 @@ MouseArea {
         }
     }
 
-    ColumnLayout {
-        id: columnLayout
+    Rectangle {
+        id: pillContainer
         anchors.centerIn: parent
-        spacing: root.spacing
+        width: root.pillWidth
+        height: root.pillHeight
+        radius: Appearance.rounding.full
+        color: Appearance.colors.colPrimaryContainer
 
-        // Album Art in 12-sided shape
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: pillContainer.width
+                height: pillContainer.height
+                radius: pillContainer.radius
+            }
+        }
+
+        Image {
+            anchors.fill: parent
+            source: root.artSource
+            fillMode: Image.PreserveAspectCrop
+            visible: root.artSource !== ""
+            cache: false
+            antialiasing: true
+            sourceSize.width: root.pillWidth
+            sourceSize.height: pillContainer.height
+        }
+
+        MaterialSymbol {
+            anchors.centerIn: parent
+            text: "music_note"
+            iconSize: Appearance.font.pixelSize.large
+            color: Appearance.colors.colOnSecondaryContainer
+            visible: root.artSource === ""
+        }
+
         Item {
-            id: albumArtVert
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: root.artSize
-            Layout.preferredHeight: root.artSize
+            anchors.fill: parent
+            visible: root.artSource !== ""
 
-            MaterialShape {
-                id: compactCookieMask
+            Rectangle {
                 anchors.fill: parent
-                shapeString: "Cookie12Sided"
-                color: Appearance.colors.colPrimaryContainer
-                visible: false
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.7) }
+                    GradientStop { position: 0.2; color: Qt.rgba(0, 0, 0, 0.05) }
+                    GradientStop { position: 0.8; color: Qt.rgba(0, 0, 0, 0.05) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.7) }
+                }
             }
 
-            Item {
+            Rectangle {
                 anchors.fill: parent
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: compactCookieMask
-                }
-
-                Image {
-                    anchors.fill: parent
-                    source: root.artSource
-                    fillMode: Image.PreserveAspectCrop
-                    visible: root.artSource !== ""
-                    cache: false
-                    antialiasing: true
-                    sourceSize.width: root.artSize
-                    sourceSize.height: root.artSize
-                }
-
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: "music_note"
-                    iconSize: Appearance.font.pixelSize.normal
-                    color: Appearance.colors.colOnSecondaryContainer
-                    visible: root.artSource === ""
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.7) }
+                    GradientStop { position: 0.2; color: Qt.rgba(0, 0, 0, 0.05) }
+                    GradientStop { position: 0.8; color: Qt.rgba(0, 0, 0, 0.05) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.7) }
                 }
             }
         }
 
-        // Cava Visualizer
-        Item {
-            id: audioVisualizerVert
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: root.visualizerWidth
-            Layout.preferredHeight: root.artSize
+        Column {
+            id: visualizerColumn
+            anchors.centerIn: parent
+            spacing: root.barGap
 
-            Row {
-                id: compactVisualizerRow
-                anchors.centerIn: parent
-                height: parent.height
-                spacing: 1
+            Repeater {
+                model: 4
+                Rectangle {
+                    required property int index
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: root.getBarLength(index)
+                    height: root.barThickness
+                    radius: root.barThickness / 2
+                    color: Appearance.colors.colPrimary
 
-                Repeater {
-                    model: 4
-                    Rectangle {
-                        required property int index
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: root.barWidth
-                        height: root.getBarHeight(index)
-                        radius: root.barWidth / 2
-                        color: Appearance.colors.colPrimary
-
-                        Behavior on height {
-                            NumberAnimation {
-                                duration: 85
-                                easing.type: Easing.OutCubic
-                            }
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: 85
+                            easing.type: Easing.OutCubic
                         }
                     }
                 }

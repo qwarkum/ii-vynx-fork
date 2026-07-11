@@ -252,7 +252,7 @@ Scope {
                                 right: undefined
                             }
                             width: Appearance.rounding.screenRounding
-                            active: barRoot.showBarBackground && Config.options.bar.cornerStyle === 0 && Config.options.appearance.fakeScreenRounding != 3 // Hug
+                            active: barRoot.showBarBackground && Config.options.bar.cornerStyle === 0 && Config.options.bar.barBackgroundStyle !== 3 && Config.options.appearance.fakeScreenRounding != 3 // Hug
 
                             states: State {
                                 name: "right"

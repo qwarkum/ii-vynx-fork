@@ -64,6 +64,8 @@ Item { // Bar content region
 
     readonly property bool isIslandMode: Config.options.bar.barBackgroundStyle === 3
     readonly property bool isDynamicIsland: Config.options.bar.cornerStyle === 3
+    readonly property bool isHugIslandMode: root.isIslandMode && Config.options.bar.cornerStyle === 0
+    readonly property string barEdge: Config.options.bar.bottom ? "right" : "left"
     readonly property real frameThickness: Config.options.appearance.fakeScreenRounding === 3 ? Config.options.appearance.wrappedFrameThickness : 0
 
     property color islandFillColor: Config.options.bar.expressiveColors
@@ -174,7 +176,8 @@ Item { // Bar content region
         anchors.left: Config.options.bar.bottom ? undefined : barBackground.left
         anchors.right: Config.options.bar.bottom ? barBackground.right : undefined
         implicitSize: barBackground.baseRadius
-        extendVertical: true
+        extendHorizontal: false
+        extendVertical: false
         color: barBackground.color
         corner: Config.options.bar.bottom ? RoundCorner.CornerEnum.BottomRight : RoundCorner.CornerEnum.BottomLeft
         visible: root.isDynamicIsland && root.showBarBackground
@@ -186,7 +189,8 @@ Item { // Bar content region
         anchors.left: Config.options.bar.bottom ? undefined : barBackground.left
         anchors.right: Config.options.bar.bottom ? barBackground.right : undefined
         implicitSize: barBackground.baseRadius
-        extendVertical: true
+        extendHorizontal: false
+        extendVertical: false
         color: barBackground.color
         corner: Config.options.bar.bottom ? RoundCorner.CornerEnum.TopRight : RoundCorner.CornerEnum.TopLeft
         visible: root.isDynamicIsland && root.showBarBackground
@@ -195,10 +199,11 @@ Item { // Bar content region
     }
 
     // ── Islands (barBackgroundStyle === 3) ────────────────────────────────────
+    // Pill islands for Float/Rect styles.
     Rectangle {
         id: topIsland
         z: -9
-        visible: root.isIslandMode && (Config.options.bar.layouts.left || []).length > 0
+        visible: root.isIslandMode && !root.isHugIslandMode && (Config.options.bar.layouts.left || []).length > 0
         anchors {
             left: parent.left; leftMargin: 4
             right: parent.right; rightMargin: 4
@@ -215,7 +220,7 @@ Item { // Bar content region
     Rectangle {
         id: middleIsland
         z: -9
-        visible: root.isIslandMode && (root.leftList.length > 0 || root.centerList.length > 0 || root.rightList.length > 0)
+        visible: root.isIslandMode && !root.isHugIslandMode && (root.leftList.length > 0 || root.centerList.length > 0 || root.rightList.length > 0)
         anchors {
             left: parent.left; leftMargin: 4
             right: parent.right; rightMargin: 4
@@ -232,7 +237,7 @@ Item { // Bar content region
     Rectangle {
         id: bottomIsland
         z: -9
-        visible: root.isIslandMode && (Config.options.bar.layouts.right || []).length > 0
+        visible: root.isIslandMode && !root.isHugIslandMode && (Config.options.bar.layouts.right || []).length > 0
         anchors {
             left: parent.left; leftMargin: 4
             right: parent.right; rightMargin: 4
@@ -243,6 +248,52 @@ Item { // Bar content region
         radius: Appearance.rounding.full
         Behavior on color {
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(bottomIsland)
+        }
+    }
+
+    // Hug-style islands: connected to the screen edge with concave transitions.
+    HugIslandGroup {
+        id: topHugIsland
+        z: -9
+        visible: root.isHugIslandMode && (Config.options.bar.layouts.left || []).length > 0
+        edge: root.barEdge
+        role: "first"
+        fillColor: barBackground.actualColor
+        anchors {
+            top: parent.top
+            bottom: topSection.bottom; bottomMargin: -6
+            left: parent.left
+            right: parent.right
+        }
+    }
+
+    HugIslandGroup {
+        id: middleHugIsland
+        z: -9
+        visible: root.isHugIslandMode && (root.leftList.length > 0 || root.centerList.length > 0 || root.rightList.length > 0)
+        edge: root.barEdge
+        role: "middle"
+        fillColor: barBackground.actualColor
+        anchors {
+            top: middleSection.top; topMargin: -6
+            bottom: middleSection.bottom; bottomMargin: -6
+            left: parent.left
+            right: parent.right
+        }
+    }
+
+    HugIslandGroup {
+        id: bottomHugIsland
+        z: -9
+        visible: root.isHugIslandMode && (Config.options.bar.layouts.right || []).length > 0
+        edge: root.barEdge
+        role: "last"
+        fillColor: barBackground.actualColor
+        anchors {
+            top: bottomSection.top; topMargin: -6
+            bottom: parent.bottom
+            left: parent.left
+            right: parent.right
         }
     }
 
