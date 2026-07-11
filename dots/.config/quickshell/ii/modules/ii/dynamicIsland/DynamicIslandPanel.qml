@@ -45,7 +45,7 @@ Scope {
 
     readonly property bool isOverviewVisible: root.searchActive && LauncherSearch.query === "" && !GlobalStates.searchOnlyMode && !Config.options.search.alwaysListApps && (Config && Config.options && Config.options.overview && Config.options.overview.enable !== undefined ? Config.options.overview.enable : true)
     readonly property bool isScrollingLayout: Persistent.states.hyprland.layout === "scrolling"
-    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !Config.options.bar.vertical)
+    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !Config.options.bar.vertical) && (!Config.options.bar.onlyShowOnSingleMonitor || hasBarOnThisMonitor)
     readonly property bool hasBarOnThisMonitor: GlobalStates.isScreenAllowedForBar(win.screen)
     readonly property bool hasTopBar: GlobalStates.barOpen && !Config.options.bar.vertical && !Config.options.bar.bottom && hasBarOnThisMonitor
 
@@ -370,7 +370,7 @@ Scope {
                 source: "widgets/FloatingNotchCalendar.qml",
                 contractedH: Config.options.bar.floatingNotch.heightCalendar ?? 48,
                 expandedH: 140,
-                contractedW: 220,
+                contractedW: 260,
                 expandedW: 340
             };
         }
@@ -578,6 +578,9 @@ Scope {
         onTriggered: showOnTopHover = false
     }
 
+    // Check if the notch is currently showing the fallback home or contracted calendar display
+    readonly property bool isIdle: mode === "home"
+
     // Determine if the island should be physically hidden (slid up out of bounds)
     readonly property bool idleHidden: {
         if (searchActive)
@@ -586,6 +589,11 @@ Scope {
             return true;
         if (rightClickHidden)
             return true;
+
+        // Hide if we are idle and the user is not hovering either the top trigger or the container itself
+        if (isIdle) {
+            return !showOnTopHover && !hoverActive;
+        }
 
         // Hide if auto-hide is enabled AND user is not hovering either the top trigger or the container itself
         if (Config.options.bar.floatingNotch.autoHide) {
@@ -667,6 +675,12 @@ Scope {
     PanelWindow {
         id: win
         screen: {
+            if (Config.options.bar.floatingNotch.onlyShowOnSingleMonitor) {
+                var targetName = Config.options.bar.floatingNotch.singleMonitorName;
+                var foundTarget = Quickshell.screens.find(s => s.name === targetName);
+                if (foundTarget)
+                    return foundTarget;
+            }
             var name = (Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "");
             var found = Quickshell.screens.find(s => s.name === name);
             if (found)

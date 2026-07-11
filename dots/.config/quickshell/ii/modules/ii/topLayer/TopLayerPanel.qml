@@ -31,7 +31,7 @@ PanelWindow {
         right: true
     }
 
-    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !topPanel.barVertical)
+    readonly property bool usingWrappedFrame: Config.options.appearance.fakeScreenRounding === 3 && !(Config.options.bar.cornerStyle === 3 && !topPanel.barVertical) && hasBarOnThisMonitor
 
     BarThemes {
         id: barThemes
@@ -96,8 +96,8 @@ PanelWindow {
         && GlobalStates.searchConnectActive
         && screen.name === GlobalStates.activeSearchMonitor
         && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable)
-        && !(Config.ready && Config.options.bar.floatingNotch.enable)
-    readonly property bool osdOpenOnMonitor: GlobalStates.osdVolumeOpen && GlobalStates.osdConnectActive && screen.name === (Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0])?.name && !(Config.ready && Config.options.bar.floatingNotch.enable)
+        && !(Config.ready && Config.options.bar.floatingNotch.enable && (!Config.options.bar.floatingNotch.onlyShowOnSingleMonitor || screen.name === Config.options.bar.floatingNotch.singleMonitorName))
+    readonly property bool osdOpenOnMonitor: GlobalStates.osdVolumeOpen && GlobalStates.osdConnectActive && screen.name === (Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0])?.name && !(Config.ready && Config.options.bar.floatingNotch.enable && (!Config.options.bar.floatingNotch.onlyShowOnSingleMonitor || screen.name === Config.options.bar.floatingNotch.singleMonitorName))
 
     readonly property bool hasFullscreenWindowOnMonitor: {
         const monitorData = HyprlandData.monitors.find(m => m.name === topPanel.screen.name);
@@ -709,7 +709,7 @@ PanelWindow {
 
     Loader {
         id: leftSidebarTopCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        active: topPanel.leftSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barBottom || Config.options.bar.cornerStyle !== 0 || !hasBarOnThisMonitor)
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         y: topPanel.sidebarTopOffset
@@ -752,7 +752,7 @@ PanelWindow {
 
     Loader {
         id: leftSidebarBottomCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        active: topPanel.leftSidebarActiveOnMonitor && (!topPanel.barBottom || !hasBarOnThisMonitor) && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame && (topPanel.barVertical === topPanel.barBottom || Config.options.bar.cornerStyle !== 0 || !hasBarOnThisMonitor)
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         anchors.bottom: parent.bottom
@@ -767,7 +767,7 @@ PanelWindow {
 
     Loader {
         id: rightSidebarTopCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0)
+        active: topPanel.rightSidebarActiveOnMonitor && Config.options.bar.cornerStyle !== 1 && !topPanel.isDynamicIslandTop && !topPanel.usingWrappedFrame && (topPanel.barVertical !== topPanel.barBottom || Config.options.bar.cornerStyle !== 0 || !hasBarOnThisMonitor)
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
@@ -811,7 +811,7 @@ PanelWindow {
 
     Loader {
         id: rightSidebarBottomCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barBottom && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame
+        active: topPanel.rightSidebarActiveOnMonitor && (!topPanel.barBottom || !hasBarOnThisMonitor) && Config.options.bar.cornerStyle !== 1 && !topPanel.usingWrappedFrame
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
@@ -827,7 +827,7 @@ PanelWindow {
 
     Loader {
         id: leftSidebarBottomBarCornerLoader
-        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame
+        active: topPanel.leftSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && hasBarOnThisMonitor
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.leftSidebarOpenOnMonitor
         x: GlobalStates.animatedLeftSidebarWidth
         y: parent.height - topPanel.sidebarBottomOffset - Appearance.rounding.screenRounding
@@ -842,7 +842,7 @@ PanelWindow {
 
     Loader {
         id: rightSidebarBottomBarCornerLoader
-        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame
+        active: topPanel.rightSidebarActiveOnMonitor && !topPanel.barVertical && topPanel.barBottom && (Config.options.bar.cornerStyle === 0 || Config.options.bar.cornerStyle === 2) && !topPanel.usingWrappedFrame && hasBarOnThisMonitor
         visible: !topPanel.hasFullscreenWindowOnMonitor || topPanel.rightSidebarOpenOnMonitor
         anchors.right: parent.right
         anchors.rightMargin: GlobalStates.animatedRightSidebarWidth
@@ -916,7 +916,7 @@ PanelWindow {
     Loader {
         id: searchDropLoader
         z: 10
-        active: !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.floatingNotch.enable)
+        active: !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.floatingNotch.enable && (!Config.options.bar.floatingNotch.onlyShowOnSingleMonitor || screen.name === Config.options.bar.floatingNotch.singleMonitorName))
         focus: searchOpenOnMonitor
         sourceComponent: Component {
             SearchConnect.SearchDrop {
@@ -947,7 +947,7 @@ PanelWindow {
     Loader {
         id: osdDropLoader
         z: 11
-        active: GlobalStates.osdConnectActive && !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable) && !(Config.ready && Config.options.bar.floatingNotch.enable)
+        active: GlobalStates.osdConnectActive && !GlobalStates.screenLocked && !(Config.ready && Config.options.bar.dynamicIsland.notchMode.enable) && !(Config.ready && Config.options.bar.floatingNotch.enable && (!Config.options.bar.floatingNotch.onlyShowOnSingleMonitor || screen.name === Config.options.bar.floatingNotch.singleMonitorName))
         sourceComponent: Component {
             OsdConnect.OsdDrop {
                 screen: topPanel.screen

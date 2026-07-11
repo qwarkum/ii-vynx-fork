@@ -43,6 +43,9 @@ Item {
     property var originalIndex: index
     property bool vertical: false
     property bool highlighted: false
+    property color groupBgColor: (groupTheme.activated || groupTheme.highlighted) ? groupTheme.colBackgroundHighlight : groupTheme.colBackground
+    property real groupStartRadius: groupTheme.startRadius
+    property real groupEndRadius: groupTheme.endRadius
 
     // ── Smooth Slide and Move Animations ──────────────────────────────────────
     property real oldX: x
@@ -375,8 +378,8 @@ Item {
         padding:       paddingless ? 0 : 5
         leftPadding:   paddingless ? 0 : padding
         rightPadding:  paddingless ? 0 : padding
-        topPadding:    paddingless ? 0 : padding
-        bottomPadding: paddingless ? 0 : padding
+        topPadding:    rootItem.vertical ? (paddingless ? 0 : padding) : 0
+        bottomPadding: rootItem.vertical ? (paddingless ? 0 : padding) : 0
 
         startRadius: rootItem.startRadius
         endRadius:   rootItem.endRadius
@@ -390,6 +393,15 @@ Item {
                 if (item) {
                     if (item.hasOwnProperty("onActivatedColor")) {
                         item.onActivatedColor = Qt.binding(() => groupTheme.colOnBackgroundHighlight);
+                    }
+                    if (item.hasOwnProperty("groupBgColor")) {
+                        item.groupBgColor = Qt.binding(() => rootItem.groupBgColor);
+                    }
+                    if (item.hasOwnProperty("groupStartRadius")) {
+                        item.groupStartRadius = Qt.binding(() => rootItem.groupStartRadius);
+                    }
+                    if (item.hasOwnProperty("groupEndRadius")) {
+                        item.groupEndRadius = Qt.binding(() => rootItem.groupEndRadius);
                     }
                     if (!rootItem.vertical) {
                         if (item.Layout !== undefined && item.Layout.fillHeight) {
@@ -410,6 +422,7 @@ Item {
             }
             Layout.fillHeight: item ? ((item.Layout !== undefined && item.Layout.fillHeight) || false) : false
             Layout.fillWidth: item ? ((item.Layout !== undefined && item.Layout.fillWidth) || false) : false
+            Layout.alignment: rootItem.vertical ? Qt.AlignHCenter : Qt.AlignVCenter
         }
     }
 

@@ -521,10 +521,10 @@ Singleton {
     }
 
     onOverviewOpenChanged: {
-        if (root.overviewOpen && root.searchConnectActive && root.activeSearchMonitor === "") {
+        if (root.overviewOpen && (root.searchConnectActive || Config.options.bar.floatingNotch.enable) && root.activeSearchMonitor === "") {
             root.activeSearchMonitor = Hyprland.focusedMonitor?.name ?? "";
         }
-        if (!root.overviewOpen && root.searchConnectActive) {
+        if (!root.overviewOpen && (root.searchConnectActive || Config.options.bar.floatingNotch.enable)) {
             root.activeSearchMonitor = "";
             // Overview.qml's PanelWindow (which resets searchOnlyMode) is inactive in
             // connect mode — reset it here so the next SUPER press opens the full overview.

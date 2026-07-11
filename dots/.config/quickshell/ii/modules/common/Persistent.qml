@@ -114,11 +114,11 @@ Singleton {
 
             property JsonObject cheatsheet: JsonObject {
                 property int tabIndex: 0
-                property list<string> sectionOrder: []
+                property var sectionOrder: []
             }
 
             property JsonObject clipboard: JsonObject {
-                property list<string> pinnedEntries: []
+                property var pinnedEntries: []
             }
 
             property JsonObject sidebar: JsonObject {
@@ -126,7 +126,7 @@ Singleton {
                     property int tab: 0
                     property JsonObject phone: JsonObject {
                         property string activeDeviceId: ""
-                        property list<string> recentDeviceIds: []
+                        property var recentDeviceIds: []
                         property string cachedNotificationsJson: ""
                     }
                 }
@@ -151,7 +151,7 @@ Singleton {
             }
 
             property JsonObject overlay: JsonObject {
-                property list<string> open: ["crosshair", "recorder", "media", "volumeMixer", "resources"]
+                property var open: ["crosshair", "recorder", "media", "volumeMixer", "resources"]
                 property JsonObject crosshair: JsonObject {
                     property bool pinned: false
                     property bool clickthrough: true
@@ -255,16 +255,16 @@ Singleton {
                 property JsonObject stopwatch: JsonObject {
                     property bool running: false
                     property int start: 0
-                    property list<var> laps: []
+                    property var laps: []
                 }
             }
-            property list<var> alarms: []
+            property var alarms: []
             property JsonObject media: JsonObject {
             }
 
             property JsonObject wallpaper: JsonObject {
-                property list<string> favourites: []
-                property list<string> favouriteDirectories: []
+                property var favourites: []
+                property var favouriteDirectories: []
             }
         }
     }

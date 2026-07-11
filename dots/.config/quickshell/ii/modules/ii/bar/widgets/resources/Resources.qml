@@ -9,18 +9,15 @@ MouseArea {
     id: root
     property bool borderless: Config.options.bar.borderless
     property bool vertical: false
+    property color groupBgColor: Appearance.colors.colLayer1
+    property real groupStartRadius: Appearance.rounding.full
+    property real groupEndRadius: Appearance.rounding.full
 
     implicitWidth: mainRow.implicitWidth
     implicitHeight: Appearance.sizes.baseBarHeight
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
 
-    readonly property color capsuleColor: {
-        try {
-            return rootItem.colBackground;
-        } catch(e) {
-            return Appearance.colors.colLayer1;
-        }
-    }
+    readonly property color capsuleColor: root.groupBgColor
 
     RowLayout {
         id: mainRow
@@ -33,7 +30,10 @@ MouseArea {
             implicitWidth: rowLayout.implicitWidth + 12
             implicitHeight: Appearance.sizes.baseBarHeight - 10
             color: Config.options.bar.resources.showDocker ? root.capsuleColor : "transparent"
-            radius: Config.options.bar.barGroupStyle === 1 ? Appearance.rounding.windowRounding : Appearance.rounding.full
+            topLeftRadius: root.groupStartRadius
+            bottomLeftRadius: root.groupStartRadius
+            topRightRadius: root.groupEndRadius
+            bottomRightRadius: root.groupEndRadius
 
             RowLayout {
                 id: rowLayout
@@ -88,7 +88,10 @@ MouseArea {
             implicitWidth: shown ? (dockerRow.implicitWidth + 16) : 0
             implicitHeight: Appearance.sizes.baseBarHeight - 10
             color: root.capsuleColor
-            radius: Config.options.bar.barGroupStyle === 1 ? Appearance.rounding.windowRounding : Appearance.rounding.full
+            topLeftRadius: root.groupStartRadius
+            bottomLeftRadius: root.groupStartRadius
+            topRightRadius: root.groupEndRadius
+            bottomRightRadius: root.groupEndRadius
 
             Behavior on implicitWidth {
                 NumberAnimation {

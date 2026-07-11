@@ -97,28 +97,36 @@ Item {
         anchors.fill: parent
         visible: !root.isExpanded
 
+        readonly property real layoutHeight: Math.min(48, root.height)
+
         readonly property bool is12h: /a/i.test(Config.options.time.format)
         readonly property string hours: is12h ? ("0" + (DateTime.clock.date.getHours() % 12 || 12)).slice(-2) : Qt.formatDateTime(DateTime.clock.date, "HH")
         readonly property string minutes: Qt.formatDateTime(DateTime.clock.date, "mm")
         readonly property string ampm: is12h ? Qt.formatDateTime(DateTime.clock.date, Config.options.time.format.includes("AP") ? "AP" : "ap").trim() : ""
         readonly property bool showAMPM: is12h && ampm.length > 0
-        readonly property string dateStr: Qt.formatDateTime(DateTime.clock.date, Config.options.time.dateFormat)
+        readonly property string dateStr: {
+            let baseFormat = Config.options.time.dateFormat || "dd/MM";
+            let hasMonthFirst = baseFormat.includes("MM/dd") || baseFormat.includes("M/d");
+            let format = hasMonthFirst ? "MM/dd/yyyy" : "dd/MM/yyyy";
+            return Qt.formatDateTime(DateTime.clock.date, format);
+        }
         readonly property string dayStr: Qt.formatDateTime(DateTime.clock.date, "dddd")
         readonly property string weatherIcon: Icons.getWeatherIcon(Weather.data.wCode) ?? "cloud"
 
-        readonly property real timeFontSize: Math.max(14, Math.min(28, root.height * 0.44))
-        readonly property real dateFontSize: Math.max(10, Math.min(16, root.height * 0.3))
-        readonly property real dayFontSize: Math.max(9, Math.min(13, root.height * 0.22))
+        readonly property real timeFontSize: Math.max(14, Math.min(28, contractedLayout.layoutHeight * 0.44))
+        readonly property real dateFontSize: Math.max(10, Math.min(16, contractedLayout.layoutHeight * 0.3))
+        readonly property real dayFontSize: Math.max(9, Math.min(13, contractedLayout.layoutHeight * 0.22))
 
         RowLayout {
             anchors.fill: parent
-            spacing: Math.max(4, root.height * 0.15)
+            spacing: Math.max(4, contractedLayout.layoutHeight * 0.15)
 
             // Time Pill
             Rectangle {
                 id: timeRect
-                Layout.fillHeight: true
-                implicitWidth: timeContent.implicitWidth + (root.height * 0.6)
+                Layout.preferredHeight: contractedLayout.layoutHeight
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: timeContent.implicitWidth + (contractedLayout.layoutHeight * 0.6)
                 radius: height / 2
                 color: Appearance.colors.colPrimaryContainer
 
@@ -153,17 +161,21 @@ Item {
             // Date Block
             Rectangle {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: contractedLayout.layoutHeight
+                Layout.alignment: Qt.AlignVCenter
                 radius: Appearance.rounding.verysmall
                 color: Appearance.colors.colSurfaceContainerHighest
 
                 ColumnLayout {
                     anchors.left: parent.left
-                    anchors.leftMargin: root.height * 0.25
+                    anchors.leftMargin: contractedLayout.layoutHeight * 0.25
+                    anchors.right: parent.right
+                    anchors.rightMargin: contractedLayout.layoutHeight * 0.25
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 0
 
                     StyledText {
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignLeft
                         text: contractedLayout.dateStr
                         font.pixelSize: contractedLayout.dateFontSize
@@ -172,9 +184,11 @@ Item {
                             "tnum": 1
                         }
                         color: Appearance.colors.colOnSurface
+                        elide: Text.ElideRight
                     }
 
                     StyledText {
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignLeft
                         text: contractedLayout.dayStr.charAt(0).toUpperCase() + contractedLayout.dayStr.slice(1)
                         font.pixelSize: contractedLayout.dayFontSize
@@ -184,14 +198,16 @@ Item {
                         }
                         color: Appearance.colors.colOnSurface
                         opacity: 0.65
+                        elide: Text.ElideRight
                     }
                 }
             }
 
             // Weather Icon
             MaterialShape {
-                Layout.preferredWidth: height
-                Layout.fillHeight: true
+                Layout.preferredWidth: contractedLayout.layoutHeight
+                Layout.preferredHeight: contractedLayout.layoutHeight
+                Layout.alignment: Qt.AlignVCenter
                 shapeString: "Cookie9Sided"
                 color: Appearance.colors.colSurfaceContainerHighest
 

@@ -48,7 +48,8 @@ Item {
     }
 
     function loadMoreResults() {
-        if (!GlobalStates.overviewOpen) return;
+        if (!GlobalStates.overviewOpen)
+            return;
         const total = root.getFilteredResultsCount();
         if (loadedResultsCount < total) {
             loadedResultsCount = Math.min(total, loadedResultsCount + 50);
@@ -66,7 +67,6 @@ Item {
     readonly property bool alwaysListAppsMode: Config.options.search.alwaysListApps && !root.isAnySpecialMode
     property bool showResults: searchingText != "" || isAnySpecialMode || alwaysListAppsMode || (searchingText === "" && LauncherSearch.results.length > 0)
     property string overviewPosition: Config.options.overview?.position ?? ""
-    
 
     // Re-enable item transitions after panel open animation completes
     Timer {
@@ -504,14 +504,16 @@ Item {
                             property color topFadeColor: {
                                 if (appResults.currentItem) {
                                     const visY = appResults.currentItem.y - appResults.contentY;
-                                    if (visY <= appResults.topMargin + 36) return "white";
+                                    if (visY <= appResults.topMargin + 36)
+                                        return "white";
                                 }
                                 return appResults.atYBeginning ? "white" : "transparent";
                             }
                             property color bottomFadeColor: {
                                 if (appResults.currentItem) {
                                     const visBottom = appResults.currentItem.y - appResults.contentY + appResults.currentItem.height;
-                                    if (visBottom >= appResults.height - appResults.bottomMargin - 36) return "white";
+                                    if (visBottom >= appResults.height - appResults.bottomMargin - 36)
+                                        return "white";
                                 }
                                 return appResults.atYEnd ? "white" : "transparent";
                             }
@@ -635,7 +637,9 @@ Item {
                         for (var i = 0; i < resultModel.count; i++)
                             oldKeys.push(resultModel.get(i).key);
 
-                        var newKeys = newItems.map(function(x) { return x.key; });
+                        var newKeys = newItems.map(function (x) {
+                            return x.key;
+                        });
 
                         // 1. Remove items no longer in newKeys
                         var toRemove = [];
@@ -708,7 +712,8 @@ Item {
                         interval: 150
                         repeat: false
                         onTriggered: {
-                            if (!GlobalStates.overviewOpen) return;
+                            if (!GlobalStates.overviewOpen)
+                                return;
                             appResults.applyResultDiff(root.processResults(LauncherSearch.results));
                         }
                     }
@@ -718,7 +723,8 @@ Item {
                         function onResultsChanged() {
                             // Guard: don't populate while overview is closed/closing
                             // (stale LauncherSearch.results from previous session would cause ghost expansion)
-                            if (!GlobalStates.overviewOpen) return;
+                            if (!GlobalStates.overviewOpen)
+                                return;
                             root.loadedResultsCount = 50;
                             // Immediately show first 15 results for snappy visual feedback
                             const immediate = root.processResults(LauncherSearch.results);
@@ -822,7 +828,8 @@ Item {
                         ParallelAnimation {
                             NumberAnimation {
                                 property: "opacity"
-                                from: 0.0; to: 1.0
+                                from: 0.0
+                                to: 1.0
                                 duration: root.suppressItemTransitions ? 0 : 180
                                 easing.type: Easing.OutQuad
                             }

@@ -75,6 +75,43 @@ ContentPage {
                 }
             }
 
+            ConfigSwitch {
+                buttonIcon: "desktop_windows"
+                text: Translation.tr("Only show island on single monitor")
+                visible: Config.options.bar.floatingNotch.enable
+                checked: Config.options.bar.floatingNotch.onlyShowOnSingleMonitor
+                onCheckedChanged: {
+                    Config.options.bar.floatingNotch.onlyShowOnSingleMonitor = checked;
+                    if (checked && Config.options.bar.floatingNotch.singleMonitorName === "" && Quickshell.screens.length > 0) {
+                        Config.options.bar.floatingNotch.singleMonitorName = Quickshell.screens[0].name;
+                    }
+                }
+                StyledToolTip {
+                    text: Translation.tr("Display the dynamic island on only one chosen monitor instead of following focus")
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Selected Monitor")
+                icon: "settings_input_hdmi"
+                visible: Config.options.bar.floatingNotch.enable && Config.options.bar.floatingNotch.onlyShowOnSingleMonitor
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.bar.floatingNotch.singleMonitorName
+                    onSelected: newValue => {
+                        Config.options.bar.floatingNotch.singleMonitorName = newValue;
+                    }
+                    options: {
+                        let list = [];
+                        for (let i = 0; i < Quickshell.screens.length; i++) {
+                            let name = Quickshell.screens[i].name;
+                            list.push({ displayName: name, icon: "desktop_windows", value: name });
+                        }
+                        return list;
+                    }
+                }
+            }
+
             Item {
                 visible: Config.options.bar.floatingNotch.enable
                 Layout.preferredHeight: 8

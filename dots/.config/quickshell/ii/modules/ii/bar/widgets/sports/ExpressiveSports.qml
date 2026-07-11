@@ -50,6 +50,7 @@ MouseArea {
             verticalOffset = vertical ? 0 : 10;
             horizontalOffset = vertical ? 10 : 0;
         }
+        Qt.callLater(() => { root.isReady = true; });
     }
 
     // Connections for switch animation
@@ -118,7 +119,10 @@ MouseArea {
         SportsService.nextGame();
     }
 
+    property bool isReady: false
+
     Behavior on implicitWidth {
+        enabled: root.isReady
         NumberAnimation {
             duration: Appearance.animation.elementMoveFast.duration
             easing.type: Appearance.animation.elementMoveFast.type
@@ -126,6 +130,7 @@ MouseArea {
     }
 
     Behavior on implicitHeight {
+        enabled: root.isReady
         NumberAnimation {
             duration: Appearance.animation.elementMoveFast.duration
             easing.type: Appearance.animation.elementMoveFast.type

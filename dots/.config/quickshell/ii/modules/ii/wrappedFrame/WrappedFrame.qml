@@ -54,8 +54,10 @@ Item {
                     }
                 }
 
+                readonly property bool hasBarOnThisMonitor: GlobalStates.isScreenAllowedForBar(monitorScope.modelData)
+
                 Loader {
-                    active: !(!barVertical && !barBottom) // topFrame is visible
+                    active: hasBarOnThisMonitor && !(!barVertical && !barBottom) // topFrame is visible
                     sourceComponent: FrameSpaceReserver {
                         screen: monitorScope.modelData
                         anchors {
@@ -68,7 +70,7 @@ Item {
                     }
                 }
                 Loader {
-                    active: !(!barVertical && barBottom) // bottomFrame is visible
+                    active: hasBarOnThisMonitor && !(!barVertical && barBottom) // bottomFrame is visible
                     sourceComponent: FrameSpaceReserver {
                         screen: monitorScope.modelData
                         anchors {
@@ -81,7 +83,7 @@ Item {
                     }
                 }
                 Loader {
-                    active: !(barVertical && !barBottom) // leftFrame is visible
+                    active: hasBarOnThisMonitor && !(barVertical && !barBottom) // leftFrame is visible
                     sourceComponent: FrameSpaceReserver {
                         screen: monitorScope.modelData
                         anchors {
@@ -94,7 +96,7 @@ Item {
                     }
                 }
                 Loader {
-                    active: !(barVertical && barBottom) // rightFrame is visible
+                    active: hasBarOnThisMonitor && !(barVertical && barBottom) // rightFrame is visible
                     sourceComponent: FrameSpaceReserver {
                         screen: monitorScope.modelData
                         anchors {
