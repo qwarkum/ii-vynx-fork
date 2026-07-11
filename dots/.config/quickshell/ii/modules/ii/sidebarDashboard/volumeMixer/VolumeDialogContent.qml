@@ -15,6 +15,8 @@ StyledFlickable {
     
     property var unavailableDevices: []
     property var tempUnavailableDevices: []
+    property int activePlaybackDragIndex: -1
+    property int activeRecordingDragIndex: -1
 
     readonly property int activeDeviceIndex: {
         const activeNode = isSink ? Pipewire.defaultAudioSink : Pipewire.defaultAudioSource;
@@ -57,6 +59,76 @@ StyledFlickable {
 
     contentHeight: mainLayout.implicitHeight + 36
     clip: true
+
+    layer.enabled: true
+    layer.effect: OpacityMask {
+        maskSource: Item {
+            id: maskRoot
+            width: root.width
+            height: root.height
+
+            property color topFadeColor: root.atYBeginning ? "white" : "transparent"
+            property color bottomFadeColor: root.atYEnd ? "white" : "transparent"
+
+            Behavior on topFadeColor {
+                ColorAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                }
+            }
+            Behavior on bottomFadeColor {
+                ColorAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.emphasizedDecel
+                }
+            }
+
+            Column {
+                anchors.fill: parent
+                spacing: 0
+
+                Rectangle {
+                    width: parent.width
+                    height: Math.min(46, parent.height / 2)
+                    color: "transparent"
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: maskRoot.topFadeColor
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: "white"
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: Math.max(0, parent.height - Math.min(46, parent.height / 2) - Math.min(56, parent.height / 2))
+                    color: "white"
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: Math.min(56, parent.height / 2)
+                    color: "transparent"
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: "white"
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: maskRoot.bottomFadeColor
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     ColumnLayout {
         id: mainLayout
@@ -351,7 +423,14 @@ StyledFlickable {
                             if (devEntry.node?.audio?.muted) {
                                 return devEntry.isSink ? "volume_off" : "mic_off";
                             }
-                            return devEntry.isSink ? "volume_up" : "mic";
+                            if (devEntry.isSink) {
+                                let vol = devEntry.node?.audio?.volume ?? 0;
+                                if (vol === 0) return "volume_mute";
+                                if (vol <= 0.5) return "volume_down";
+                                return "volume_up";
+                            } else {
+                                return "mic";
+                            }
                         }
                         iconSize: 22
                         color: devEntry.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface
@@ -378,7 +457,14 @@ StyledFlickable {
             StyledText {
                 id: percentageText
                 anchors.verticalCenter: parent.verticalCenter
-                x: Math.max(12, fillRect.width - width - 12)
+                x: {
+                    let insideX = fillRect.width - width - 12;
+                    let minSafeX = (devEntry.isActive ? 20 : 16) + 24 + 12;
+                    if (insideX < minSafeX) {
+                        return mainRect.width - width - 16;
+                    }
+                    return insideX;
+                }
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.bold: true
                 color: devEntry.isActive ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurface
@@ -458,13 +544,19 @@ StyledFlickable {
         readonly property bool isFirst: index === 0
         readonly property bool isLast: index === totalCount - 1
 
+        readonly property int activeDragIndex: progEntry.isSink ? root.activePlaybackDragIndex : root.activeRecordingDragIndex
+        readonly property bool isDragged: activeDragIndex === progEntry.index
+        readonly property bool isPrevDragged: activeDragIndex === progEntry.index + 1
+        readonly property bool isNextDragged: activeDragIndex === progEntry.index - 1
+
+        readonly property real rFull: height / 2
         readonly property real rOuter: Appearance?.rounding?.large ?? 23
         readonly property real rInner: Appearance?.rounding?.verysmall ?? 4
 
-        readonly property real topLeftRadius: isFirst ? rOuter : rInner
-        readonly property real topRightRadius: isFirst ? rOuter : rInner
-        readonly property real bottomLeftRadius: isLast ? rOuter : rInner
-        readonly property real bottomRightRadius: isLast ? rOuter : rInner
+        readonly property real topLeftRadius: isDragged ? rFull : (isNextDragged ? rFull : (isFirst ? rOuter : rInner))
+        readonly property real topRightRadius: isDragged ? rFull : (isNextDragged ? rFull : (isFirst ? rOuter : rInner))
+        readonly property real bottomLeftRadius: isDragged ? rFull : (isPrevDragged ? rFull : (isLast ? rOuter : rInner))
+        readonly property real bottomRightRadius: isDragged ? rFull : (isPrevDragged ? rFull : (isLast ? rOuter : rInner))
 
         Rectangle {
             id: mainRect
@@ -618,7 +710,14 @@ StyledFlickable {
             StyledText {
                 id: percentageText
                 anchors.verticalCenter: parent.verticalCenter
-                x: Math.max(12, fillRect.width - width - 12)
+                x: {
+                    let insideX = fillRect.width - width - 12;
+                    let minSafeX = 16 + 24 + 12;
+                    if (insideX < minSafeX) {
+                        return mainRect.width - width - 16;
+                    }
+                    return insideX;
+                }
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.bold: true
                 color: Appearance.colors.colOnSecondaryContainer
@@ -658,6 +757,29 @@ StyledFlickable {
                     let percentage = Math.max(0, Math.min(1.0, mouseX / mainRect.width));
                     if (progEntry.node && progEntry.node.audio) {
                         progEntry.node.audio.volume = percentage;
+                    }
+                }
+            }
+
+            Connections {
+                target: progMouseArea
+                function onPressedChanged() {
+                    if (progMouseArea.pressed) {
+                        if (progEntry.isSink) {
+                            root.activePlaybackDragIndex = progEntry.index;
+                        } else {
+                            root.activeRecordingDragIndex = progEntry.index;
+                        }
+                    } else {
+                        if (progEntry.isSink) {
+                            if (root.activePlaybackDragIndex === progEntry.index) {
+                                root.activePlaybackDragIndex = -1;
+                            }
+                        } else {
+                            if (root.activeRecordingDragIndex === progEntry.index) {
+                                root.activeRecordingDragIndex = -1;
+                            }
+                        }
                     }
                 }
             }

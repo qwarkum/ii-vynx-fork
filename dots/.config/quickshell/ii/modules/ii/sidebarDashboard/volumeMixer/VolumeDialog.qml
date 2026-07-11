@@ -29,8 +29,8 @@ WindowDialog {
             id: detailsBtn
             buttonRadius: Appearance.rounding.full
             colBackground: "transparent"
-            colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.1)
-            colRipple: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.2)
+            colBackgroundHover: "transparent"
+            colRipple: "transparent"
             implicitHeight: 36
             implicitWidth: detailsText.implicitWidth + 48
 
@@ -38,11 +38,11 @@ WindowDialog {
                 anchors.fill: parent
                 color: "transparent"
                 border.width: 1
-                border.color: Appearance.colors.colPrimary
+                border.color: detailsBtn.hovered ? Appearance.colors.colOnSurface : Appearance.colors.colOutline
                 radius: parent.buttonEffectiveRadius
 
-                Behavior on radius {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                Behavior on border.color {
+                    ColorAnimation { duration: 150 }
                 }
             }
 
@@ -53,9 +53,10 @@ WindowDialog {
                 verticalAlignment: Text.AlignVCenter
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.variableAxes: ({
-                        "wght": 700
+                        "wght": 500
                     })
-                color: Appearance.colors.colPrimary
+                color: detailsBtn.hovered ? Appearance.colors.colOnSurface : Appearance.colors.colOutline
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
             onClicked: {
                 Quickshell.execDetached(["bash", "-c", `${Config.options.apps.volumeMixer}`]);
