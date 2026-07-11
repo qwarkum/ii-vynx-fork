@@ -22,7 +22,8 @@ Singleton {
     // reload is retried before we ever dare to write defaults.
     // Increased from 2000 to 5000 to match writeGuardDelay — prevents
     // config.json from being clobbered with defaults during hot-reload.
-    property int missingFileGracePeriod: 5000
+    // Increased to 10000 to match the updated writeGuardDelay.
+    property int missingFileGracePeriod: 10000
     property int missingFileRetryInterval: 1500
     // Minimum time (ms) since singleton creation before ANY write is allowed,
     // even after `onLoaded` sets `ready = true`. This catches hot-reload races
@@ -30,7 +31,16 @@ Singleton {
     // JsonAdapter hasn't fully merged values into all nested JsonObjects yet.
     // Increased from 3000 to 5000 to prevent config.json resets during
     // shell hot-reload while Phone services are initializing.
-    property int writeGuardDelay: 5000
+    // Increased to 10000 — must exceed constructionSettleReload (8s) so the
+    // late reload fixes any early-materialization corruption before the first
+    // write serializes the adapter state to disk.
+    property int writeGuardDelay: 10000
+    // Backup file for crash recovery — saved before every writeAdapter() call.
+    // If a write corrupts config.json (e.g. 0-byte atomic write during a crash
+    // loop), the next load detects the empty file and restores from this backup.
+    property string backupPath: root.filePath + ".bak"
+    property bool _loadVerified: false
+    property int _loadFailureCount: 0
 
     function setNestedValue(nestedKey, value) {
         let keys = nestedKey.split(".");
@@ -98,7 +108,12 @@ Singleton {
                 fileWriteTimer.restart();
                 return;
             }
-            configFileView.writeAdapter();
+            // Save backup before writing. If this write produces a corrupt
+            // file (e.g. 0 bytes during a crash loop), the next load detects
+            // it and restores from the backup. writeAdapter() is called on
+            // backup completion (or on 2s timeout safety fallback).
+            preWriteBackupProc.running = true;
+            preWriteBackupFallback.restart();
         }
     }
 
@@ -117,6 +132,120 @@ Singleton {
         }
     }
 
+    // Before each writeAdapter() call, save a backup of the current config.json.
+    // If the write produces a corrupt file (e.g. 0 bytes during a crash loop),
+    // the next load detects it and restores from this backup automatically.
+    Process {
+        id: preWriteBackupProc
+        running: false
+        command: ["sh", "-c", `[ -s "${root.filePath}" ] && cp "${root.filePath}" "${root.backupPath}" && echo ok || echo skipped`]
+        onRunningChanged: {
+            if (!running) {
+                preWriteBackupFallback.stop();
+                configFileView.writeAdapter();
+            }
+        }
+    }
+    Timer {
+        id: preWriteBackupFallback
+        interval: 2000
+        repeat: false
+        onTriggered: {
+            if (preWriteBackupProc.running) {
+                preWriteBackupProc.running = false;
+            }
+            // onRunningChanged fires on kill → writeAdapter()
+        }
+    }
+
+    // After onLoaded fires, verify the loaded file actually has content.
+    // A 0-byte file loads as "success" (not FileNotFound) but provides no data,
+    // leaving the adapter at QML defaults which would overwrite the real config.
+    Process {
+        id: loadFileSizeCheckProc
+        running: false
+        command: ["sh", "-c", `wc -c < "${root.filePath}" 2>/dev/null | tr -d ' \\n'`]
+        stdout: SplitParser {
+            onRead: line => {
+                // Guard: if ready is already true, this is a stale check from
+                // a previous load cycle. Ignore it to avoid redundant restores.
+                if (root.ready) return;
+                const size = parseInt(line);
+                if (!isNaN(size) && size >= 50) {
+                    root.ready = true;
+                    root._loadVerified = true;
+                    root._loadFailureCount = 0;
+                    // Bootstrap a startup-only backup. Unlike .bak (which is
+                    // rewritten before every write), this persists across the
+                    // session and guarantees we have a known-good copy to
+                    // restore from even if the first write corrupts the file.
+                    startupBakProc.running = true;
+                } else if (root._loadFailureCount < 3) {
+                    root._loadFailureCount++;
+                    restoreBackupProc.running = true;
+                } else {
+                    root.ready = true;
+                    root._loadVerified = true;
+                    root._loadFailureCount = 0;
+                }
+            }
+        }
+        stderr: SplitParser {
+            onRead: line => {
+                // stderr from wc means the check itself failed (not the file).
+                // Don't immediately set ready — let the 3s timeout handle it
+                // to give the restore path a chance if the file is empty.
+            }
+        }
+    }
+    // Safety net: if the size check Process never produces output (e.g. sh
+    // unavailable), set ready anyway after 3s to avoid deadlocking the shell.
+    Timer {
+        id: loadCheckTimeout
+        interval: 3000
+        repeat: false
+        onTriggered: {
+            if (!root.ready) {
+                root.ready = true;
+                root._loadVerified = true;
+            }
+        }
+    }
+
+    // Late reload after construction settles. Other singletons (Appearance.qml
+    // etc.) read Config.options in their property bindings during construction,
+    // which may materialize adapter objects with QML defaults before the file
+    // merge is complete. This forces a clean re-merge of the original file
+    // after the QML object tree has settled, overwriting any stale defaults.
+    Timer {
+        id: constructionSettleReload
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            configFileView.reload();
+        }
+    }
+
+    Process {
+        id: restoreBackupProc
+        running: false
+        command: ["sh", "-c", `([ -s "${root.backupPath}" ] && cp "${root.backupPath}" "${root.filePath}" && echo restored_bak) || ([ -s "${root.filePath}.startupbak" ] && cp "${root.filePath}.startupbak" "${root.filePath}" && echo restored_startup) || echo no_backup`]
+        stdout: SplitParser {
+            onRead: line => {
+                configFileView.reload();
+            }
+        }
+    }
+
+    // Startup backup — saved once when the config is first verified healthy.
+    // Unlike .bak (overwritten before every write), this persists for the
+    // session and survives even if .bak gets overwritten by a corrupt write.
+    Process {
+        id: startupBakProc
+        running: false
+        command: ["sh", "-c", `[ -s "${root.filePath}" ] && cp "${root.filePath}" "${root.filePath}.startupbak" || true`]
+    }
+
     FileView {
         id: configFileView
         path: root.filePath
@@ -128,7 +257,24 @@ Singleton {
         atomicWrites: true
         onFileChanged: fileReloadTimer.restart()
         onAdapterUpdated: fileWriteTimer.restart()
-        onLoaded: root.ready = true
+        onLoaded: {
+            // Don't trust the load yet — verify the file actually has content.
+            // A 0-byte (or tiny) file loads as "success" (not FileNotFound)
+            // but provides no data, leaving the adapter at default QML values.
+            // Without this check, writeAdapter() would serialize those defaults
+            // and overwrite the user's real config on the next write cycle.
+            if (loadFileSizeCheckProc.running) {
+                loadFileSizeCheckProc.running = false;
+            }
+            loadFileSizeCheckProc.running = true;
+            loadCheckTimeout.restart();
+            // Schedule a late reload to fix any early-materialization issues.
+            // During construction, other singletons (e.g. Appearance.qml) read
+            // Config.options properties which may materialize adapter objects
+            // with QML defaults before the file merge completes. This forces a
+            // clean re-merge of the file after construction has settled.
+            constructionSettleReload.restart();
+        }
         onLoadFailed: error => {
             if (error != FileViewError.FileNotFound) {
                 return;
@@ -138,10 +284,8 @@ Singleton {
                 // Singleton has been alive past the grace window and the file
                 // is still gone — legitimately missing (first-run install or
                 // user manually deleted it). Safe to seed defaults.
-                writeAdapter();
-                // Mark ready so subsequent user-triggered writes go through
-                // (fileWriteTimer guards on `root.ready`).
                 root.ready = true;
+                preWriteBackupProc.running = true;
             } else {
                 // Likely transient: schedule a reload. If it succeeds,
                 // `onLoaded` flips `root.ready` and nothing is overwritten. If
@@ -583,9 +727,9 @@ Singleton {
                     property int heightWorkspaces: 36
                     property int heightKeyboard: 36
                     property int heightWifi: 36
-                    property int heightBluetooth: 36
+                    property int heightBluetooth: 88
                     property int heightMedia: 52
-                    property int heightNotification: 54
+                    property int heightNotification: 64
                     property int heightRecording: 36
                     property int heightTimer: 36
                     property int heightClipboard: 36
@@ -608,7 +752,7 @@ Singleton {
                 property bool enableBrightnessScroll: true
 
                 property JsonObject mediaPlayer: JsonObject {
-                    property bool expressivePopup: false
+                    property string popupStyle: "default" // Options: default, expressive, android
                     property bool useFixedSize: true
                     property int customSize: 200
                     property int maxSize: 400
@@ -991,6 +1135,9 @@ Singleton {
                     property bool enable: true
                     property real radius: 100
                     property real extraZoom: 1.1
+                }
+                property JsonObject zoomAnimation: JsonObject {
+                    property bool enabled: true
                 }
                 property bool centerClock: true
                 property bool showLockedText: true

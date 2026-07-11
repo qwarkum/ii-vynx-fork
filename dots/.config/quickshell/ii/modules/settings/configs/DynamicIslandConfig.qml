@@ -381,6 +381,16 @@ ContentPage {
                     Config.options.bar.floatingNotch.heightLocalSend = value;
                 }
             }
+            ConfigSwitch {
+                buttonIcon: "smartphone"
+                text: Translation.tr("KDE Connect column in drag panel")
+                visible: Config.options.bar.floatingNotch.enable && !Config.options.bar.floatingNotch.disableLocalSend
+                checked: !Config.options.bar.floatingNotch.disableKdeConnectInLocalSend
+                onCheckedChanged: {
+                    Config.options.bar.floatingNotch.disableKdeConnectInLocalSend = !checked;
+                }
+                StyledToolTip { text: Translation.tr("Show the KDE Connect drop column alongside LocalSend when dragging files into the notch") }
+            }
 
             Item {
                 visible: Config.options.bar.floatingNotch.enable

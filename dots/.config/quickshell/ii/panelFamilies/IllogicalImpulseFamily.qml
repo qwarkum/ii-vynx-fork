@@ -74,15 +74,15 @@ Scope {
         component: MediaControls {}
     }
     PanelLoader {
-        extraCondition: !Config.options.bar.floatingNotch.enable
+        extraCondition: Config.ready && !Config.options.bar.floatingNotch.enable
         component: BluetoothConnectionPopup {}
     }
     PanelLoader {
-        extraCondition: !Config.options.bar.floatingNotch.enable
+        extraCondition: Config.ready && !Config.options.bar.floatingNotch.enable
         component: KeyboardLayoutTransitionPopup {}
     }
     PanelLoader {
-        extraCondition: !Config.options.bar.floatingNotch.enable
+        extraCondition: Config.ready && !Config.options.bar.floatingNotch.enable
         component: LocalSendPopup {}
     }
     PanelLoader {

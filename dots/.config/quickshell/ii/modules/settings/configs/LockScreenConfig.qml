@@ -86,6 +86,18 @@ ContentPage {
         }
 
         ConfigSwitch {
+            buttonIcon: "zoom_out_map"
+            text: Translation.tr("Zoom animation")
+            checked: Config.options.lock.zoomAnimation.enabled
+            onCheckedChanged: {
+                Config.options.lock.zoomAnimation.enabled = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Animate wallpaper zoom on lock and unlock.")
+            }
+        }
+
+        ConfigSwitch {
             buttonIcon: "text_fields"
             text: Translation.tr("Show \"Locked\" text")
             checked: Config.options.lock.showLockedText
@@ -120,6 +132,20 @@ ContentPage {
             checked: Config.options.lock.blur.enable
             onCheckedChanged: {
                 Config.options.lock.blur.enable = checked;
+            }
+        }
+
+        ConfigSlider {
+            buttonIcon: "blur_circular"
+            text: Translation.tr("Blur intensity")
+            enabled: Config.options.lock.blur.enable
+            from: 0
+            to: 200
+            stepSize: 5
+            value: Config.options.lock.blur.radius
+            usePercentTooltip: false
+            onValueChanged: {
+                Config.options.lock.blur.radius = value;
             }
         }
 
