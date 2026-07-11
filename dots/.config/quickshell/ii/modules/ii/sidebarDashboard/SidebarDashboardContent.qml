@@ -40,6 +40,13 @@ Item {
 
     property bool isLoadedOnLeft: false
 
+    Component.onCompleted: {
+        if (GlobalStates.requestVolumeDialog) {
+            root.showAudioOutputDialog = true;
+            GlobalStates.requestVolumeDialog = false;
+        }
+    }
+
     Connections {
         target: GlobalStates
         function onSidebarRightOpenChanged() {
@@ -50,6 +57,16 @@ Item {
                 root.showAudioInputDialog = false;
                 root.showDarkModeDialog = false;
                 root.showLocalSendDialog = false;
+            }
+        }
+    }
+
+    Connections {
+        target: GlobalStates
+        function onRequestVolumeDialogChanged() {
+            if (GlobalStates.requestVolumeDialog) {
+                root.showAudioOutputDialog = true;
+                GlobalStates.requestVolumeDialog = false;
             }
         }
     }
