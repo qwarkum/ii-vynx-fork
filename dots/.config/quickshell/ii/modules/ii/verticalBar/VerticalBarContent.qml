@@ -72,31 +72,7 @@ Item { // Bar content region
         ? root.activeTheme.barBackground
         : Appearance.colors.colLayer0
 
-    // === Transparent bar background: soft vignette gradient ===
-    // Subtle tint at the screen edge that fades smoothly over ~35% of the
-    // bar, leaving the rest fully transparent for a clean float look.
-    Rectangle {
-        id: transparentGradientLayer
-        z: -11
-        anchors.fill: parent
-        visible: Config.options.bar.barBackgroundStyle === 0
-        readonly property bool barAtLeft: !Config.options.bar.bottom
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop {
-                position: transparentGradientLayer.barAtLeft ? 0.00 : 1.00
-                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.18)
-            }
-            GradientStop {
-                position: transparentGradientLayer.barAtLeft ? 0.15 : 0.85
-                color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.06)
-            }
-            GradientStop {
-                position: transparentGradientLayer.barAtLeft ? 0.35 : 0.65
-                color: "transparent"
-            }
-        }
-    }
+
 
     // Background
     Rectangle {

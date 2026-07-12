@@ -248,6 +248,19 @@ Item {
             }
 
             ConfigSwitch {
+                buttonIcon: "blur_on"
+                text: Translation.tr("Transparent bar blur/dim")
+                checked: Config.options.bar.transparentGlow
+                visible: Config.options.bar.barBackgroundStyle === 0
+                onCheckedChanged: {
+                    Config.options.bar.transparentGlow = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Adds a soft blur and dim gradient under the transparent bar")
+                }
+            }
+
+            ConfigSwitch {
                 buttonIcon: "format_color_fill"
                 text: Translation.tr("Expressive bar solid colors")
                 checked: Config.options.bar.expressiveColors

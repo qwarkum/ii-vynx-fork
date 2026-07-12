@@ -122,11 +122,11 @@ Singleton {
 
             property JsonObject cheatsheet: JsonObject {
                 property int tabIndex: 0
-                property var sectionOrder: []
+                property list<string> sectionOrder: []
             }
 
             property JsonObject clipboard: JsonObject {
-                property var pinnedEntries: []
+                property list<string> pinnedEntries: []
             }
 
             property JsonObject sidebar: JsonObject {
@@ -134,7 +134,7 @@ Singleton {
                     property int tab: 0
                     property JsonObject phone: JsonObject {
                         property string activeDeviceId: ""
-                        property var recentDeviceIds: []
+                        property list<string> recentDeviceIds: []
                         property string cachedNotificationsJson: ""
                     }
                 }
@@ -159,7 +159,7 @@ Singleton {
             }
 
             property JsonObject overlay: JsonObject {
-                property var open: ["crosshair", "recorder", "media", "volumeMixer", "resources"]
+                property list<string> open: ["crosshair", "recorder", "media", "volumeMixer", "resources"]
                 property JsonObject crosshair: JsonObject {
                     property bool pinned: false
                     property bool clickthrough: true
@@ -263,16 +263,16 @@ Singleton {
                 property JsonObject stopwatch: JsonObject {
                     property bool running: false
                     property int start: 0
-                    property var laps: []
+                    property list<var> laps: []
                 }
             }
-            property var alarms: []
+            property list<var> alarms: []
             property JsonObject media: JsonObject {
             }
 
             property JsonObject wallpaper: JsonObject {
-                property var favourites: []
-                property var favouriteDirectories: []
+                property list<string> favourites: []
+                property list<string> favouriteDirectories: []
             }
         }
     }

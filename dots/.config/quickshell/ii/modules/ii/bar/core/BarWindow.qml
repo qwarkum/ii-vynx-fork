@@ -143,40 +143,16 @@ Scope {
         color: "transparent"
         anchors { top: true; bottom: true; left: true; right: true }
 
-        // ── Ultra-soft edge vignette ──────────────────────────────────────────
-        // Barely-perceptible gradient extending ~100px from the screen edge.
-        // Uses opaque base color so alpha is fully controlled. Only renders
-        // in transparent mode (barBackgroundStyle === 0). Sits behind all
-        // bar widgets (z: -20) so it never overlays content.
-        Rectangle {
+        TransparentBarGlow {
             z: -20
-            visible: Config.options.bar.barBackgroundStyle === 0
+            vertical: false
+            isBottom: Config.options.bar.bottom
+            targetScreen: barRoot.screen
             anchors {
                 left: parent.left
                 right: parent.right
                 top: !Config.options.bar.bottom ? parent.top : undefined
                 bottom: Config.options.bar.bottom ? parent.bottom : undefined
-            }
-            readonly property real glowDepth: 100
-            height: glowDepth
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop {
-                    position: 0.0
-                    color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.025)
-                }
-                GradientStop {
-                    position: 0.30
-                    color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.012)
-                }
-                GradientStop {
-                    position: 0.70
-                    color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.004)
-                }
-                GradientStop {
-                    position: 1.0
-                    color: "transparent"
-                }
             }
         }
 
