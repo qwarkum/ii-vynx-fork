@@ -562,6 +562,13 @@ apply_fork_branch() {
                 chmod +x "$STANDARD_SCRIPT_DIR/$s"
             fi
         done
+        # Prune obsolete scripts that we no longer ship but may linger from older installs.
+        for obsolete in update-with-customs.sh; do
+            if [ -f "$STANDARD_SCRIPT_DIR/$obsolete" ] && [ ! -f "$SCRIPT_DIR/$obsolete" ]; then
+                rm -f "$STANDARD_SCRIPT_DIR/$obsolete"
+                log_verbose "Pruned obsolete script: $STANDARD_SCRIPT_DIR/$obsolete"
+            fi
+        done
         # sdata cli libs (for vynx subcommands)
         if [ -d "$SCRIPT_DIR/sdata" ]; then
             mkdir -p "$STANDARD_SCRIPT_DIR/sdata/cli/lib"
