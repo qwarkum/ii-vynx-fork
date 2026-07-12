@@ -413,7 +413,72 @@ command: ["bash", "-c",
                 }
             }
 
-            _StatusLogBox {}  // instantiates the inline component declared at file-level
+            // ── Status + log box (inline) ──
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    height: 40
+                    visible: actionProc.finished
+                    radius: Appearance.rounding.small
+                    color: ColorUtils.transparentize(actionProc.exitCode === 0 ? Appearance.colors.colPrimary : Appearance.colors.colError, 0.85)
+                    border.width: 0
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: 8
+
+                        MaterialSymbol {
+                            text: actionProc.exitCode === 0 ? "check_circle" : "error"
+                            iconSize: 20
+                            color: actionProc.exitCode === 0 ? Appearance.colors.colPrimary : Appearance.colors.colError
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: actionProc.exitCode === 0
+                                  ? Translation.tr("Update completed successfully! Reload the shell to apply.")
+                                  : Translation.tr("Update failed! Check the log below.")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnLayer0
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 6
+                    height: Math.min(250, logText.implicitHeight + 16)
+                    visible: actionProc.logOutput !== ""
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer0
+                    border.width: 0
+
+                    StyledFlickable {
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        clip: true
+                        contentHeight: logText.implicitHeight
+                        contentWidth: width
+                        flickableDirection: Flickable.VerticalFlick
+
+                        Text {
+                            id: logText
+                            width: parent.width
+                            text: actionProc.logOutput
+                            font.family: "monospace"
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnLayer1
+                            wrapMode: Text.WrapAnywhere
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -704,76 +769,6 @@ command: ["bash", "-c",
                         Layout.fillWidth: true
                         opacity: 0.85
                     }
-                }
-            }
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Component: status + log box (used by the Update section)
-    // ──────────────────────────────────────────────────────────────────────────
-    component _StatusLogBox : ColumnLayout {
-        spacing: 6
-
-        // Success / failure banner rectangle.
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: 8
-            height: 40
-            visible: actionProc.finished
-            radius: Appearance.rounding.small
-            color: ColorUtils.transparentize(actionProc.exitCode === 0 ? Appearance.colors.colPrimary : Appearance.colors.colError, 0.85)
-            border.width: 0
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 8
-
-                MaterialSymbol {
-                    text: actionProc.exitCode === 0 ? "check_circle" : "error"
-                    iconSize: 20
-                    color: actionProc.exitCode === 0 ? Appearance.colors.colPrimary : Appearance.colors.colError
-                }
-
-                StyledText {
-                    Layout.fillWidth: true
-                    text: actionProc.exitCode === 0
-                          ? Translation.tr("Update completed successfully! Reload the shell to apply.")
-                          : Translation.tr("Update failed! Check the log below.")
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: Appearance.colors.colOnLayer0
-                }
-            }
-        }
-
-        // Log box (no border; uses color contrast only).
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: 6
-            height: Math.min(250, logText.implicitHeight + 16)
-            visible: actionProc.logOutput !== ""
-            radius: Appearance.rounding.small
-            color: Appearance.colors.colLayer0
-            border.width: 0
-
-            StyledFlickable {
-                anchors.fill: parent
-                anchors.margins: 8
-                clip: true
-                contentHeight: logText.implicitHeight
-                contentWidth: width
-                flickableDirection: Flickable.VerticalFlick
-
-                Text {
-                    id: logText
-                    width: parent.width
-                    text: actionProc.logOutput
-                    font.family: "monospace"
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: Appearance.colors.colOnLayer1
-                    wrapMode: Text.WrapAnywhere
                 }
             }
         }
