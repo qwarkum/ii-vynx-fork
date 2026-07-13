@@ -182,6 +182,7 @@ Item {
             id: layout4x2StandardComp
             MediaCtrl.AndroidMediaPopup {
                 player: MprisController.activePlayer
+                showShadow: false
                 anchors.fill: parent
             }
         }

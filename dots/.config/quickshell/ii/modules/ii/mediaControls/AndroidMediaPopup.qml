@@ -18,6 +18,7 @@ Item {
     id: root
 
     required property MprisPlayer player
+    property bool showShadow: true
     property list<real> visualizerPoints: []
 
     readonly property bool playing: player ? player.playbackState === MprisPlaybackState.Playing : false
@@ -171,8 +172,11 @@ Item {
         root.activeLyricText = root.displaySongText;
     }
 
-    StyledRectangularShadow {
-        target: mainBg
+    Loader {
+        active: root.showShadow
+        sourceComponent: StyledRectangularShadow {
+            target: mainBg
+        }
     }
 
     Rectangle {

@@ -51,10 +51,17 @@ if [[ "$INVOKED_AS" == "vynx" ]]; then
     LIB_DIR="$SCRIPT_DIR/sdata/cli/lib"
     BASE_DIR="$SCRIPT_DIR"
     VERBOSE=false
+    NO_CONFIRM=false
+    PASS_FLAGS=()
     TEMP_ARGS=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -v|--verbose) VERBOSE=true; shift ;;
+            -v|--verbose)          VERBOSE=true; PASS_FLAGS+=("-v"); shift ;;
+            --no-confirm)          NO_CONFIRM=true; PASS_FLAGS+=("--no-confirm"); shift ;;
+            --preserve-config)     PASS_FLAGS+=("--preserve-config"); shift ;;
+            --no-backup)           PASS_FLAGS+=("--no-backup"); shift ;;
+            --force-install)       PASS_FLAGS+=("--force-install"); shift ;;
+            --rebuild-quickshell)  PASS_FLAGS+=("--rebuild-quickshell"); shift ;;
             *) TEMP_ARGS+=("$1"); shift ;;
         esac
     done
@@ -194,7 +201,7 @@ resolve_fork_arg() {
     local norm
     norm="$(normalize_github_url "$arg")"
     if [[ "$norm" == https://github.com/* ]]; then
-        echo "$norm|main"
+        echo "$norm|default"
         return 0
     fi
     echo -e "${RED}Invalid fork: $arg${NC}" >&2
@@ -290,16 +297,6 @@ compute_protected_files() {
     # config.json — handle separately via PRESERVE_CONFIG logic in backup/restore
     # Always consider it for the explicit prompt-based reset flow
     PROTECTED_FILES+=("config.json")
-
-    # Always preserve About.qml (header safe-room, may not exist in our fork but exists in end-4)
-    PROTECTED_FILES+=("modules/settings/About.qml")
-
-    # AboutConfig.qml — only protect when switching within the same fork
-    # (i.e. update or branch switch on P3DROVFX). When changing forks, let the
-    # new fork's AboutConfig replace ours.
-    if [ -n "$dest_fork_id" ] && [ "$dest_fork_id" = "$current_fork_id" ]; then
-        PROTECTED_FILES+=("modules/settings/configs/AboutConfig.qml")
-    fi
 }
 
 backup_protected_files() {
@@ -487,7 +484,20 @@ apply_fork_branch() {
 
     echo -e "${BLUE}• Cloning $clone_url (branch: $branch)…${NC}"
     rm -rf "$clone_dir"
-    if ! git clone --depth=1 --recurse-submodules --branch "$branch" "$clone_url" "$clone_dir"; then
+    
+    local clone_success=false
+    if [ "$branch" = "default" ]; then
+        if git clone --depth=1 --recurse-submodules "$clone_url" "$clone_dir"; then
+            clone_success=true
+            branch="$(git -C "$clone_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")"
+        fi
+    else
+        if git clone --depth=1 --recurse-submodules --branch "$branch" "$clone_url" "$clone_dir"; then
+            clone_success=true
+        fi
+    fi
+
+    if [ "$clone_success" = false ]; then
         echo -e "${RED}✗ Clone failed. Check that branch '$branch' exists on $clone_url${NC}"
         echo -e "${RED}  Try: $0 --list-branches${NC}"
         rm -rf "$clone_dir"
@@ -554,32 +564,31 @@ apply_fork_branch() {
     # Step 6: restore protected files (overwrites just-copied versions)
     restore_protected_files "$TARGET_DIR"
 
-    # Step 7: mirror setup scripts to standard location so UI keeps working
-    if [ "$SCRIPT_DIR" != "$STANDARD_SCRIPT_DIR" ]; then
-        mkdir -p "$STANDARD_SCRIPT_DIR"
-        cp "$SOURCE" "$STANDARD_SCRIPT_DIR/setup-ii-vynx.sh" 2>/dev/null || cp "$SCRIPT_DIR/setup-ii-vynx.sh" "$STANDARD_SCRIPT_DIR/setup-ii-vynx.sh"
-        chmod +x "$STANDARD_SCRIPT_DIR/setup-ii-vynx.sh"
-        for s in update-fork.sh; do
-            if [ -f "$SCRIPT_DIR/$s" ]; then
-                cp "$SCRIPT_DIR/$s" "$STANDARD_SCRIPT_DIR/$s"
-                chmod +x "$STANDARD_SCRIPT_DIR/$s"
-            fi
-        done
-        # Prune obsolete scripts that we no longer ship but may linger from older installs.
-        for obsolete in update-with-customs.sh; do
-            if [ -f "$STANDARD_SCRIPT_DIR/$obsolete" ] && [ ! -f "$SCRIPT_DIR/$obsolete" ]; then
-                rm -f "$STANDARD_SCRIPT_DIR/$obsolete"
-                log_verbose "Pruned obsolete script: $STANDARD_SCRIPT_DIR/$obsolete"
-            fi
-        done
-        # sdata cli libs (for vynx subcommands)
-        if [ -d "$SCRIPT_DIR/sdata" ]; then
-            mkdir -p "$STANDARD_SCRIPT_DIR/sdata/cli/lib"
-            cp -r "$SCRIPT_DIR/sdata/cli/lib/." "$STANDARD_SCRIPT_DIR/sdata/cli/lib/" 2>/dev/null
-            chmod +x "$STANDARD_SCRIPT_DIR/sdata/cli/lib/"*.sh 2>/dev/null
+    # Step 7: always mirror setup scripts from the fresh clone
+    # (not from $SCRIPT_DIR, which may be a stale mirror itself).
+    mkdir -p "$STANDARD_SCRIPT_DIR"
+    cp "$clone_dir/setup-ii-vynx.sh" "$STANDARD_SCRIPT_DIR/setup-ii-vynx.sh"
+    chmod +x "$STANDARD_SCRIPT_DIR/setup-ii-vynx.sh"
+    for s in update-fork.sh; do
+        if [ -f "$clone_dir/$s" ]; then
+            cp "$clone_dir/$s" "$STANDARD_SCRIPT_DIR/$s"
+            chmod +x "$STANDARD_SCRIPT_DIR/$s"
         fi
-        log_verbose "Mirrored scripts to $STANDARD_SCRIPT_DIR"
+    done
+    # Prune obsolete scripts
+    for obsolete in update-with-customs.sh; do
+        if [ -f "$STANDARD_SCRIPT_DIR/$obsolete" ]; then
+            rm -f "$STANDARD_SCRIPT_DIR/$obsolete"
+            log_verbose "Pruned obsolete script: $STANDARD_SCRIPT_DIR/$obsolete"
+        fi
+    done
+    # sdata cli libs (for vynx subcommands)
+    if [ -d "$clone_dir/sdata" ]; then
+        mkdir -p "$STANDARD_SCRIPT_DIR/sdata/cli/lib"
+        cp -r "$clone_dir/sdata/cli/lib/." "$STANDARD_SCRIPT_DIR/sdata/cli/lib/" 2>/dev/null
+        chmod +x "$STANDARD_SCRIPT_DIR/sdata/cli/lib/"*.sh 2>/dev/null
     fi
+    log_verbose "Mirrored scripts to $STANDARD_SCRIPT_DIR"
 
     # Cleanup clone
     rm -rf "$clone_dir"
