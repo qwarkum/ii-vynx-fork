@@ -25,6 +25,30 @@ StyledPopup {
         radius: Appearance.rounding.normal
         color: Appearance.colors.colSurfaceContainerHigh
 
+        opacity: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 1.0 : 0.0
+        scale: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 1.0 : 0.92
+        transform: Translate {
+            y: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 0 : 15
+            Behavior on y {
+                SequentialAnimation {
+                    PauseAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 25 : 0 }
+                    NumberAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutCubic }
+                }
+            }
+        }
+        Behavior on opacity {
+            SequentialAnimation {
+                PauseAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 25 : 0 }
+                NumberAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 250 : 180 }
+            }
+        }
+        Behavior on scale {
+            SequentialAnimation {
+                PauseAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 25 : 0 }
+                NumberAnimation { duration: (popupRoot.opened && popupRoot.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutBack }
+            }
+        }
+
         ColumnLayout {
             id: contentCol
             anchors {

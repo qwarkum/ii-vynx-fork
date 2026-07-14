@@ -94,8 +94,29 @@ StyledPopup {
     }
 
     contentItem: ColumnLayout {
+        id: contentLayout
         spacing: 12
         implicitWidth: 380
+
+        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+
+        readonly property var _visList: [
+            true, // Hero Card
+            true, // CPU/GPU Cards
+            true, // RAM Pill
+            Config.options.bar.resources.alwaysShowSwap, // SWAP Pill
+            true, // Disk Pill
+            Config.options.bar.resources.showDocker // Docker
+        ]
+
+        function getDelay(index) {
+            let visIndex = 0;
+            for (let i = 0; i < index; i++) {
+                if (_visList[i]) visIndex++;
+            }
+            const delays = [25, 75, 125, 200, 275, 350];
+            return delays[Math.min(visIndex, delays.length - 1)];
+        }
 
         // Hero Card
         Rectangle {
@@ -104,6 +125,30 @@ StyledPopup {
             implicitHeight: 140
             radius: Appearance.rounding.large
             color: Appearance.colors.colPrimaryContainer
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -192,8 +237,33 @@ StyledPopup {
         }
 
         RowLayout {
+            id: cpuGpuCardsRow
             implicitWidth: 380
             spacing: 12
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             // CPU Card
             Rectangle {
@@ -229,9 +299,9 @@ StyledPopup {
                                 text: Config.options.bar.weather.useUSCS
                                       ? Math.round(ResourceUsage.cpuTemp * 1.8 + 32) + "°F"
                                       : Math.round(ResourceUsage.cpuTemp) + "°C"
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                font.weight: Font.Bold
-                                color: Appearance.colors.colOnLayer1
+                                  font.pixelSize: Appearance.font.pixelSize.small
+                                  font.weight: Font.Bold
+                                  color: Appearance.colors.colOnLayer1
                             }
                         }
                     }
@@ -348,10 +418,35 @@ StyledPopup {
 
         // RAM Pill
         Rectangle {
+            id: ramCard
             implicitWidth: 380
             implicitHeight: 64
             radius: Appearance.rounding.full
             color: Appearance.colors.colSecondaryContainer
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -403,11 +498,36 @@ StyledPopup {
 
         // SWAP Pill
         Rectangle {
+            id: swapCard
             visible: Config.options.bar.resources.alwaysShowSwap
             implicitWidth: 380
             implicitHeight: 64
             radius: Appearance.rounding.full
             color: Appearance.colors.colSecondaryContainer
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -459,10 +579,35 @@ StyledPopup {
 
         // Disk Pill
         Rectangle {
+            id: diskCard
             implicitWidth: 380
             implicitHeight: 64
             radius: Appearance.rounding.full
             color: Appearance.colors.colSecondaryContainer
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(4) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(4) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(4) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -514,9 +659,34 @@ StyledPopup {
 
         // ── Docker Integration ────────────────────────────────────────────
         ColumnLayout {
+            id: dockerLayout
             Layout.fillWidth: true
             visible: Config.options.bar.resources.showDocker
             spacing: 12
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(5) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(5) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(5) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             // ── Docker divider ────────────────────────────────────────────────
             RowLayout {

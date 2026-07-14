@@ -96,6 +96,26 @@ StyledPopup {
         id: contentLayout
         anchors.centerIn: parent
         spacing: 12
+
+        // Dynamic vis index delays
+        readonly property var _visList: [
+            weatherHero.visible,
+            hourlyForecast.visible,
+            metricsGrid.visible,
+            inDayForecast.visible
+        ]
+
+        function getDelay(index) {
+            let visIndex = 0;
+            for (let i = 0; i < index; i++) {
+                if (_visList[i]) visIndex++;
+            }
+            const delays = [25, 75, 125, 200];
+            return delays[Math.min(visIndex, delays.length - 1)];
+        }
+
+        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+
         HeroCard {
             id: weatherHero
             Layout.minimumWidth: 320
@@ -106,9 +126,34 @@ StyledPopup {
             pillIcon: Weather.data.city ? "location_on" : ""
             title: Weather.data.temp
             subtitle: Weather.data.wDesc
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
         
         HourlyForecast {
+            id: hourlyForecast
             visible: !root.compact
             showDivider: false
             spacing: 6
@@ -123,9 +168,34 @@ StyledPopup {
             
             Layout.minimumWidth: 360
             margins: root.cardMargins
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         MetricsGrid {
+            id: metricsGrid
             visible: !root.compact
 
             Layout.fillWidth: true
@@ -133,9 +203,34 @@ StyledPopup {
             rowSpacing: 8
             columnSpacing: 8
             uniformCellWidths: true
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         InDayForecast {
+            id: inDayForecast
             visible: !root.compact
 
             Layout.minimumWidth: 360
@@ -147,6 +242,30 @@ StyledPopup {
             showDivider: false
             title: Translation.tr("Forecast")
             icon: "calendar_month"
+
+            opacity: contentLayout.startAnim ? 1.0 : 0.0
+            scale: contentLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: contentLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                        NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: contentLayout.startAnim ? contentLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: contentLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
     }
 }

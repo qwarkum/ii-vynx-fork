@@ -127,6 +127,30 @@ StyledPopup {
                         return yPos;
                     }
 
+                    opacity: (root.opened && root.popupOpenProgress > 0.6) ? 1.0 : 0.0
+                    scale: (root.opened && root.popupOpenProgress > 0.6) ? 1.0 : 0.92
+                    transform: Translate {
+                        y: (root.opened && root.popupOpenProgress > 0.6) ? 0 : 15
+                        Behavior on y {
+                            SequentialAnimation {
+                                PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                                NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutCubic }
+                            }
+                        }
+                    }
+                    Behavior on opacity {
+                        SequentialAnimation {
+                            PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                            NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 250 : 180 }
+                        }
+                    }
+                    Behavior on scale {
+                        SequentialAnimation {
+                            PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                            NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutBack }
+                        }
+                    }
+
                     Behavior on y {
                         NumberAnimation {
                             duration: 400

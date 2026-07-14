@@ -28,11 +28,11 @@ StyledPopup {
     readonly property color colPhoneBody: Appearance.colors.colSecondaryContainer
     readonly property color colPhoneCameraFrame: Appearance.colors.colPrimary
 
-    readonly property string iconEarbudsCushion: "../../../assets/images/devices/earbuds_cushion.svg"
-    readonly property string iconEarbudsStem: "../../../assets/images/devices/earbuds_stem.svg"
+    readonly property string iconEarbudsCushion: "../../../../../assets/images/devices/earbuds_cushion.svg"
+    readonly property string iconEarbudsStem: "../../../../../assets/images/devices/earbuds_stem.svg"
 
     // Pixel Folder Assets
-    readonly property string pixelPath: "../../../assets/images/devices/pixel/"
+    readonly property string pixelPath: "../../../../../assets/images/devices/pixel/"
     readonly property string iconFrameBody: pixelPath + "frame_body.svg"
     readonly property string iconFrameDetails: pixelPath + "frame_details.svg"
     readonly property string iconCameraBase: pixelPath + "camera_base.svg"
@@ -140,6 +140,30 @@ StyledPopup {
                             }
                         }
                         return yPos;
+                    }
+
+                    opacity: (root.opened && root.popupOpenProgress > 0.6) ? 1.0 : 0.0
+                    scale: (root.opened && root.popupOpenProgress > 0.6) ? 1.0 : 0.92
+                    transform: Translate {
+                        y: (root.opened && root.popupOpenProgress > 0.6) ? 0 : 15
+                        Behavior on y {
+                            SequentialAnimation {
+                                PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                                NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutCubic }
+                            }
+                        }
+                    }
+                    Behavior on opacity {
+                        SequentialAnimation {
+                            PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                            NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 250 : 180 }
+                        }
+                    }
+                    Behavior on scale {
+                        SequentialAnimation {
+                            PauseAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? (25 + index * 75) : 0 }
+                            NumberAnimation { duration: (root.opened && root.popupOpenProgress > 0.6) ? 320 : 180; easing.type: Easing.OutBack }
+                        }
                     }
 
                     Behavior on y {

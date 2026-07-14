@@ -200,11 +200,59 @@ StyledPopup {
         implicitWidth: 400
         spacing: 12
 
+        // Delays computed dynamically based on visibility order to prevent stagger skipping
+        readonly property var _visList: [
+            clockHero.visible,
+            worldClocksLoader.visible && worldClocksLoader.active,
+            columnLayout.children[2].visible, // info column Layout
+            localSendLoader.visible && localSendLoader.active,
+            alarmsCard.visible
+        ]
+
+        function getDelay(index) {
+            let visIndex = 0;
+            for (let i = 0; i < index; i++) {
+                if (_visList[i]) visIndex++;
+            }
+            const delays = [25, 75, 125, 200, 275];
+            return delays[Math.min(visIndex, delays.length - 1)];
+        }
+
+        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+
         ClockHeaderCard {
             id: clockHero
             Layout.fillWidth: true
             Layout.minimumWidth: 400
             visible: Config.options.time.alarms.showAnalogClock
+            
+            // Stagger animation sequence using columnLayout.startAnim & root.popupOpenProgress
+            opacity: columnLayout.startAnim ? 1.0 : 0.0
+            scale: columnLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: columnLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(0) : 0 }
+                        NumberAnimation {
+                            duration: columnLayout.startAnim ? 320 : 180
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         Loader {
@@ -214,11 +262,67 @@ StyledPopup {
             visible: active && Config.options.time.alarms.showWorldClocks
             active: Config.options.time.worldClocks && Config.options.time.worldClocks.length > 0
             sourceComponent: worldClocksComponent
+            
+            // Stagger animation sequence using columnLayout.startAnim & root.popupOpenProgress
+            opacity: columnLayout.startAnim ? 1.0 : 0.0
+            scale: columnLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: columnLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(1) : 0 }
+                        NumberAnimation {
+                            duration: columnLayout.startAnim ? 320 : 180
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 12
+            
+            // Stagger animation sequence using columnLayout.startAnim & root.popupOpenProgress
+            opacity: columnLayout.startAnim ? 1.0 : 0.0
+            scale: columnLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: columnLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(2) : 0 }
+                        NumberAnimation {
+                            duration: columnLayout.startAnim ? 320 : 180
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(2) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             InfoPill {
                 visible: !root.compact ? LocalSend.currentTransfer == null || LocalSend.droppedFiles.length > 0 : false
@@ -257,6 +361,34 @@ StyledPopup {
             visible: active
             active: LocalSend.currentTransfer !== null || LocalSend.droppedFiles.length > 0
             sourceComponent: LocalSend.currentTransfer !== null ? transferCard : sendCard
+            
+            // Stagger animation sequence using columnLayout.startAnim & root.popupOpenProgress
+            opacity: columnLayout.startAnim ? 1.0 : 0.0
+            scale: columnLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: columnLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(3) : 0 }
+                        NumberAnimation {
+                            duration: columnLayout.startAnim ? 320 : 180
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(3) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         AlarmsCard {
@@ -264,6 +396,34 @@ StyledPopup {
             Layout.fillWidth: true
             Layout.minimumWidth: root.compact ? 320 : 360
             visible: Config.options.time.alarms.showAlarmsSection
+            
+            // Stagger animation sequence using columnLayout.startAnim & root.popupOpenProgress
+            opacity: columnLayout.startAnim ? 1.0 : 0.0
+            scale: columnLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: columnLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(4) : 0 }
+                        NumberAnimation {
+                            duration: columnLayout.startAnim ? 320 : 180
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(4) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: columnLayout.startAnim ? columnLayout.getDelay(4) : 0 }
+                    NumberAnimation { duration: columnLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
         }
 
         Component {

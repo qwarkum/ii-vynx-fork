@@ -36,12 +36,53 @@ StyledPopup {
         anchors.centerIn: parent
         spacing: 16
 
+        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+
+        readonly property var _visList: [
+            true, // HERO
+            true, // divider
+            true, // grid cell 1
+            true, // grid cell 2
+            true, // grid cell 3
+            true  // grid cell 4
+        ]
+
+        function getDelay(index) {
+            const delays = [25, 75, 125, 200, 275, 350];
+            return delays[Math.min(index, delays.length - 1)];
+        }
+
         // HERO CARD
         Rectangle {
+            id: batteryHero
             Layout.preferredWidth: 380
             Layout.preferredHeight: 220
             radius: Appearance.rounding.normal
             color: Appearance.colors.colSurfaceContainerHigh
+
+            opacity: mainLayout.startAnim ? 1.0 : 0.0
+            scale: mainLayout.startAnim ? 1.0 : 0.92
+            transform: Translate {
+                y: mainLayout.startAnim ? 0 : 15
+                Behavior on y {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(0) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                }
+            }
+            Behavior on scale {
+                SequentialAnimation {
+                    PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(0) : 0 }
+                    NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
@@ -175,6 +216,14 @@ StyledPopup {
             height: 2
             radius: 1
             color: Appearance.colors.colSurfaceContainerHighest
+
+            opacity: mainLayout.startAnim ? 1.0 : 0.0
+            Behavior on opacity {
+                SequentialAnimation {
+                    PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(1) : 0 }
+                    NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                }
+            }
         }
 
         // DETAILED INFO GRID
@@ -185,10 +234,35 @@ StyledPopup {
             columnSpacing: 12
 
             Rectangle {
+                id: cellHealth
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: Appearance.rounding.normal
                 color: Appearance.colors.colSurfaceContainerHigh
+
+                opacity: mainLayout.startAnim ? 1.0 : 0.0
+                scale: mainLayout.startAnim ? 1.0 : 0.92
+                transform: Translate {
+                    y: mainLayout.startAnim ? 0 : 15
+                    Behavior on y {
+                        SequentialAnimation {
+                            PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(2) : 0 }
+                            NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+                Behavior on opacity {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(2) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                    }
+                }
+                Behavior on scale {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(2) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -233,10 +307,35 @@ StyledPopup {
             }
 
             Rectangle {
+                id: cellWattage
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: Appearance.rounding.normal
                 color: Appearance.colors.colSurfaceContainerHigh
+
+                opacity: mainLayout.startAnim ? 1.0 : 0.0
+                scale: mainLayout.startAnim ? 1.0 : 0.92
+                transform: Translate {
+                    y: mainLayout.startAnim ? 0 : 15
+                    Behavior on y {
+                        SequentialAnimation {
+                            PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(3) : 0 }
+                            NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+                Behavior on opacity {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(3) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                    }
+                }
+                Behavior on scale {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(3) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -281,10 +380,35 @@ StyledPopup {
             }
 
             Rectangle {
+                id: cellCycles
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: Appearance.rounding.normal
                 color: Appearance.colors.colSurfaceContainerHigh
+
+                opacity: mainLayout.startAnim ? 1.0 : 0.0
+                scale: mainLayout.startAnim ? 1.0 : 0.92
+                transform: Translate {
+                    y: mainLayout.startAnim ? 0 : 15
+                    Behavior on y {
+                        SequentialAnimation {
+                            PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(4) : 0 }
+                            NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+                Behavior on opacity {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(4) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                    }
+                }
+                Behavior on scale {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(4) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -334,10 +458,35 @@ StyledPopup {
             }
 
             Rectangle {
+                id: cellStatus
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: Appearance.rounding.normal
                 color: Appearance.colors.colSurfaceContainerHigh
+
+                opacity: mainLayout.startAnim ? 1.0 : 0.0
+                scale: mainLayout.startAnim ? 1.0 : 0.92
+                transform: Translate {
+                    y: mainLayout.startAnim ? 0 : 15
+                    Behavior on y {
+                        SequentialAnimation {
+                            PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(5) : 0 }
+                            NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+                Behavior on opacity {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(5) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 250 : 180 }
+                    }
+                }
+                Behavior on scale {
+                    SequentialAnimation {
+                        PauseAnimation { duration: mainLayout.startAnim ? mainLayout.getDelay(5) : 0 }
+                        NumberAnimation { duration: mainLayout.startAnim ? 320 : 180; easing.type: Easing.OutBack }
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
