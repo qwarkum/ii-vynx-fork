@@ -41,7 +41,23 @@ Singleton {
             icon: "music_note",
             title: "Music player",
             styleConfigKey: "media",
-            styleOptions: defaultStyleOptions,
+            styleOptions: [
+                {
+                    displayName: qsTr("Default"),
+                    icon: "style",
+                    value: "default"
+                },
+                {
+                    displayName: qsTr("Expressive"),
+                    icon: "fluid_med",
+                    value: "expressive"
+                },
+                {
+                    displayName: qsTr("Neural"),
+                    icon: "graphic_eq",
+                    value: "neural"
+                }
+            ],
             configPage: "MediaPlayerConfig.qml"
         },
         {
@@ -65,6 +81,11 @@ Singleton {
                     displayName: qsTr("Expressive"),
                     icon: "fluid_med",
                     value: "expressive"
+                },
+                {
+                    displayName: qsTr("Dock"),
+                    icon: "dock_to_left",
+                    value: "dock"
                 }
             ]
         },
@@ -81,13 +102,31 @@ Singleton {
             icon: "nest_clock_farsight_analog",
             title: "Clock",
             styleConfigKey: "clock",
-            styleOptions: defaultStyleOptions,
-            configPage: "CoreTimeDateConfig.qml"
+            configPage: "CoreTimeDateConfig.qml",
+            styleOptions: [
+                {
+                    displayName: qsTr("Default"),
+                    icon: "style",
+                    value: "default"
+                },
+                {
+                    displayName: qsTr("Material"),
+                    icon: "interests",
+                    value: "material"
+                },
+                {
+                    displayName: qsTr("Expressive"),
+                    icon: "fluid_med",
+                    value: "expressive"
+                }
+            ]
         },
         {
             id: "system_tray",
             icon: "system_update_alt",
             title: "System tray",
+            styleConfigKey: "systray",
+            styleOptions: defaultStyleOptions,
             configPage: "SystemTrayConfig.qml"
         },
         {
@@ -127,8 +166,24 @@ Singleton {
             icon: "battery_android_6",
             title: "Battery",
             styleConfigKey: "battery",
-            styleOptions: defaultStyleOptions,
-            configPage: "BatteryConfig.qml"
+            configPage: "BatteryConfig.qml",
+            styleOptions: [
+                {
+                    displayName: qsTr("Default"),
+                    icon: "style",
+                    value: "default"
+                },
+                {
+                    displayName: qsTr("Material"),
+                    icon: "interests",
+                    value: "material"
+                },
+                {
+                    displayName: qsTr("Expressive"),
+                    icon: "fluid_med",
+                    value: "expressive"
+                }
+            ]
         },
         {
             id: "timer",
@@ -165,8 +220,24 @@ Singleton {
             icon: "keyboard",
             title: "Keyboard Layout",
             styleConfigKey: "keyboard",
-            styleOptions: defaultStyleOptions,
-            configPage: "KeyboardLayoutConfig.qml"
+            configPage: "KeyboardLayoutConfig.qml",
+            styleOptions: [
+                {
+                    displayName: qsTr("Default"),
+                    icon: "style",
+                    value: "default"
+                },
+                {
+                    displayName: qsTr("Material"),
+                    icon: "interests",
+                    value: "material"
+                },
+                {
+                    displayName: qsTr("Expressive"),
+                    icon: "fluid_med",
+                    value: "expressive"
+                }
+            ]
         },
         {
             id: "sports",

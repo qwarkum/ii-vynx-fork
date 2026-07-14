@@ -21,6 +21,25 @@ AbstractBackgroundWidget {
 
     configEntryName: "media"
 
+    visibleWhenLocked: root.lockBehavior === "keep" || root.lockBehavior === "center" || root.lockBehavior === "lockOnly" || (Config.options.lock.centerWidget === "media")
+
+    property real lastStaticWidth: 240
+    property real lastStaticHeight: 240
+
+    implicitHeight: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticHeight : contentItem.implicitHeight
+    implicitWidth: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticWidth : contentItem.implicitWidth
+
+    onImplicitHeightChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticHeight = contentItem.implicitHeight;
+        }
+    }
+    onImplicitWidthChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticWidth = contentItem.implicitWidth;
+        }
+    }
+
     readonly property bool useAlbumColors: Config.options.background.widgets.media.useAlbumColors
     readonly property bool useDynamicColors: root.useAlbumColors && root.currentPlayer != null
     readonly property bool showPreviousToggle: Config.options.background.widgets.media.showPreviousToggle
@@ -68,9 +87,6 @@ AbstractBackgroundWidget {
     property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
 
     property list<real> visualizerPoints: []
-
-    implicitHeight: contentItem.implicitHeight
-    implicitWidth: contentItem.implicitWidth
 
     // 'Switch button' visiblity on hover
     property bool hovering: false

@@ -1,4 +1,5 @@
 import qs.modules.common
+import ".."
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -119,8 +120,8 @@ Singleton {
     // Polling periódico para manter o estado sincronizado com a realidade
     Timer {
         id: pollingTimer
-        interval: 5000
-        running: root.available
+        interval: 15000
+        running: root.available && (GlobalStates.dashboardPanelOpen || root.active)
         repeat: true
         onTriggered: {
             root.fetchActiveState()

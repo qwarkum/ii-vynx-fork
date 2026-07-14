@@ -7,7 +7,7 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.overview
-import qs.modules.ii.bar
+import qs.modules.ii.bar.shared
 
 // ── Animation strategy ──────────────────────────────────────────────────────
 // Caestelia-inspired: uses expressiveFastSpatial (spring overshoot y1=1.67)
@@ -24,7 +24,8 @@ Item {
     BarThemes {
         id: barThemes
     }
-    readonly property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
+    property var activeTheme: barThemes.getTheme(Config.options.bar.expressiveColorTheme)
+    readonly property color themeBgColor: Config.options.bar.expressiveColors ? activeTheme.barBackground : Appearance.colors.colLayer0
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
@@ -58,9 +59,9 @@ Item {
     property int frameThickness: 0
     property int barHeight: Appearance.sizes.barHeight
     property int verticalBarWidth: Appearance.sizes.verticalBarWidth
-    property real barMargin: 0
     property real hBarHiddenAmount: 0
     property real vBarHiddenAmount: 0
+    property real barMargin: 0
     property real animatedLeftSidebarWidth: 0
     property real animatedRightSidebarWidth: 0
     property bool leftSidebarActiveOnMonitor: false
@@ -75,11 +76,7 @@ Item {
 
     property var searchWidgetRef: null
 
-    readonly property bool isOverviewVisible: root.isOpen
-        && (root.searchWidgetRef ? root.searchWidgetRef.searchingText === "" : true)
-        && !GlobalStates.searchOnlyMode
-        && !Config.options.search.alwaysListApps
-        && (Config?.options.overview.enable ?? true)
+    readonly property bool isOverviewVisible: root.isOpen && (root.searchWidgetRef ? root.searchWidgetRef.searchingText === "" : true) && !GlobalStates.searchOnlyMode && !Config.options.search.alwaysListApps && (Config?.options.overview.enable ?? true)
 
     readonly property bool isScrollingLayout: Persistent.states.hyprland.layout === "scrolling"
     readonly property real launcherContentWidth: searchWidgetRef ? searchWidgetRef.implicitWidth : 0
@@ -201,7 +198,7 @@ Item {
     Item {
         id: dropContainer
         x: positioner.anchorX
-        y: positioner.anchorY
+        y: root.barBottom ? (positioner.anchorY + (dropState.targetH - root.animHeight)) : positioner.anchorY
         width: dropState.targetW
         height: root.animHeight
         visible: root.animHeight > 0.001
@@ -224,7 +221,7 @@ Item {
             // animHeight * 0.8 reaches windowRounding quickly without overshoot.
             topRadius: Math.min(_wr, root.animHeight * 0.8)
             bottomRadius: Math.min(_wr, root.animHeight)
-            fillColor: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
+            fillColor: root.themeBgColor
             transform: Scale {
                 xScale: 1
                 yScale: barBottom ? -1 : 1
@@ -232,64 +229,6 @@ Item {
             }
         }
 
-        // ── Concave corners at bar attachment edge ────────────────────────────
-        // RoundCorners flush at the TOP of dropContainer, outside its left/right edges,
-        // painting colLayer0 (bar background) to create a smooth concave curve where
-        // the bar bottom meets the drop panel. Grow from radius 0 with animHeight.
-        //
-        // Corner enum semantics for "drop below bar" layout:
-        //   Left side:  BottomRight fills bottom-right quadrant → arc faces inward → concave ✓
-        //   Right side: BottomLeft  fills bottom-left  quadrant → arc faces inward → concave ✓
-        readonly property real _cornerRadius: Math.min(
-            Appearance.rounding.windowRounding,
-            root.animHeight
-        )
-        readonly property bool _showCorners: !root.barVertical && root.animHeight > 0.5
-
-        RoundCorner {
-            id: topLeftCorner
-            visible: false
-            implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
-            corner: RoundCorner.CornerEnum.BottomRight
-            anchors.right: parent.left
-            anchors.top: parent.top
-        }
-
-        RoundCorner {
-            id: topRightCorner
-            visible: false
-            implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
-            corner: RoundCorner.CornerEnum.BottomLeft
-            anchors.left: parent.right
-            anchors.top: parent.top
-        }
-
-        // barBottom variant: corners at the BOTTOM edge (drop grows upward)
-        RoundCorner {
-            id: bottomLeftCorner
-            visible: dropContainer._showCorners && root.barBottom
-            implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
-            corner: RoundCorner.CornerEnum.TopRight
-            extendHorizontal: true
-            extendVertical: true
-            anchors.right: parent.left
-            anchors.bottom: parent.bottom
-        }
-
-        RoundCorner {
-            id: bottomRightCorner
-            visible: dropContainer._showCorners && root.barBottom
-            implicitSize: dropContainer._cornerRadius
-            color: Config.options.bar.expressiveColors ? root.activeTheme.barBackground : Appearance.colors.colLayer0
-            corner: RoundCorner.CornerEnum.TopLeft
-            extendHorizontal: true
-            extendVertical: true
-            anchors.left: parent.right
-            anchors.bottom: parent.bottom
-        }
 
         // ── Content (clipped to growing height) ──────────────────────────────
         Item {
@@ -382,15 +321,15 @@ Item {
 
     Loader { // Classic overview
         id: overviewLoader
-        anchors.top: dropContainer.bottom
-        anchors.topMargin: 10
+        y: root.barBottom ? (dropContainer.y - height - 10) : (dropContainer.y + dropContainer.height + 10)
+        height: implicitHeight
         anchors.horizontalCenter: parent.horizontalCenter
         active: root.isWidgetActive && !root.isScrollingLayout
         visible: opacity > 0.01
 
         opacity: root.isOverviewVisible ? 1.0 : 0.0
         transform: Translate {
-            y: root.isOverviewVisible ? 0 : 30
+            y: root.isOverviewVisible ? 0 : (root.barBottom ? -30 : 30)
             Behavior on y {
                 NumberAnimation {
                     duration: root.isOverviewVisible ? root._animDurationOpen : root._animDurationClose
@@ -416,16 +355,16 @@ Item {
 
     Loader { // Scrolling overview
         id: scrollingOverviewLoader
-        anchors.top: dropContainer.bottom
+        y: root.barBottom ? 0 : (dropContainer.y + dropContainer.height)
+        height: root.barBottom ? dropContainer.y : (parent.height - y)
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
         active: root.isWidgetActive && root.isScrollingLayout
         visible: opacity > 0.01
 
         opacity: root.isOverviewVisible ? 1.0 : 0.0
         transform: Translate {
-            y: root.isOverviewVisible ? 0 : 30
+            y: root.isOverviewVisible ? 0 : (root.barBottom ? -30 : 30)
             Behavior on y {
                 NumberAnimation {
                     duration: root.isOverviewVisible ? root._animDurationOpen : root._animDurationClose
@@ -461,13 +400,7 @@ Item {
 
         const topR = dropNotch.topRadius;
         const bottomR = dropNotch.bottomRadius;
-        if (GlobalStates.searchDropActive !== active
-            || GlobalStates.searchDropExclusionX !== sx
-            || GlobalStates.searchDropExclusionY !== sy
-            || GlobalStates.searchDropExclusionWidth !== sw
-            || GlobalStates.searchDropExclusionHeight !== sh
-            || GlobalStates.searchDropTopRadius !== topR
-            || GlobalStates.searchDropBottomRadius !== bottomR) {
+        if (GlobalStates.searchDropActive !== active || GlobalStates.searchDropExclusionX !== sx || GlobalStates.searchDropExclusionY !== sy || GlobalStates.searchDropExclusionWidth !== sw || GlobalStates.searchDropExclusionHeight !== sh || GlobalStates.searchDropTopRadius !== topR || GlobalStates.searchDropBottomRadius !== bottomR) {
             GlobalStates.searchDropActive = active;
             GlobalStates.searchDropExclusionX = sx;
             GlobalStates.searchDropExclusionY = sy;

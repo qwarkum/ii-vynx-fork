@@ -107,6 +107,14 @@ Scope {
                 }
             }
 
+            Connections {
+                target: HyprlandData
+                ignoreUnknownSignals: true
+                function onWindowByAddressChanged() {
+                    tRoot.updateToplevels();
+                }
+            }
+
             Component.onCompleted: updateToplevels()
 
             // ── Visibility / readiness ──────────────────────────────────────
@@ -411,7 +419,7 @@ Scope {
             anchors.fill: parent
             captureSource: tile.visible ? tile.toplevel : null
             // Performance: live false to avoid continuous screencopy overhead
-            live: false
+            live: Config.options.background.windowZoomLiveCapture
             paintCursor: false
             opacity: 1.0
         }

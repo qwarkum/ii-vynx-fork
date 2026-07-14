@@ -55,6 +55,12 @@ Rectangle {
         decodeImageProcess.running = true;
     }
 
+    onEntryChanged: {
+        root.source = "";
+        decodeImageProcess.running = false;
+        decodeImageProcess.running = true;
+    }
+
     Process {
         id: decodeImageProcess
         command: ["bash", "-c", `mkdir -p '${imageDecodePath}' && { [ -f '${imageDecodeFilePath}' ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}'; }`]

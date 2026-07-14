@@ -16,6 +16,28 @@ AbstractBackgroundWidget {
 
     configEntryName: "media"
 
+    visibleWhenLocked: root.lockBehavior === "keep" || root.lockBehavior === "center" || root.lockBehavior === "lockOnly" || (Config.options.lock.centerWidget === "media")
+
+    property real lastStaticWidth: 400
+    property real lastStaticHeight: 240
+
+    readonly property real computedWidth: cardPadding * 2 + albumContainerSize + cardSpacing + 350
+    readonly property real computedHeight: 240
+
+    implicitWidth: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticWidth : computedWidth
+    implicitHeight: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticHeight : computedHeight
+
+    onComputedWidthChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticWidth = computedWidth;
+        }
+    }
+    onComputedHeightChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticHeight = computedHeight;
+        }
+    }
+
     property MprisPlayer player: MprisController.activePlayer
 
     readonly property color colBg: Appearance.colors.colPrimaryContainer
@@ -96,9 +118,6 @@ AbstractBackgroundWidget {
             artDownloaded = true;
         }
     }
-
-    implicitWidth: cardPadding * 2 + albumContainerSize + cardSpacing + 350
-    implicitHeight: 240
 
     FontLoader {
         id: ledFont

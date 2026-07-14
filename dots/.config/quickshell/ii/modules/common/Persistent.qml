@@ -71,6 +71,10 @@ Singleton {
         }
     }
 
+    Component.onDestruction: {
+        root.blockWrites = true;
+    }
+
     FileView {
         id: persistentStatesFileView
         path: root.filePath
@@ -79,7 +83,7 @@ Singleton {
         atomicWrites: true
         blockWrites: root.blockWrites
         onFileChanged: fileReloadTimer.restart()
-        onAdapterUpdated: fileWriteTimer.restart()
+        onAdapterUpdated: { if (root.ready && !root.blockWrites) fileWriteTimer.restart(); }
         onLoaded: root.ready = true
         onLoadFailed: error => {
             console.log("Failed to load persistent states file:", error);
@@ -87,12 +91,16 @@ Singleton {
                 return;
             }
             const elapsed = Date.now() - root.initTimestamp;
-            if (elapsed > root.missingFileGracePeriod) {
+            if (elapsed > root.missingFileGracePeriod && !root.ready) {
                 fileWriteTimer.restart();
                 root.ready = true;
             } else {
                 missingFileRetryTimer.restart();
             }
+        }
+
+        Component.onDestruction: {
+            persistentStatesFileView.blockWrites = true;
         }
 
         adapter: JsonAdapter {
@@ -107,6 +115,8 @@ Singleton {
             }
 
             property JsonObject background: JsonObject {
+                property bool widgetsMigrated: false
+                property bool lockBehaviorMigrated: false
                 property JsonObject mediaMode: JsonObject {
                     property real userScrollOffset: 0
                 }

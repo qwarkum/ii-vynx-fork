@@ -13,20 +13,42 @@ AbstractBackgroundWidget {
 
     configEntryName: "clock"
 
-    implicitHeight: contentColumn.implicitHeight
-    implicitWidth: contentColumn.implicitWidth
+    property real lastStaticHeight: 200
+    property real lastStaticWidth: 300
 
-    readonly property string clockStyle: GlobalStates.screenLocked ? Config.options.background.widgets.clock.styleLocked : Config.options.background.widgets.clock.style
-    readonly property bool forceCenter: (GlobalStates.screenLocked && Config.options.lock.centerClock)
+    implicitHeight: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticHeight : contentColumn.implicitHeight
+    implicitWidth: (typeof bgRoot !== 'undefined' && bgRoot.lockAnimationActive) ? lastStaticWidth : contentColumn.implicitWidth
+
+    onImplicitHeightChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticHeight = contentColumn.implicitHeight;
+        }
+    }
+    onImplicitWidthChanged: {
+        if (typeof bgRoot === 'undefined' || !bgRoot.lockAnimationActive) {
+            lastStaticWidth = contentColumn.implicitWidth;
+        }
+    }
+
+    readonly property string clockStyle: {
+        if (root.styleOverride !== "") return root.styleOverride;
+        return GlobalStates.screenLocked ? Config.options.background.widgets.clock.styleLocked : Config.options.background.widgets.clock.style;
+    }
     readonly property bool shouldShow: (!Config.options.background.widgets.clock.showOnlyWhenLocked || GlobalStates.screenLocked)
     property bool wallpaperSafetyTriggered: false
+
+    visibleWhenLocked: root.lockBehavior === "keep" || root.lockBehavior === "center" || root.lockBehavior === "lockOnly" || (Config.options.lock.centerWidget === "clock")
+    opacity: {
+        if (!root.shouldShow) return 0;
+        if (root.lockBehavior === "lockOnly") return GlobalStates.screenLocked ? 1 : 0;
+        if (GlobalStates.screenLocked && !visibleWhenLocked) return 0;
+        return 1;
+    }
+
     needsColText: clockStyle === "digital"
-    targetX: forceCenter ? ((root.screenWidth - root.width) / 2) : ((placementStrategy === "free" || placementStrategy === "draggable") ? Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width)) : calculatedX)
-    targetY: forceCenter ? ((root.screenHeight - root.height) / 2) : ((placementStrategy === "free" || placementStrategy === "draggable") ? Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height)) : calculatedY)
-    visibleWhenLocked: true
 
     property var textHorizontalAlignment: {
-        if (!Config.options.background.widgets.clock.digital.adaptiveAlignment || root.forceCenter || Config.options.background.widgets.clock.digital.vertical) 
+        if (root.forceCenter || !Config.options.background.widgets.clock.digital.adaptiveAlignment || Config.options.background.widgets.clock.digital.vertical) 
             return Text.AlignHCenter;
         if (root.x < root.scaledScreenWidth / 3)
             return Text.AlignLeft;
@@ -40,11 +62,11 @@ AbstractBackgroundWidget {
         anchors.centerIn: parent
         spacing: 10
 
-        FadeLoader {
+        Loader {
             id: cookieClockLoader
             anchors.horizontalCenter: parent.horizontalCenter
-            shown: root.clockStyle === "cookie" && (root.shouldShow)
-            fade: false
+            active: root.clockStyle === "cookie"
+            visible: active && (root.shouldShow)
             sourceComponent: Column {
                 spacing: 10
                 CookieClock {
@@ -58,11 +80,11 @@ AbstractBackgroundWidget {
             }
         }
 
-        FadeLoader {
+        Loader {
             id: digitalClockLoader
             anchors.horizontalCenter: parent.horizontalCenter
-            shown: root.clockStyle === "digital" && (root.shouldShow)
-            fade: false
+            active: root.clockStyle === "digital"
+            visible: active && (root.shouldShow)
             sourceComponent: DigitalClock {
                 colText: root.colText
                 colTextSecondary: root.colTextSecondary
@@ -71,11 +93,11 @@ AbstractBackgroundWidget {
             }
         }
 
-        FadeLoader {
+        Loader {
             id: nagasakiClockLoader
             anchors.horizontalCenter: parent.horizontalCenter
-            shown: root.clockStyle === "nagasaki" && (root.shouldShow)
-            fade: false
+            active: root.clockStyle === "nagasaki"
+            visible: active && (root.shouldShow)
             sourceComponent: NagasakiClock {}
         }
         StatusRow {

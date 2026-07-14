@@ -11,6 +11,7 @@ Item {
     property real bottomRadius: 14
     property color fillColor: Appearance.colors.colLayer0
     property bool disableBehaviors: false
+    property real bleedTop: 4
 
     implicitWidth: bodyWidth
     implicitHeight: bodyHeight
@@ -19,8 +20,21 @@ Item {
         anchors.fill: parent
         antialiasing: true
         layer.enabled: true
-        layer.samples: 4
-        preferredRendererType: Shape.CurveRenderer
+        layer.samples: 8
+        preferredRendererType: Shape.GeometryRenderer
+
+        // Top bleed filler to prevent subpixel gaps at the screen edge
+        ShapePath {
+            strokeWidth: 0
+            strokeColor: "transparent"
+            fillColor: root.fillColor
+            
+            startX: 0; startY: -root.bleedTop
+            PathLine { x: root.width; y: -root.bleedTop }
+            PathLine { x: root.width; y: 0 }
+            PathLine { x: 0; y: 0 }
+            PathLine { x: 0; y: -root.bleedTop }
+        }
 
         ShapePath {
             id: path
@@ -30,8 +44,6 @@ Item {
             joinStyle: ShapePath.RoundJoin
             capStyle: ShapePath.FlatCap
 
-            // Using root.width/root.height instead of bodyWidth/bodyHeight
-            // to avoid double-animation when parent's width/height animate.
             readonly property real w:  root.width
             readonly property real h:  root.height
             readonly property real tr: root.topRadius

@@ -42,6 +42,24 @@ Singleton {
             "configPage": "widgets/DesktopClockWidgetConfig.qml"
         },
         {
+            "widgetId": "clock_wearos",
+            "name": Translation.tr("WearOS Clock (Watch)"),
+            "category": "Clock",
+            "qmlPath": Qt.resolvedUrl("clock/WearOSClockWidget.qml"),
+            "icon": "schedule",
+            "description": Translation.tr("A circular analog clock widget styled like a Wear OS watch face."),
+            "configPage": "widgets/DesktopWearOSClockWidgetConfig.qml"
+        },
+        {
+            "widgetId": "circular_media",
+            "name": Translation.tr("Circular Media (Watch)"),
+            "category": "Media",
+            "qmlPath": Qt.resolvedUrl("media/CircularMediaWidget.qml"),
+            "icon": "play_circle",
+            "description": Translation.tr("Circular media player widget styled like a smartwatch interface."),
+            "configPage": "widgets/DesktopCircularMediaWidgetConfig.qml"
+        },
+        {
             "widgetId": "media_circular",
             "name": Translation.tr("Circular Media"),
             "category": "Media",

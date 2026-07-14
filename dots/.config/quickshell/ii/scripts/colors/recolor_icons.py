@@ -207,8 +207,65 @@ def process_file(args):
 
 
 # ── Icon Scavenging (Phase 2) ───────────────────────────────────────────────
+def get_icon_name_variations(icon_name):
+    """
+    Generate common variations of an icon name to improve lookup success.
+    For example: 'zen' → ['zen', 'zen-browser', 'zen_browser', 'Zen', 'ZenBrowser']
+    """
+    variations = [icon_name]
+    
+    # Common substitutions
+    name_lower = icon_name.lower()
+    
+    # Try adding common suffixes for browsers/apps
+    if not any(suffix in name_lower for suffix in ['-browser', '_browser', '-app', '_app']):
+        variations.append(name_lower + '-browser')
+        variations.append(name_lower + '_browser')
+        variations.append(name_lower + '-app')
+        variations.append(name_lower + '_app')
+    
+    # Try removing common suffixes
+    for suffix in ['-browser', '_browser', '-app', '_app', '-icon', '_icon']:
+        if name_lower.endswith(suffix):
+            base = name_lower[:-len(suffix)]
+            if base not in variations:
+                variations.append(base)
+    
+    # Try different separators
+    if '-' in icon_name:
+        variations.append(icon_name.replace('-', '_'))
+    if '_' in icon_name:
+        variations.append(icon_name.replace('_', '-'))
+    
+    # Try camelCase/PascalCase variations
+    if '-' in icon_name or '_' in icon_name:
+        parts = re.split(r'[-_]', icon_name)
+        pascal = ''.join(p.capitalize() for p in parts)
+        variations.append(pascal)
+        variations.append(pascal.lower())
+    
+    return variations
+
+
 def find_icon_in_themes(icon_name, theme_dirs):
     """Search system icon themes for icon_name, return best resolution path."""
+    # Try the exact name first
+    result = _find_icon_exact(icon_name, theme_dirs)
+    if result:
+        return result
+    
+    # Try variations if exact name not found
+    for variation in get_icon_name_variations(icon_name):
+        if variation != icon_name:
+            result = _find_icon_exact(variation, theme_dirs)
+            if result:
+                return result
+    
+    return None
+
+
+def _find_icon_exact(icon_name, theme_dirs):
+    """Search system icon themes for exact icon_name match."""
     for theme_dir in theme_dirs:
         if not os.path.isdir(theme_dir):
             continue

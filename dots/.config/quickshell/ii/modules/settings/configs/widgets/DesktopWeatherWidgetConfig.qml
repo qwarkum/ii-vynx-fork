@@ -48,66 +48,79 @@ ContentPage {
 
         Item {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: !Config.options.background.widgets.weather.enable
+            implicitHeight: 250
+            visible: !Config.isWidgetActive("weather_default") && !Config.isWidgetActive("weather_expressive")
 
             PagePlaceholder {
                 anchors.fill: parent
                 icon: "cloud_off"
                 shape: MaterialShape.Shape.Circle
                 title: Translation.tr("Weather widget disabled")
-                description: Translation.tr("Enable the desktop weather widget in Desktop Widgets settings to use this page.")
+                description: Translation.tr("Enable a weather widget in Desktop Widgets settings to use this page.")
             }
         }
 
-        ContentSubsection {
-            title: Translation.tr("Weather style")
-            icon: "style"
+        ColumnLayout {
             Layout.fillWidth: true
+            spacing: 4
+            visible: Config.isWidgetActive("weather_default") || Config.isWidgetActive("weather_expressive")
 
-            ConfigSelectionArray {
-                currentValue: Config.options.background.widgets.weather.style
-                onSelected: newValue => {
-                    Config.options.background.widgets.weather.style = newValue;
+            ContentSubsection {
+                visible: Config.isWidgetActive("weather_expressive")
+                title: Translation.tr("Background shape")
+                icon: "category"
+                Layout.fillWidth: true
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.background.widgets.weather.backgroundShape
+                    onSelected: newValue => {
+                        Config.options.background.widgets.weather.backgroundShape = newValue;
+                    }
+                    options: ["Circle", "Pill", "Oval", "SemiCircle", "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided", "Ghostish", "Puffy", "PuffyDiamond", "Bun", "SoftBurst", "Sunny", "VerySunny"].map(icon => {
+                        return {
+                            displayName: "",
+                            shape: icon,
+                            value: icon
+                        };
+                    })
                 }
-                options: [
-                    { displayName: Translation.tr("Default"), icon: "cloud", value: "default" },
-                    { displayName: Translation.tr("Expressive"), icon: "palette", value: "expressive" }
-                ]
             }
-        }
+            
+            ContentSubsectionLabel {
+                visible: !Config.isWidgetActive("weather_expressive") && Config.isWidgetActive("weather_default")
+                text: Translation.tr("No custom settings available for the Default style.")
+            }
+            Item {
+                Layout.preferredHeight: 16
+            }
 
-        ContentSubsection {
-            visible: Config.options.background.widgets.weather.style === "expressive"
-            title: Translation.tr("Background shape")
-            icon: "category"
-            Layout.fillWidth: true
+            // Visual Options (Shadows)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
 
-            ConfigSelectionArray {
-                currentValue: Config.options.background.widgets.weather.backgroundShape
-                onSelected: newValue => {
-                    Config.options.background.widgets.weather.backgroundShape = newValue;
+                ContentSubsectionLabel {
+                    text: Translation.tr("Visual Options")
                 }
-                options: ["Circle", "Pill", "Oval", "SemiCircle", "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided", "Ghostish", "Puffy", "PuffyDiamond", "Bun", "SoftBurst", "Sunny", "VerySunny"].map(icon => {
-                    return {
-                        displayName: "",
-                        shape: icon,
-                        value: icon
-                    };
-                })
-            }
-        }
 
-        ConfigSelectionArray {
-            currentValue: Config.options.background.widgets.weather.placementStrategy
-            onSelected: newValue => {
-                Config.options.background.widgets.weather.placementStrategy = newValue;
+                ConfigSwitch {
+                    buttonIcon: "wb_sunny"
+                    text: Translation.tr("Enable Shadows")
+                    checked: Config.options.background.widgets.enableShadows ?? true
+                    onCheckedChanged: {
+                        Config.options.background.widgets.enableShadows = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "blur_on"
+                    text: Translation.tr("Enable Inner Shadows")
+                    checked: Config.options.background.widgets.enableInnerShadow ?? true
+                    onCheckedChanged: {
+                        Config.options.background.widgets.enableInnerShadow = checked;
+                    }
+                }
             }
-            options: [
-                { displayName: Translation.tr("Draggable"), icon: "pan_tool", value: "draggable" },
-                { displayName: Translation.tr("Least busy"), icon: "low_priority", value: "least_busy" },
-                { displayName: Translation.tr("Most busy"), icon: "priority_high", value: "most_busy" }
-            ]
         }
     }
 }

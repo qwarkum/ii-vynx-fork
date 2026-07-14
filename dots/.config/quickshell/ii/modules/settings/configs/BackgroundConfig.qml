@@ -83,15 +83,27 @@ ContentPage {
             }
         }
 
-        ConfigSpinBox {
-            icon: "loupe"
+        ConfigSlider {
+            buttonIcon: "loupe"
             text: Translation.tr("Preferred wallpaper zoom (%)")
-            value: Config.options.background.parallax.workspaceZoom * 100
-            from: 10
-            to: 200
+            from: 100
+            to: 150
             stepSize: 1
+            value: Config.options.background.parallax.workspaceZoom * 100
             onValueChanged: {
                 Config.options.background.parallax.workspaceZoom = value / 100;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "timer_off"
+            text: Translation.tr("Disable clock animation on lock")
+            checked: Config.options.background.widgets.clock.disableAnimationOnLock
+            onCheckedChanged: {
+                Config.options.background.widgets.clock.disableAnimationOnLock = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Skip loading the clock widget during lock screen for better animation performance.")
             }
         }
     }
@@ -106,6 +118,67 @@ ContentPage {
             checked: Config.options.background.animateWallpaperChanges
             onCheckedChanged: {
                 Config.options.background.animateWallpaperChanges = checked;
+            }
+        }
+
+        ContentSubsection {
+            visible: Config.options.background.animateWallpaperChanges
+            title: Translation.tr("Transition style")
+            icon: "style"
+            Layout.fillWidth: true
+
+            ConfigSelectionArray {
+                currentValue: Config.options.background.wallpaperAnimation
+                onSelected: newValue => {
+                    Config.options.background.wallpaperAnimation = newValue;
+                }
+                options: [
+                    {
+                        displayName: Translation.tr("Random"),
+                        icon: "shuffle",
+                        value: "random"
+                    },
+                    {
+                        displayName: Translation.tr("Crossfade"),
+                        icon: "blur_on",
+                        value: ""
+                    },
+                    {
+                        displayName: Translation.tr("Circle Pit"),
+                        icon: "circle",
+                        value: "circlePit"
+                    },
+                    {
+                        displayName: Translation.tr("Circle Select"),
+                        icon: "radio_button_checked",
+                        value: "circleSelect"
+                    },
+                    {
+                        displayName: Translation.tr("Magic"),
+                        icon: "auto_awesome",
+                        value: "magic"
+                    },
+                    {
+                        displayName: Translation.tr("Peel"),
+                        icon: "sticky_note_2",
+                        value: "Peel"
+                    },
+                    {
+                        displayName: Translation.tr("Transition"),
+                        icon: "swap_horiz",
+                        value: "transition"
+                    },
+                    {
+                        displayName: Translation.tr("Pixelate"),
+                        icon: "grid_on",
+                        value: "pixelate"
+                    },
+                    {
+                        displayName: Translation.tr("Stripes"),
+                        icon: "view_column",
+                        value: "stripes"
+                    }
+                ]
             }
         }
 
@@ -132,6 +205,68 @@ ContentPage {
             value: Config.options.background.blurWhenWindowsOpenRadius ?? 80
             onValueChanged: {
                 Config.options.background.blurWhenWindowsOpenRadius = value;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "gradient"
+            text: Translation.tr("Gradient blur effect on wallpaper")
+            checked: Config.options.background.gradientBlur.enable
+            onCheckedChanged: {
+                Config.options.background.gradientBlur.enable = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Apply a gradient blur effect across the wallpaper for a smooth transition from sharp to blurred.")
+            }
+        }
+
+        ConfigSlider {
+            buttonIcon: "lens_blur"
+            text: Translation.tr("Gradient blur intensity")
+            visible: Config.options.background.gradientBlur.enable
+            usePercentTooltip: true
+            from: 0
+            to: 100
+            stepSize: 1
+            value: Config.options.background.gradientBlur.radius ?? 50
+            onValueChanged: {
+                Config.options.background.gradientBlur.radius = value;
+            }
+        }
+
+        ContentSubsection {
+            visible: Config.options.background.gradientBlur.enable
+            title: Translation.tr("Gradient blur direction")
+            icon: "swap_vert"
+            Layout.fillWidth: true
+
+            ConfigSelectionArray {
+                currentValue: Config.options.background.gradientBlur.direction ?? "top-to-bottom"
+                onSelected: newValue => {
+                    Config.options.background.gradientBlur.direction = newValue;
+                }
+                options: [
+                    {
+                        displayName: Translation.tr("Top → Bottom"),
+                        icon: "arrow_downward",
+                        value: "top-to-bottom"
+                    },
+                    {
+                        displayName: Translation.tr("Bottom → Top"),
+                        icon: "arrow_upward",
+                        value: "bottom-to-top"
+                    },
+                    {
+                        displayName: Translation.tr("Left → Right"),
+                        icon: "arrow_forward",
+                        value: "left-to-right"
+                    },
+                    {
+                        displayName: Translation.tr("Right → Left"),
+                        icon: "arrow_back",
+                        value: "right-to-left"
+                    }
+                ]
             }
         }
 
@@ -190,21 +325,17 @@ ContentPage {
                 text: Translation.tr("Shows scaled ScreencopyView of windows zooming out with the wallpaper when the overview opens.\nWindows on the active workspace follow the wallpaper zoom animation.\nWorkspace switching slides the window previews alongside the workspace animation.")
             }
         }
-    }
-
-    ContentSection {
-        title: Translation.tr("Wallpaper settings")
-        icon: "wallpaper"
 
         ConfigSwitch {
-            buttonIcon: "photo_size_select_large"
-            text: Translation.tr("Smooth wallpapers")
-            checked: Config.options.background.scaleLargeWallpapers
+            visible: Config.options.background.zoomOutEnabled && Config.options.background.zoomOutStyle === 0 && Config.options.background.windowZoomOnOverview
+            buttonIcon: "videocam"
+            text: Translation.tr("Keep screencopy live (no freeze)")
+            checked: Config.options.background.windowZoomLiveCapture
             onCheckedChanged: {
-                Config.options.background.scaleLargeWallpapers = checked;
+                Config.options.background.windowZoomLiveCapture = checked;
             }
             StyledToolTip {
-                text: Translation.tr("Reduces the resolution of wallpapers larger than the screen to save memory. Disabling i you can have some jagged edges on the wallpaper.")
+                text: Translation.tr("When enabled, window previews stay live instead of freezing on overview open.\nDisable for better performance (freezes capture on open).")
             }
         }
     }

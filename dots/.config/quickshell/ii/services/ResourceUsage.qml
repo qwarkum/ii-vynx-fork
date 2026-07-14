@@ -315,13 +315,13 @@ Singleton {
 
     Timer {
         id: diskSpaceTimer
-        interval: 1000
+        interval: 30000
         repeat: true
         running: true
         onTriggered: {
             diskSpaceProc.running = false
             diskSpaceProc.running = true
-            interval = Config.options?.resources?.diskInterval ?? 5000
+            interval = Config.options?.resources?.diskInterval ?? 30000
         }
     }
 

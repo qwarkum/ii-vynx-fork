@@ -46,11 +46,35 @@ ContentPage {
     }
 
     ContentSection {
+        icon: "style"
+        title: Translation.tr("Style & Layout")
+
+        ContentSubsection {
+            title: Translation.tr("Battery layout")
+            icon: "battery_full"
+            tooltip: Translation.tr("Choose the layout for the Battery widget in the bar")
+            ConfigSelectionArray {
+                currentValue: Config.options.bar.styles.battery
+                onSelected: newValue => {
+                    Config.options.bar.styles.battery = newValue;
+                }
+                options: [
+                    { displayName: Translation.tr("Classic"),    icon: "style",     value: "classic" },
+                    { displayName: Translation.tr("Material 3"), icon: "interests", value: "material" },
+                    { displayName: Translation.tr("Expressive"), icon: "fluid_med", value: "expressive" }
+                ]
+            }
+        }
+
+    }
+
+    ContentSection {
         icon: "battery_full"
         title: Translation.tr("Battery")
 
         ContentSubsection {
             title: Translation.tr("Battery Icon Style")
+            enabled: Config.options.bar.styles.battery !== "material"
             icon: "style"
             Layout.fillWidth: true
 
@@ -83,7 +107,7 @@ ContentPage {
 
         ContentSubsection {
             title: Translation.tr("Show Percentage")
-            enabled: Config.options.battery.style === "windows11"
+            enabled: Config.options.battery.style === "windows11" && Config.options.bar.styles.battery !== "material"
             icon: "percent"
             Layout.fillWidth: true
 
@@ -106,14 +130,65 @@ ContentPage {
                 ]
 
                 currentIndex: {
-                    const val = Config.options.battery.showPercentage || "off";
+                    const val = Config.options.bar.battery.showPercentage || "off";
                     const index = model.findIndex(item => item.value === val);
                     return index !== -1 ? index : 0;
                 }
 
                 onActivated: index => {
-                    Config.options.battery.showPercentage = model[index].value;
+                    Config.options.bar.battery.showPercentage = model[index].value;
                 }
+            }
+        }
+    }
+
+    ContentSection {
+        enabled: Config.options.bar.styles.battery === "material"
+        icon: "interests"
+        title: Translation.tr("Material 3 Design")
+
+        ConfigSwitch {
+            buttonIcon: "percent"
+            text: Translation.tr("Show battery percentage inside the battery")
+            checked: Config.options.bar.battery.showPercentageInsideBattery
+            onCheckedChanged: {
+                Config.options.bar.battery.showPercentageInsideBattery = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "flip"
+            text: Translation.tr("Move secondary component to the opposite")
+            checked: Config.options.bar.battery.secondaryOpposite
+            onCheckedChanged: {
+                Config.options.bar.battery.secondaryOpposite = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_checked"
+            text: Translation.tr("Show primary component")
+            checked: Config.options.bar.battery.showPrimary
+            onCheckedChanged: {
+                Config.options.bar.battery.showPrimary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_unchecked"
+            text: Translation.tr("Show secondary component")
+            checked: Config.options.bar.battery.showSecondary
+            onCheckedChanged: {
+                Config.options.bar.battery.showSecondary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "sync"
+            text: Translation.tr("Swap secondary component with the primary")
+            checked: Config.options.bar.battery.swapPrimaryWithSecondary
+            onCheckedChanged: {
+                Config.options.bar.battery.swapPrimaryWithSecondary = checked;
             }
         }
     }

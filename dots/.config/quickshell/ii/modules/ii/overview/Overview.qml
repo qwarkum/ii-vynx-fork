@@ -89,7 +89,10 @@ Scope {
                         Timer {
                             id: exitAnimTimer
                             interval: root.animDurationExit + 30
-                            onTriggered: root.exitAnimating = false
+                            onTriggered: {
+                                root.exitAnimating = false;
+                                searchWidget.cancelSearch();
+                            }
                         }
 
                         Connections {
@@ -131,7 +134,7 @@ Scope {
                             left: true
                             right: true
                         }
-                        property int barSize: Config.options.bar.vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.barHeight
+                        property int barSize: Config.options.bar.vertical ? Appearance.sizes.verticalBarWindowWidth : Appearance.sizes.barHeight
                         property int margin: isZoomInStyle ? barSize : barSize * 2
                         margins {
                             top: -margin * 2
@@ -194,18 +197,20 @@ Scope {
 
                             Item { // Wrapper for animation
                                 id: searchWidgetWrapper
-                                implicitHeight: searchWidget.implicitHeight
-                                implicitWidth: searchWidget.implicitWidth
+                                readonly property bool isNotchMode: Config.ready && Config.options.bar.dynamicIsland.notchMode.enable
+                                implicitHeight: isNotchMode ? GlobalStates.activeSearchHeight : searchWidget.implicitHeight
+                                implicitWidth: isNotchMode ? GlobalStates.activeSearchWidth : searchWidget.implicitWidth
                                 z: 999
+                                visible: !isNotchMode
 
                                 // Slide from absolute top of screen — offset large enough to hide above top edge
-                                readonly property real slideOffset: -(implicitHeight + root.margin * 2 + Appearance.sizes.elevationMargin + 40)
+                                readonly property real slideOffset: (Config.options.bar.bottom ? 1 : -1) * (implicitHeight + root.margin * 2 + Appearance.sizes.elevationMargin + 40)
 
                                 // Driven directly — no Behavior, to avoid QML skipping anim while invisible
                                 property real slideY: slideOffset
                                 property real slideOpacity: 0.0
 
-                                opacity: slideOpacity
+                                opacity: isNotchMode ? 0.0 : slideOpacity
                                 transform: Translate {
                                     y: searchWidgetWrapper.slideY
                                 }
@@ -311,11 +316,11 @@ Scope {
                                     }
                                 }
 
-                                anchors {
-                                    horizontalCenter: parent.horizontalCenter
-                                    top: parent.top
-                                    topMargin: root.margin * 2 + Appearance.sizes.elevationMargin
-                                }
+                                width: implicitWidth
+                                height: implicitHeight
+                                y: Config.options.bar.bottom ? (parent.height - height - (root.margin * 2 + Appearance.sizes.elevationMargin)) : (root.margin * 2 + Appearance.sizes.elevationMargin)
+                                anchors.horizontalCenter: parent.horizontalCenter
+
                                 SearchWidget {
                                     id: searchWidget
                                     anchors.horizontalCenter: parent.horizontalCenter
@@ -327,7 +332,8 @@ Scope {
 
                             Loader { // Classic overview
                                 id: overviewLoader
-                                anchors.top: searchWidgetWrapper.bottom
+                                y: Config.options.bar.bottom ? (searchWidgetWrapper.y - height - 10) : (searchWidgetWrapper.y + searchWidgetWrapper.height + 10)
+                                height: implicitHeight
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 active: (Config?.options.overview.enable ?? true) && !root.isScrollingLayout
 
@@ -356,7 +362,7 @@ Scope {
                                 }
 
                                 transform: Translate {
-                                    y: overviewLoader.isOverviewVisible ? 0 : 30
+                                    y: overviewLoader.isOverviewVisible ? 0 : (Config.options.bar.bottom ? -30 : 30)
                                     Behavior on y {
                                         NumberAnimation {
                                             duration: overviewLoader.isOverviewVisible ? root.animDurationEnter : root.animDurationExit
@@ -402,7 +408,7 @@ Scope {
                                 }
 
                                 transform: Translate {
-                                    y: scrollingOverviewLoader.isOverviewVisible ? 0 : 30
+                                    y: scrollingOverviewLoader.isOverviewVisible ? 0 : (Config.options.bar.bottom ? -30 : 30)
                                     Behavior on y {
                                         NumberAnimation {
                                             duration: scrollingOverviewLoader.isOverviewVisible ? root.animDurationEnter : root.animDurationExit
