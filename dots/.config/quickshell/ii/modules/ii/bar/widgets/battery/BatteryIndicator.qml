@@ -11,6 +11,8 @@ MouseArea {
     id: root
     property bool borderless: Config.options.bar.borderless
     property bool disablePopup: false
+    property bool isMaterial: Config.options.bar.styles.battery === "material"
+    property bool vertical: Config.options.bar.vertical
 
     readonly property var chargeState: Battery.chargeState
     readonly property bool isCharging: Battery.isCharging
@@ -41,254 +43,377 @@ MouseArea {
             }
         }
     }
-
+    
     implicitWidth: {
-        if (Config.options.battery.style === "android16")
-            return android16Battery.width + 12;
-        if (Config.options.battery.style === "oneui")
-            return oneuiBattery.implicitWidth + 12;
-        return batteryContainerOuter.implicitWidth + 12;
+        if (root.isMaterial) {
+            return rowLoader.item?.width - 1
+        }
+        if (Config.options.battery.style === "android16") {
+            return rowLoader.item?.width + 12;
+        }
+        if (Config.options.battery.style === "oneui") {
+            return rowLoader.item?.implicitWidth + 12;
+        }
+        return rowLoader.item?.implicitWidth + 12;
     }
     implicitHeight: Appearance.sizes.baseBarHeight
-
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
 
-    ClippedProgressBar {
-        id: oneuiBattery
-        visible: Config.options.battery.style === "oneui"
+    Loader {
+        id: rowLoader
+        active: !root.vertical
+        visible: active
         anchors.centerIn: parent
-        value: root.percentage
-        highlightColor: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
+        sourceComponent: root.isMaterial ? rowMaterial : rowDefault
 
-        Item {
-            anchors.centerIn: parent
-            width: oneuiBattery.valueBarWidth
-            height: oneuiBattery.valueBarHeight
-
-            RowLayout {
-                anchors {
-                    horizontalCenter: parent.horizontalCenter
-                    bottom: parent.bottom
-                    bottomMargin: (parent.height - height) / 2
-                }
-                spacing: 0
-
-                MaterialSymbol {
-                    id: boltIcon
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: -2
-                    Layout.rightMargin: -2
-                    fill: 1
-                    text: "bolt"
-                    iconSize: Appearance.font.pixelSize.smaller
-                    visible: root.effectivelyCharging && root.percentage < 1 // TODO: animation
-                }
-                StyledText {
-                    Layout.alignment: Qt.AlignVCenter
-                    font: oneuiBattery.font
-                    text: oneuiBattery.text
-                }
-            }
-        }
-    }
-
-    Item {
-        id: android16Battery
-        visible: Config.options.battery.style === "android16"
-        anchors.centerIn: parent
-        width: 29 // 26 (bar) + 1 (spacing) + 2 (tip)
-        height: 14
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 1
-
-            ClippedProgressBar {
-                id: batteryProgress
-                width: 26
-                height: 14
-
-                radius: 4.5
-
-                value: root.percentage
-                highlightColor: {
-                    if (root.isLow && !root.effectivelyCharging)
-                        return Appearance.m3colors.m3error;
-                    if (root.effectivelyCharging)
-                        return '#55c35a';
-                    if (root.isPowerSaving)
-                        return "#FFC917";
-                    if (root.isPerformance)
-                        return "#42A5F5";
-                    return root.textColor;
-                }
-                trackColor: {
-                    if (root.isLow && !root.effectivelyCharging)
-                        return Appearance.m3colors.m3errorContainer;
-                    return Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.3);
+        Component {
+            id: rowDefault
+            Item {
+                implicitWidth: {
+                    if (Config.options.battery.style === "android16")
+                        return android16Battery.width;
+                    if (Config.options.battery.style === "oneui")
+                        return oneuiBattery.implicitWidth;
+                    return batteryContainerOuter.implicitWidth;
                 }
 
-                // Custom text mask to include the bolt icon
-                textMask: Item {
-                    width: 26
+                // ─── OneUI style ──────────────────────────────────────────
+                ClippedProgressBar {
+                    id: oneuiBattery
+                    visible: Config.options.battery.style === "oneui"
+                    anchors.centerIn: parent
+                    value: root.percentage
+                    highlightColor: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 2
+
+                        MaterialSymbol {
+                            id: boltIcon
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.leftMargin: -2
+                            Layout.rightMargin: -2
+                            fill: 1
+                            text: "bolt"
+                            iconSize: Appearance.font.pixelSize.smaller
+                            visible: root.effectivelyCharging && root.percentage < 1
+                        }
+                        StyledText {
+                            Layout.alignment: Qt.AlignVCenter
+                            font: oneuiBattery.font
+                            text: oneuiBattery.text
+                        }
+                    }
+                }
+
+                // ─── Android 16 style ────────────────────────────────────
+                Item {
+                    id: android16Battery
+                    visible: Config.options.battery.style === "android16"
+                    anchors.centerIn: parent
+                    width: 29
                     height: 14
 
-                    StyledText {
+                    Row {
                         anchors.centerIn: parent
-                        font.pixelSize: 10
+                        spacing: 1
+
+                        ClippedProgressBar {
+                            id: batteryProgress
+                            width: 26
+                            height: 14
+                            radius: 4.5
+                            value: root.percentage
+                            highlightColor: {
+                                if (root.isLow && !root.effectivelyCharging)
+                                    return Appearance.m3colors.m3error;
+                                if (root.effectivelyCharging)
+                                    return '#55c35a';
+                                if (root.isPowerSaving)
+                                    return "#FFC917";
+                                if (root.isPerformance)
+                                    return "#42A5F5";
+                                return root.textColor;
+                            }
+                            trackColor: {
+                                if (root.isLow && !root.effectivelyCharging)
+                                    return Appearance.m3colors.m3errorContainer;
+                                return Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.3);
+                            }
+
+                            textMask: Item {
+                                width: 26
+                                height: 14
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    text: batteryProgress.text
+                                    color: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3onError : root.textColor
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: batteryTip
+                            width: 2
+                            height: 6
+                            anchors.verticalCenter: parent.verticalCenter
+                            radius: 1
+                            color: (root.percentage >= 0.98) ? batteryProgress.highlightColor : batteryProgress.trackColor
+                        }
+                    }
+
+                    MaterialSymbol {
+                        visible: root.effectivelyCharging
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.right
+                        anchors.horizontalCenterOffset: -1
+                        text: "bolt"
+                        iconSize: 17
+                        fill: 1
+                        color: Appearance.colors.colLayer0
+                        z: 2
+                    }
+
+                    MaterialSymbol {
+                        visible: root.effectivelyCharging
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.right
+                        anchors.horizontalCenterOffset: -1
+                        text: "bolt"
+                        iconSize: 16
+                        fill: 1
+                        color: root.textColor
+                        z: 3
+                    }
+                }
+
+                // ─── Default (legacy) style ─────────────────────────────
+                Row {
+                    id: batteryContainerOuter
+                    visible: Config.options.battery.style !== "android16" && Config.options.battery.style !== "oneui"
+                    anchors.centerIn: parent
+                    spacing: 7
+
+                    StyledText {
+                        visible: (Config.options.bar.battery.showPercentage === "left")
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: (Config.options.bar.battery.showPercentage === "left" || Config.options.bar.battery.showPercentage === "right") ? 0.5 : 0
+                        text: Math.round(root.percentage * 100) + "%"
+                        color: root.textColor
+                        font.pixelSize: Appearance.font.pixelSize.small
                         font.weight: Font.Bold
-                        text: batteryProgress.text
-                        color: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3onError : root.textColor
+                    }
+
+                    Item {
+                        id: batteryContainer
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 14
+                        width: height * (28 / 13)
+
+                        Item {
+                            id: fillClipping
+                            clip: true
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.leftMargin: 3
+
+                            readonly property real clampedPct: Math.max(0, Math.min(1, root.percentage))
+                            width: (batteryContainer.width - 9) * clampedPct
+                            z: 0
+
+                            Rectangle {
+                                y: 3
+                                anchors.left: parent.left
+                                height: 8
+                                width: batteryContainer.width - 9
+                                radius: 2
+                                color: {
+                                    if (root.isCritical && !root.effectivelyCharging)
+                                        return "#E53935";
+                                    if (root.isLow && !root.effectivelyCharging)
+                                        return "#FB8C00";
+                                    if (root.effectivelyCharging)
+                                        return "#43A047";
+                                    if (root.isPowerSaving)
+                                        return "#FFC917";
+                                    if (root.isPerformance)
+                                        return "#42A5F5";
+                                    return root.textColor;
+                                }
+                            }
+                        }
+
+                        CustomIcon {
+                            anchors.fill: parent
+                            source: "Battery.svg"
+                            colorize: true
+                            color: {
+                                if (root.isCritical && !root.effectivelyCharging)
+                                    return Appearance.m3colors.m3error;
+                                if (root.isLow && !root.effectivelyCharging)
+                                    return Appearance.m3colors.m3error;
+                                return root.textColor;
+                            }
+                            z: 1
+                        }
+
+                        MaterialSymbol {
+                            visible: root.effectivelyCharging
+                            anchors.top: parent.top
+                            anchors.topMargin: -5
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
+                            text: "bolt"
+                            iconSize: 17
+                            fill: 1
+                            color: Appearance.colors.colLayer0
+                            z: 2
+                        }
+
+                        MaterialSymbol {
+                            visible: root.effectivelyCharging
+                            anchors.top: parent.top
+                            anchors.topMargin: -6
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
+                            text: "bolt"
+                            iconSize: 16
+                            fill: 1
+                            color: root.textColor
+                            z: 3
+                        }
+                    }
+
+                    StyledText {
+                        visible: (Config.options.bar.battery.showPercentage === "right")
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Math.round(root.percentage * 100) + "%"
+                        color: root.textColor
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.weight: Font.Bold
                     }
                 }
             }
-
-            // Battery Tip
-            Rectangle {
-                id: batteryTip
-                width: 2
-                height: 6
-                anchors.verticalCenter: parent.verticalCenter
-                radius: 1
-                color: (root.percentage >= 0.98) ? batteryProgress.highlightColor : batteryProgress.trackColor
-            }
         }
 
-        MaterialSymbol {
-            visible: root.effectivelyCharging
+        Component {
+            id: rowMaterial
 
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.horizontalCenter: parent.right
-            anchors.horizontalCenterOffset: -1
+            MaterialBarWidget {
+                primaryComponent: batteryIndicatorComponent
+                secondaryComponent: batteryPercentageComponent
+                secondaryExtraMargin: 4
+                componentsPadding: 6
 
-            text: "bolt"
-            iconSize: 17
-            fill: 1
-            color: Appearance.colors.colLayer0
-            z: 2
-        }
+                showSecondary: Config.options.bar.battery.showSecondary
+                secondaryOpposite: Config.options.bar.battery.secondaryOpposite
+                swapPrimaryWithSecondary: Config.options.bar.battery.swapPrimaryWithSecondary
+                showPrimary: Config.options.bar.battery.showPrimary
 
-        MaterialSymbol {
-            visible: root.effectivelyCharging
+                Component {
+                    id: batteryPercentageComponent
+                    StyledText {
+                        id: text
+                        text: Math.round(root.percentage * 100)
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: 1
+                        color: Config.options.bar.battery.swapPrimaryWithSecondary ? Appearance.colors.colOnPrimary : Appearance.colors.colPrimary
+                        font.family: Appearance.font.family.main
+                        font.features: { "tnum": 1 }
+                        font.pixelSize: Appearance.font.pixelSize.small
+                    }
+                }
 
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.horizontalCenter: parent.right
-            anchors.horizontalCenterOffset: -1
+                Component {
+                    id: batteryIndicatorComponent
+                    Item {
+                        id: android16Battery
+                        anchors.centerIn: parent
+                        width: 26
+                        height: 14
+                        implicitWidth: width
 
-            text: "bolt"
-            iconSize: 16
-            fill: 1
-            color: root.textColor
-            z: 3
-        }
-    }
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 1
 
-    Row {
-        id: batteryContainerOuter
-        visible: Config.options.battery.style !== "android16" && Config.options.battery.style !== "oneui"
-        anchors.centerIn: parent
-        spacing: 7
+                            ClippedProgressBar {
+                                id: batteryProgress
+                                width: 26
+                                height: 14
 
-        StyledText {
-            visible: (Config.options.battery.showPercentage === "left")
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: (Config.options.battery.showPercentage === "left" || Config.options.battery.showPercentage === "right") ? 0.5 : 0
-            text: Math.round(root.percentage * 100) + "%"
-            color: root.textColor
-            font.pixelSize: Appearance.font.pixelSize.small
-            font.weight: Font.Bold
-        }
+                                radius: 4.5
 
-        Item {
-            id: batteryContainer
-            anchors.verticalCenter: parent.verticalCenter
-            height: 14
-            width: height * (28 / 13)
+                                value: root.percentage
+                                highlightColor: {
+                                    if (root.isLow && !root.effectivelyCharging)
+                                        return Appearance.m3colors.m3error;
+                                    if (root.effectivelyCharging)
+                                        return '#55c35a';
+                                    if (root.isPowerSaving)
+                                        return "#FFC917";
+                                    if (root.isPerformance)
+                                        return "#42A5F5";
+                                    var color = Config.options.bar.battery.swapPrimaryWithSecondary ? Appearance.colors.colPrimary : Appearance.colors.colPrimaryContainerHover
+                                    return color;
+                                }
+                                trackColor: {
+                                    if (root.isLow && !root.effectivelyCharging)
+                                        return Appearance.m3colors.m3errorContainer;
+                                    var color = Config.options.bar.battery.swapPrimaryWithSecondary ? Appearance.colors.colPrimary : Appearance.colors.colPrimaryContainerHover
+                                    var opacity = Config.options.bar.battery.swapPrimaryWithSecondary ? 0.3 : 0.6
+                                    return Qt.rgba(color.r, color.g, color.b, opacity);
+                                }
 
-            Item {
-                id: fillClipping
-                clip: true
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.leftMargin: 3
+                                // Custom text mask to include the bolt icon
+                                textMask: Item {
+                                    width: 26
+                                    height: 14
 
-                readonly property real clampedPct: Math.max(0, Math.min(1, root.percentage))
-                width: (batteryContainer.width - 9) * clampedPct
-                z: 0
+                                    StyledText {
+                                        visible: Config.options.bar.battery.showPercentageInsideBattery
+                                        anchors.centerIn: parent
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        text: batteryProgress.text
+                                        color: (root.isLow && !root.effectivelyCharging) ? Appearance.m3colors.m3onError : root.textColor
+                                    }
+                                }
+                            }
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 2
+                            // Battery Tip
+                            Rectangle {
+                                id: batteryTip
+                                width: 2
+                                height: 6
+                                anchors.verticalCenter: parent.verticalCenter
+                                radius: 1
+                                color: (root.percentage >= 0.98) ? batteryProgress.highlightColor : batteryProgress.trackColor
+                            }
+                        }
 
-                    color: {
-                        if (root.isCritical && !root.effectivelyCharging)
-                            return "#E53935";
-                        if (root.isLow && !root.effectivelyCharging)
-                            return "#FB8C00";
-                        if (root.effectivelyCharging)
-                            return "#43A047";
-                        if (root.isPowerSaving)
-                            return "#FFC917";
-                        if (root.isPerformance)
-                            return "#42A5F5";
-                        return root.textColor;
+                        MaterialSymbol {
+                            visible: root.effectivelyCharging
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.horizontalCenter: parent.right
+                            anchors.horizontalCenterOffset: -1
+
+                            text: "bolt"
+                            iconSize: 16
+                            fill: 1
+                            style: Text.Outline
+                            styleColor: batteryProgress.trackColor
+                            color: root.textColor
+                            z: 2
+                        }
                     }
                 }
             }
-
-            CustomIcon {
-                anchors.fill: parent
-                source: "Battery.svg"
-                colorize: true
-                color: {
-                    if (root.isCritical && !root.effectivelyCharging)
-                        return Appearance.m3colors.m3error;
-                    if (root.isLow && !root.effectivelyCharging)
-                        return Appearance.m3colors.m3error;
-                    return root.textColor;
-                }
-                z: 1
-            }
-
-            MaterialSymbol {
-                visible: root.effectivelyCharging
-
-                anchors.top: parent.top
-                anchors.topMargin: -5
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
-
-                text: "bolt"
-                iconSize: 17
-                fill: 1
-                color: Appearance.colors.colLayer0
-                z: 2
-            }
-
-            MaterialSymbol {
-                visible: root.effectivelyCharging
-
-                anchors.top: parent.top
-                anchors.topMargin: -6
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.horizontalCenterOffset: -(parent.width * (4 / 28)) / 2
-
-                text: "bolt"
-                iconSize: 16
-                fill: 1
-                color: root.textColor
-                z: 3
-            }
-        }
-
-        StyledText {
-            visible: (Config.options.battery.showPercentage === "right")
-            anchors.verticalCenter: parent.verticalCenter
-            text: Math.round(root.percentage * 100) + "%"
-            color: root.textColor
-            font.pixelSize: Appearance.font.pixelSize.small
-            font.weight: Font.Bold
         }
     }
 

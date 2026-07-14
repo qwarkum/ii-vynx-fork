@@ -12,13 +12,14 @@ MouseArea {
     id: root
     property bool vertical: false
     property bool uppercaseLayout: Config.options.bar.keyboardLayout.uppercaseLayout
+    property bool isMaterial: Config.options.bar.styles.keyboard === "material"
 
     readonly property bool hasMultipleLayouts: HyprlandXkb.layoutCodes.length > 1
 
     // Visible if there is at least 1 layout registered
     visible: HyprlandXkb.layoutCodes.length >= 1
 
-    implicitWidth: visible ? layout.implicitWidth + 16 : 0
+    implicitWidth: visible ? rowLoader.item?.implicitWidth + (root.isMaterial ? 0 : 16) : 0
     implicitHeight: visible ? Appearance.sizes.baseBarHeight : 0
 
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
@@ -45,25 +46,98 @@ MouseArea {
         }
     }
 
-    RowLayout {
-        id: layout
+    Loader {
+        id: rowLoader
+        active: !root.vertical
+        visible: active
         anchors.centerIn: parent
-        spacing: 6
+        sourceComponent: root.isMaterial ? rowMaterial : rowDefault
 
-        MaterialSymbol {
-            iconSize: Appearance.font.pixelSize.large
-            text: "keyboard"
-            color: Appearance.colors.colOnLayer1
+        Component {
+            id: rowDefault
+
+            RowLayout {
+                id: layout
+                anchors.centerIn: parent
+                spacing: 6
+
+                MaterialSymbol {
+                    iconSize: Appearance.font.pixelSize.large
+                    text: "keyboard"
+                    color: Appearance.colors.colOnLayer1
+                }
+
+                StyledText {
+                    text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode).replace(/\n/g, ' ')
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.family: Appearance.font.family.title
+                    color: Appearance.colors.colOnLayer1
+                    font.weight: Font.Bold
+                    Layout.alignment: Qt.AlignVCenter
+                    animateChange: true
+                }
+            }
         }
+    
+        Component {
+            id: rowMaterial
+            
+            MaterialBarWidget {
+                primaryComponent: iconComponent
+                secondaryComponent: keyboardLayoutComponent
+                primaryIsCircle: true
+                secondaryExtraMargin: 4
+                componentsPadding: 6
 
-        StyledText {
-            text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode).replace(/\n/g, ' ')
-            font.pixelSize: Appearance.font.pixelSize.small
-            font.family: Appearance.font.family.title
-            color: Appearance.colors.colOnLayer1
-            font.weight: Font.Bold
-            Layout.alignment: Qt.AlignVCenter
-            animateChange: true
+                showSecondary: Config.options.bar.keyboardLayout.showSecondary
+                secondaryOpposite: Config.options.bar.keyboardLayout.secondaryOpposite
+                swapPrimaryWithSecondary: Config.options.bar.keyboardLayout.swapPrimaryWithSecondary
+                showPrimary: Config.options.bar.keyboardLayout.showPrimary
+
+                Component {
+                    id: iconComponent
+                    MaterialSymbol {
+                        id: timeText
+                        anchors.verticalCenter: parent.verticalCenter
+                        fill: 0
+                        text: "keyboard"
+                        iconSize: 20
+                        color: Config.options.bar.keyboardLayout.swapPrimaryWithSecondary
+                                ? Appearance.colors.colPrimary
+                                : Appearance.colors.colOnPrimary
+                    }
+                }
+
+                Component {
+                    id: keyboardLayoutComponent
+                    Item {
+                        width: metrics.width
+                        height: keyboardText.implicitHeight
+                        implicitWidth: width
+                        implicitHeight: height
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: 1
+
+                        StyledText {
+                            id: keyboardText
+                            anchors.centerIn: parent
+                            color: Config.options.bar.keyboardLayout.swapPrimaryWithSecondary
+                                ? Appearance.colors.colOnPrimary
+                                : Appearance.colors.colPrimary
+                            text: root.abbreviateLayoutCode(HyprlandXkb.currentLayoutCode).replace(/\n/g, ' ')
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            animateChange: true
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        TextMetrics {
+                            id: metrics
+                            font: keyboardText.font
+                            text: root.uppercaseLayout ? "UU UU" : "uu uu"
+                        }
+                    }
+                }
+            }
         }
     }
 

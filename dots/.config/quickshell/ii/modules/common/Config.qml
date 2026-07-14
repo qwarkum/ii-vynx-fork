@@ -402,13 +402,13 @@ Singleton {
                 property real iconTintPercentage: 0.6
                 property JsonObject fonts: JsonObject {
                     property bool enableCustom: false
-                    property string main: "Google Sans Flex"
-                    property string numbers: "Google Sans Flex"
-                    property string title: "Google Sans Flex"
+                    property string main: "Google Sans Flex" // xmpl: right sidebar, settings, system monitor, default clock, expressive weather
+                    property string numbers: "Google Sans Flex" // xmpl: styled slider, config
+                    property string title: "Google Sans Flex" // settings list item, popup titles
                     property string iconNerd: "JetBrains Mono NF"
-                    property string monospace: "JetBrains Mono NF"
-                    property string reading: "Readex Pro"
-                    property string expressive: "Space Grotesk"
+                    property string monospace: "JetBrains Mono NF" // clipboard metadata
+                    property string reading: "Readex Pro" // cookie clock quote
+                    property string expressive: "Space Grotesk" // desktop widgets font, overview workspace number, user profile config
                     property bool roundnessFull: false
                 }
                 property JsonObject transparency: JsonObject {
@@ -663,9 +663,16 @@ Singleton {
 
             property JsonObject bar: JsonObject {
                 property bool borderless: false
+                property JsonObject clock: JsonObject {
+                    property bool showSeconds: true
+                    property bool secondaryOpposite: false
+                    property bool showPrimary: true
+                    property bool showSecondary: true
+                    property bool swapPrimaryWithSecondary: false
+                }
                 property JsonObject styles: JsonObject {
                     property string activeWindow: "default"
-                    property string clock: "expressive" // default, expressive
+                    property string clock: "expressive" // default, expressive, material
                     property string media: "expressive"
                     property string notification: "default"
                     property string utilButtons: "expressive"
@@ -1011,12 +1018,23 @@ Singleton {
                     property bool enableKeyboardLayoutTransitionPopup: true
                 }
                 property JsonObject keyboardLayout: JsonObject {
+                    property bool secondaryOpposite: false
+                    property bool showSecondary: true
+                    property bool showPrimary: true
+                    property bool swapPrimaryWithSecondary: false
                     property bool uppercaseLayout: false
+                }
+                property JsonObject battery: JsonObject {
+                    property bool secondaryOpposite: true
+                    property bool showPrimary: true
+                    property bool showSecondary: true
+                    property bool swapPrimaryWithSecondary: false
+                    property bool showPercentageInsideBattery: false
                 }
                 property string bluetoothDevicesLayout: "expressive" // Options: classic, expressive
                 property JsonObject sizes: JsonObject {
                     property int height: 40 // horizontal mode
-                    property int width: 46 // vertical mode
+                    property int width: 45 // vertical mode
                 }
             }
 
@@ -1531,10 +1549,11 @@ Singleton {
             property JsonObject time: JsonObject {
                 // https://doc.qt.io/qt-6/qtime.html#toString
                 property string format: "hh:mm"
+                property string secondsFormat: "ss"
                 property string shortDateFormat: "dd/MM"
                 property string longDateFormat: "dd/MM/yyyy"
                 property string dateWithYearFormat: "dd/MM/yyyy"
-                property string dateFormat: "ddd, dd/MM"
+                property string dateFormat: "dd/MM, ddd"
                 property int firstDayOfWeek: 6 // 0: Monday, 1: Tuesday, 2: Wednesday, 3: Thursday, 4: Friday, 5: Saturday, 6: Sunday
 
                 property JsonObject pomodoro: JsonObject {

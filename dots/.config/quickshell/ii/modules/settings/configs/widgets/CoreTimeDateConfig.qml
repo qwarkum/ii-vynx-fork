@@ -61,6 +61,18 @@ ContentPage {
         }
 
         ConfigSwitch {
+            buttonIcon: "avg_pace"
+            text: Translation.tr("Show seconds on a clock")
+            checked: Config.options.bar.clock.showSeconds
+            onCheckedChanged: {
+                Config.options.bar.clock.showSeconds = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Enable if you want bar clock to show seconds")
+            }
+        }
+
+        ConfigSwitch {
             buttonIcon: "today"
             text: Translation.tr("Start week on Monday")
             checked: Config.options.time.firstDayOfWeek === 0
@@ -117,11 +129,11 @@ ContentPage {
                 options: [
                     {
                         displayName: Translation.tr("Date First dd/MM"),
-                        value: "ddd dd/MM"
+                        value: "dd/MM, ddd"
                     },
                     {
                         displayName: Translation.tr("Month First MM/dd"),
-                        value: "ddd MM/dd"
+                        value: "MM/dd, ddd"
                     }
                 ]
             }
@@ -313,6 +325,48 @@ ContentPage {
                         worldClocksSubsection.addWorldClock();
                     }
                 }
+            }
+        }
+    }
+
+    ContentSection {
+        enabled: Config.options.bar.styles.clock === "material"
+        icon: "interests"
+        title: Translation.tr("Material 3 Design")
+
+        ConfigSwitch {
+            buttonIcon: "flip"
+            text: Translation.tr("Move secondary component to the opposite")
+            checked: Config.options.bar.clock.secondaryOpposite
+            onCheckedChanged: {
+                Config.options.bar.clock.secondaryOpposite = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_checked"
+            text: Translation.tr("Show primary component")
+            checked: Config.options.bar.clock.showPrimary
+            onCheckedChanged: {
+                Config.options.bar.clock.showPrimary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_unchecked"
+            text: Translation.tr("Show secondary component")
+            checked: Config.options.bar.clock.showSecondary
+            onCheckedChanged: {
+                Config.options.bar.clock.showSecondary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "sync"
+            text: Translation.tr("Swap secondary component with the primary")
+            checked: Config.options.bar.clock.swapPrimaryWithSecondary
+            onCheckedChanged: {
+                Config.options.bar.clock.swapPrimaryWithSecondary = checked;
             }
         }
     }

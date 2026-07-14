@@ -246,110 +246,67 @@ Item {
 
     // Widget style resolution — single source of truth
     readonly property string widgetStyle: registry.getStyle(modelData.id)
-    readonly property bool isExpressive: widgetStyle === "expressive"
+    readonly property bool isExpressiveFromRegistry: widgetStyle === "expressive"
     readonly property bool isMinimal:    widgetStyle === "minimal"
 
-    // ── Component resolution ──────────────────────────────────────────────────
-    // Replaces compMap JS object. Adding a new widget: add one case here +
-    // add the Component definition below + add getStyle() entry in registry.
-    function resolveComponent(id, isVert, style) {
-        const isExp = style === "expressive";
-        const isMin = style === "minimal";
-        switch (id) {
-            case "workspaces":
-                if (isMin) return workspaceCompMinimal;
-                if (isExp) return workspaceCompExpressive;
-                if (style === "dock") return workspaceCompDock;
-                return workspaceComp;
-            case "music_player":
-                if (isExp) return musicPlayerCompExpressive;
-                if (style === "neural") return isVert ? neuralMediaCompVert : neuralMediaComp;
-                return isVert ? musicPlayerCompVert : musicPlayerComp;
-            case "system_monitor":
-                if (isExp) return systemMonitorCompExpressive;
-                return isVert ? systemMonitorCompVert : systemMonitorComp;
-            case "clock":
-                if (isExp) return clockCompExpressive;
-                return isVert ? clockCompVert : clockComp;
-            case "battery":
-                if (isExp) return batteryCompExpressive;
-                return isVert ? batteryCompVert : batteryComp;
-            case "utility_buttons":
-                if (isExp) return utilityButtonsCompExpressive;
-                return utilityButtonsComp;
-            case "system_tray":
-                if (isExp) return systemTrayCompExpressive;
-                return systemTrayComp;
-            case "active_window":
-                if (isExp) return activeWindowCompExpressive;
-                return activeWindowComp;
-            case "weather":
-                if (isExp) return weatherCompExpressive;
-                return weatherComp;
-            case "policies_panel_button":
-                if (isExp) return policiesPanelButtonExpressive;
-                return policiesPanelButton;
-            case "dashboard_panel_button":
-                if (isExp) return isVert ? dashboardPanelButtonExpressiveVert : dashboardPanelButtonExpressive;
-                return isVert ? dashboardPanelButtonVert : dashboardPanelButton;
-            case "bluetooth_devices":
-                if (isExp) return bluetoothCompExpressive;
-                return isVert ? bluetoothCompVert : bluetoothComp;
-            case "keyboard_layout":
-                if (isExp) return keyboardCompExpressive;
-                return isVert ? keyboardCompVert : keyboardComp;
-            case "sports":
-                if (isExp) return sportsCompExpressive;
-                return sportsComp;
-            case "power":
-                if (isExp) return powerCompExpressive;
-                return powerComp;
-            case "date":          return dateCompVert;
-            case "timer":         return isVert ? timerCompVert : timerComp;
-            case "record_indicator":        return recordIndicatorComp;
-            case "phone_scrcpy_indicator":  return phoneScrcpyIndicatorComp;
-            case "screen_share_indicator":  return screenshareIndicatorComp;
-            default:              return null;
+    // ── Explicit style checks (HEAD) – keep them for maximum compatibility ──
+    readonly property bool isMaterial: {
+        if (modelData.id === "clock" && Config.options.bar.styles.clock === "material") {
+            return true;
         }
-    }
-
-    // ── Visibility helpers ────────────────────────────────────────────────────
-    function toggleVisible(visibility) {
-        if (visible !== visibility) visible = visibility;
-        let item = null;
-        if (barSection == 0)      item = Config.options.bar.layouts.left[originalIndex];
-        else if (barSection == 1) item = Config.options.bar.layouts.center[originalIndex];
-        else if (barSection == 2) item = Config.options.bar.layouts.right[originalIndex];
-        if (item !== undefined && item !== null) {
-            if (item.visible !== visibility) item.visible = visibility;
+        if (modelData.id === "keyboard_layout" && Config.options.bar.styles.keyboard === "material") {
+            return true;
         }
+        if (modelData.id === "battery" && Config.options.bar.styles.battery === "material") {
+            return true;
+        }
+        return false;
+    }
+    readonly property bool isExpressive: {
+        if (modelData.id === "clock" && Config.options.bar.styles.clock === "expressive")
+            return true;
+        if (modelData.id === "music_player" && Config.options.bar.styles.media === "expressive")
+            return true;
+        if (modelData.id === "workspaces" && Config.options.bar.styles.workspaces === "expressive")
+            return true;
+        if (modelData.id === "utility_buttons" && Config.options.bar.styles.utilButtons === "expressive")
+            return true;
+        if (modelData.id === "weather" && Config.options.bar.styles.weather === "expressive")
+            return true;
+        if (modelData.id === "dashboard_panel_button" && Config.options.bar.styles.dashboard === "expressive")
+            return true;
+        if (modelData.id === "system_monitor" && Config.options.bar.styles.resources === "expressive")
+            return true;
+        if (modelData.id === "policies_panel_button" && Config.options.bar.styles.policies === "expressive")
+            return true;
+        if (modelData.id === "power" && Config.options.bar.styles.power === "expressive")
+            return true;
+        if (modelData.id === "battery" && Config.options.bar.styles.battery === "expressive")
+            return true;
+        if (modelData.id === "system_tray" && Config.options.bar.styles.systray === "expressive")
+            return true;
+        if (modelData.id === "bluetooth_devices" && Config.options.bar.styles.bluetooth === "expressive")
+            return true;
+        if (modelData.id === "keyboard_layout" && Config.options.bar.styles.keyboard === "expressive")
+            return true;
+        if (modelData.id === "sports" && Config.options.bar.styles.sports === "expressive")
+            return true;
+        if (modelData.id === "active_window" && Config.options.bar.styles.activeWindow === "expressive")
+            return true;
+        if (modelData.id === "record_indicator")
+            return true;
+        if (modelData.id === "phone_scrcpy_indicator")
+            return true;
+        return false;
     }
 
-    function toggleHighlight(highlight) {
-        rootItem.highlighted = highlight;
-    }
-
-    // ── Group theme (radius + colors) ─────────────────────────────────────────
-    BarGroupTheme {
-        id: groupTheme
-        barSection:    rootItem.barSection
-        list:          rootItem.list
-        originalIndex: rootItem.originalIndex
-        isExpressive:  rootItem.isExpressive
-        highlighted:   rootItem.highlighted
-        activated:     itemLoader.item?.activated ?? false
-        activeTheme:   rootItem.activeTheme
-        widgetId:      modelData.id
-    }
-
-    // ── Radius convenience aliases (consumed by BarGroup + policy panel buttons) ──
+    // ── Radius convenience aliases (from upstream/dev) ──────────────────────
     property real startRadius: groupTheme.startRadius
     property real endRadius:   groupTheme.endRadius
 
     // ── Theme ─────────────────────────────────────────────────────────────────
     BarThemes { id: barThemes }
     property var activeTheme: barThemes.themes[Config.options.bar.expressiveColorTheme] || barThemes.themes["content"]
-
 
     // ── BarGroup wrapper ──────────────────────────────────────────────────────
     BarGroup {
@@ -374,7 +331,7 @@ Item {
             verticalTranslation
         ]
 
-        readonly property bool paddingless: registry.isPaddingless(modelData.id, rootItem.isExpressive)
+        readonly property bool paddingless: registry.isPaddingless(modelData.id, rootItem.isExpressive) || rootItem.isMaterial
         padding:       paddingless ? 0 : 5
         leftPadding:   paddingless ? 0 : padding
         rightPadding:  paddingless ? 0 : padding
@@ -383,7 +340,7 @@ Item {
 
         startRadius: rootItem.startRadius
         endRadius:   rootItem.endRadius
-        colBackground: groupTheme.resolvedBackground
+        colBackground: rootItem.isMaterial ? "transparent" : groupTheme.resolvedBackground
 
         Loader {
             id: itemLoader
@@ -424,6 +381,99 @@ Item {
             Layout.fillWidth: item ? ((item.Layout !== undefined && item.Layout.fillWidth) || false) : false
             Layout.alignment: rootItem.vertical ? Qt.AlignHCenter : Qt.AlignVCenter
         }
+    }
+
+    // ── Component resolution ──────────────────────────────────────────────────
+    // Replaces compMap JS object. Adding a new widget: add one case here +
+    // add the Component definition below + add getStyle() entry in registry.
+    function resolveComponent(id, isVert, style) {
+        const isExp = style === "expressive";
+        const isMin = style === "minimal";
+        switch (id) {
+            case "workspaces":
+                if (isMin) return workspaceCompMinimal;
+                if (isExp) return workspaceCompExpressive;
+                if (style === "dock") return workspaceCompDock;
+                return workspaceComp;
+            case "music_player":
+                if (isExp) return musicPlayerCompExpressive;
+                if (style === "neural") return isVert ? neuralMediaCompVert : neuralMediaComp;
+                return isVert ? musicPlayerCompVert : musicPlayerComp;
+            case "system_monitor":
+                if (isExp) return systemMonitorCompExpressive;
+                return isVert ? systemMonitorCompVert : systemMonitorComp;
+            case "clock":
+                if (isExp) return clockCompExpressive;
+                return isVert ? clockCompVert : clockComp;
+            case "battery":
+                if (isExp) return batteryCompExpressive;
+                return isVert ? batteryCompVert : batteryComp;
+            case "keyboard_layout":
+                if (isExp) return keyboardCompExpressive;
+                return isVert ? keyboardCompVert : keyboardComp;
+            case "utility_buttons":
+                if (isExp) return utilityButtonsCompExpressive;
+                return utilityButtonsComp;
+            case "system_tray":
+                if (isExp) return systemTrayCompExpressive;
+                return systemTrayComp;
+            case "active_window":
+                if (isExp) return activeWindowCompExpressive;
+                return activeWindowComp;
+            case "weather":
+                if (isExp) return weatherCompExpressive;
+                return weatherComp;
+            case "policies_panel_button":
+                if (isExp) return policiesPanelButtonExpressive;
+                return policiesPanelButton;
+            case "dashboard_panel_button":
+                if (isExp) return isVert ? dashboardPanelButtonExpressiveVert : dashboardPanelButtonExpressive;
+                return isVert ? dashboardPanelButtonVert : dashboardPanelButton;
+            case "bluetooth_devices":
+                if (isExp) return bluetoothCompExpressive;
+                return isVert ? bluetoothCompVert : bluetoothComp;
+            case "sports":
+                if (isExp) return sportsCompExpressive;
+                return sportsComp;
+            case "power":
+                if (isExp) return powerCompExpressive;
+                return powerComp;
+            case "date":          return dateCompVert;
+            case "timer":         return isVert ? timerCompVert : timerComp;
+            case "record_indicator":        return recordIndicatorComp;
+            case "phone_scrcpy_indicator":  return phoneScrcpyIndicatorComp;
+            case "screen_share_indicator":  return screenshareIndicatorComp;
+            default:              return null;
+        }
+    }
+
+    // ── Visibility helpers ────────────────────────────────────────────────────
+    function toggleVisible(visibility) {
+        if (visible !== visibility) visible = visibility;
+        let item = null;
+        if (barSection == 0)      item = Config.options.bar.layouts.left[originalIndex];
+        else if (barSection == 1) item = Config.options.bar.layouts.center[originalIndex];
+        else if (barSection == 2) item = Config.options.bar.layouts.right[originalIndex];
+        if (item !== undefined && item !== null) {
+            if (item.visible !== visibility) item.visible = visibility;
+        }
+    }
+
+    function toggleHighlight(highlight) {
+        rootItem.highlighted = highlight;
+    }
+
+    // ── Group theme ────────────────────────────────────────────────────────────
+    BarGroupTheme {
+        id: groupTheme
+        barSection:    rootItem.barSection
+        list:          rootItem.list
+        originalIndex: rootItem.originalIndex
+        isExpressive:  rootItem.isExpressive
+        highlighted:   rootItem.highlighted
+        activated:     itemLoader.item?.activated ?? false
+        activeTheme:   rootItem.activeTheme
+        widgetId:      modelData.id
     }
 
     // ── Widget Components ─────────────────────────────────────────────────────
