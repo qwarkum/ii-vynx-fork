@@ -95,7 +95,8 @@ Singleton {
         // Play sound in loop if enabled
         SoundService.stopLoop();
         if (Config.options.sounds.alarm) {
-            SoundService.startLoop("alarm-clock-elapsed");
+            const fadeSeconds = Config.options.sounds.alarmFadeIn ? Config.options.sounds.alarmFadeInSeconds : 0;
+            SoundService.startLoop("alarm", "alarm-clock-elapsed", fadeSeconds);
         }
 
         // Send a system notification if the fullscreen popup is disabled
