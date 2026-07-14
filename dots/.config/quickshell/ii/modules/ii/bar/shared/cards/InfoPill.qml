@@ -21,29 +21,73 @@ Rectangle {
     property color shapeColor: Appearance.colors.colSecondary
     property color symbolColor: Appearance.colors.colOnSecondary
     property color textColor: Appearance.colors.colOnSecondaryContainer
+    
+    // Internal animation control
+    property bool startAnim: false
+    
+    onStartAnimChanged: {
+        if (startAnim) {
+            // Reset elements
+            shapeTranslate.x = -30;
+            shapeItem.scale = 0.8;
+            shapeItem.rotation = -10;
+            pillText.opacity = 0.0;
+            textContainer.opacity = 0.0;
+            
+            // Start animations
+            Qt.callLater(function() {
+                shapeAnim.start();
+                textAnim.start();
+            });
+        }
+    }
 
     default property alias shapeContent: shapeItem.children
     property alias text: pillText.text
     property alias textContent: textContainer.children
 
-    MaterialShape {
-        id: shapeItem
-        shapeString: root.shapeString
-        implicitSize: root.shapeSize
-        color: root.shapeColor
+    Item {
+        id: shapeContainer
+        width: root.shapeSize
+        height: root.shapeSize
         anchors {
             left: parent.left
             leftMargin: 12
             verticalCenter: parent.verticalCenter
         }
+        
+        transform: Translate {
+            id: shapeTranslate
+            x: 0
+        }
+        
+        SequentialAnimation {
+            id: shapeAnim
+            PauseAnimation { duration: 60 }
+            ParallelAnimation {
+                NumberAnimation { target: shapeTranslate; property: "x"; from: -30; to: 0; duration: 350; easing.type: Easing.OutCubic }
+                NumberAnimation { target: shapeItem; property: "scale"; from: 0.8; to: 1.0; duration: 350; easing.type: Easing.OutBack }
+                NumberAnimation { target: shapeItem; property: "rotation"; from: -10; to: 0; duration: 350; easing.type: Easing.OutCubic }
+            }
+        }
 
-        MaterialSymbol {
-            id: iconSymbol
-            visible: root.icon !== "" && shapeItem.children.length <= 1
+        MaterialShape {
+            id: shapeItem
+            shapeString: root.shapeString
+            implicitSize: root.shapeSize
+            color: root.shapeColor
             anchors.centerIn: parent
-            text: root.icon
-            iconSize: Appearance.font.pixelSize.large
-            color: root.symbolColor
+            scale: 1.0
+            rotation: 0
+
+            MaterialSymbol {
+                id: iconSymbol
+                visible: root.icon !== "" && shapeItem.children.length <= 1
+                anchors.centerIn: parent
+                text: root.icon
+                iconSize: Appearance.font.pixelSize.large
+                color: root.symbolColor
+            }
         }
     }
 
@@ -53,6 +97,13 @@ Rectangle {
             verticalCenter: parent.verticalCenter
             horizontalCenter: parent.horizontalCenter
             horizontalCenterOffset: 9
+        }
+        opacity: 1.0
+        
+        SequentialAnimation {
+            id: textAnim
+            PauseAnimation { duration: 120 }
+            NumberAnimation { target: textContainer; property: "opacity"; from: 0.0; to: 1.0; duration: 250 }
         }
 
         StyledText {

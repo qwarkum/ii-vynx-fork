@@ -200,11 +200,84 @@ StyledPopup {
         implicitWidth: 400
         spacing: 12
 
+        // Delays computed dynamically based on visibility order to prevent stagger skipping
+        readonly property var _visList: [
+            clockHero.visible,
+            worldClocksLoader.visible && worldClocksLoader.active,
+            columnLayout.children[2].visible, // info column Layout
+            localSendLoader.visible && localSendLoader.active,
+            alarmsCard.visible
+        ]
+
+        function getDelay(index) {
+            let visIndex = 0;
+            for (let i = 0; i < index; i++) {
+                if (_visList[i]) visIndex++;
+            }
+            const delays = [40, 100, 160, 220, 280];
+            return delays[Math.min(visIndex, delays.length - 1)];
+        }
+
+        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+        
+        onStartAnimChanged: {
+            if (startAnim) {
+                // Reset all cards to initial state before animation
+                clockHero.opacity = 0.0;
+                clockHero.scale = 0.85;
+                clockHeroTransform.y = 25;
+                
+                worldClocksLoader.opacity = 0.0;
+                worldClocksLoader.scale = 0.85;
+                worldClocksTransform.y = 25;
+                
+                infoColumn.opacity = 0.0;
+                infoColumn.scale = 0.85;
+                infoColumnTransform.y = 25;
+                
+                localSendLoader.opacity = 0.0;
+                localSendLoader.scale = 0.85;
+                localSendTransform.y = 25;
+                
+                alarmsCard.opacity = 0.0;
+                alarmsCard.scale = 0.85;
+                alarmsCardTransform.y = 25;
+                
+                // Start animations after reset
+                Qt.callLater(function() {
+                    clockHeroAnim.start();
+                    worldClocksAnim.start();
+                    infoColumnAnim.start();
+                    localSendAnim.start();
+                    alarmsCardAnim.start();
+                });
+            }
+        }
+
         ClockHeaderCard {
             id: clockHero
             Layout.fillWidth: true
             Layout.minimumWidth: 400
             visible: Config.options.time.alarms.showAnalogClock
+            startAnim: columnLayout.startAnim
+            
+            opacity: 0.0
+            scale: 0.85
+            transform: Translate {
+                id: clockHeroTransform
+                y: 25
+            }
+            
+            SequentialAnimation {
+                id: clockHeroAnim
+                
+                PauseAnimation { duration: columnLayout.getDelay(0) }
+                ParallelAnimation {
+                    NumberAnimation { target: clockHero; property: "opacity"; to: 1.0; duration: 300 }
+                    NumberAnimation { target: clockHero; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    NumberAnimation { target: clockHeroTransform; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                }
+            }
         }
 
         Loader {
@@ -214,13 +287,63 @@ StyledPopup {
             visible: active && Config.options.time.alarms.showWorldClocks
             active: Config.options.time.worldClocks && Config.options.time.worldClocks.length > 0
             sourceComponent: worldClocksComponent
+            
+            opacity: 0.0
+            scale: 0.85
+            transform: Translate {
+                id: worldClocksTransform
+                y: 25
+            }
+            
+            SequentialAnimation {
+                id: worldClocksAnim
+                
+                PauseAnimation { duration: columnLayout.getDelay(1) }
+                ParallelAnimation {
+                    NumberAnimation { target: worldClocksLoader; property: "opacity"; to: 1.0; duration: 300 }
+                    NumberAnimation { target: worldClocksLoader; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    NumberAnimation { target: worldClocksTransform; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                }
+            }
         }
 
         ColumnLayout {
+            id: infoColumn
             Layout.fillWidth: true
             spacing: 12
+            
+            property bool startAnim: columnLayout.startAnim
+            onStartAnimChanged: {
+                if (startAnim) {
+                    infoPill.startAnim = false;
+                    localSendPill.startAnim = false;
+                    Qt.callLater(function() {
+                        infoPill.startAnim = true;
+                        localSendPill.startAnim = true;
+                    });
+                }
+            }
+            
+            opacity: 0.0
+            scale: 0.85
+            transform: Translate {
+                id: infoColumnTransform
+                y: 25
+            }
+            
+            SequentialAnimation {
+                id: infoColumnAnim
+                
+                PauseAnimation { duration: columnLayout.getDelay(2) }
+                ParallelAnimation {
+                    NumberAnimation { target: infoColumn; property: "opacity"; to: 1.0; duration: 300 }
+                    NumberAnimation { target: infoColumn; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    NumberAnimation { target: infoColumnTransform; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                }
+            }
 
             InfoPill {
+                id: infoPill
                 visible: !root.compact ? LocalSend.currentTransfer == null || LocalSend.droppedFiles.length > 0 : false
                 textContent: Loader {
                     anchors.centerIn: parent
@@ -236,6 +359,7 @@ StyledPopup {
             }
 
             LocalSendPill {
+                id: localSendPill
                 visible: LocalSend.available
             }
         }
@@ -257,6 +381,24 @@ StyledPopup {
             visible: active
             active: LocalSend.currentTransfer !== null || LocalSend.droppedFiles.length > 0
             sourceComponent: LocalSend.currentTransfer !== null ? transferCard : sendCard
+            
+            opacity: 0.0
+            scale: 0.85
+            transform: Translate {
+                id: localSendTransform
+                y: 25
+            }
+            
+            SequentialAnimation {
+                id: localSendAnim
+                
+                PauseAnimation { duration: columnLayout.getDelay(3) }
+                ParallelAnimation {
+                    NumberAnimation { target: localSendLoader; property: "opacity"; to: 1.0; duration: 300 }
+                    NumberAnimation { target: localSendLoader; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    NumberAnimation { target: localSendTransform; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                }
+            }
         }
 
         AlarmsCard {
@@ -264,6 +406,25 @@ StyledPopup {
             Layout.fillWidth: true
             Layout.minimumWidth: root.compact ? 320 : 360
             visible: Config.options.time.alarms.showAlarmsSection
+            startAnim: columnLayout.startAnim
+            
+            opacity: 0.0
+            scale: 0.85
+            transform: Translate {
+                id: alarmsCardTransform
+                y: 25
+            }
+            
+            SequentialAnimation {
+                id: alarmsCardAnim
+                
+                PauseAnimation { duration: columnLayout.getDelay(4) }
+                ParallelAnimation {
+                    NumberAnimation { target: alarmsCard; property: "opacity"; to: 1.0; duration: 300 }
+                    NumberAnimation { target: alarmsCard; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    NumberAnimation { target: alarmsCardTransform; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                }
+            }
         }
 
         Component {
@@ -348,6 +509,7 @@ StyledPopup {
                 getUtcTimeForTz: root.getUtcTimeForTz
                 getFormattedTime: root.getFormattedTime
                 getFormattedDate: root.getFormattedDate
+                startAnim: columnLayout.startAnim
             }
         }
 

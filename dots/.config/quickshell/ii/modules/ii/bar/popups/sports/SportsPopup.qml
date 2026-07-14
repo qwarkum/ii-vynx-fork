@@ -194,11 +194,33 @@ StyledPopup {
                         scale: gamesColumn.draggedIndex === index ? 1.03 : 1.0
                         opacity: gamesColumn.draggedIndex === index ? 0.9 : 1.0
                         
-                        Behavior on scale {
-                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                        readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6 && gamesColumn.draggedIndex === -1
+                        
+                        onStartAnimChanged: {
+                            if (startAnim) {
+                                card.opacity = 0.0;
+                                card.scale = 0.85;
+                                cardTranslate.y = 25;
+                                
+                                Qt.callLater(function() {
+                                    cardAnim.start();
+                                });
+                            }
                         }
-                        Behavior on opacity {
-                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                        
+                        transform: Translate {
+                            id: cardTranslate
+                            y: (gamesColumn.draggedIndex !== index && root.opened && root.popupOpenProgress > 0.6) ? 0 : (gamesColumn.draggedIndex === index ? 0 : 25)
+                        }
+                        
+                        SequentialAnimation {
+                            id: cardAnim
+                            PauseAnimation { duration: 40 + index * 100 }
+                            ParallelAnimation {
+                                NumberAnimation { target: card; property: "opacity"; to: 1.0; duration: 300 }
+                                NumberAnimation { target: card; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                                NumberAnimation { target: cardTranslate; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                            }
                         }
 
                         DragManager {

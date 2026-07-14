@@ -66,7 +66,7 @@ Item {
     readonly property bool isAnySpecialMode: root.isClipboardMode || root.isBluetoothMode || root.isTranslatorMode || root.isMediaDownloaderMode || root.isMaterialSymbolsMode
     readonly property bool alwaysListAppsMode: Config.options.search.alwaysListApps && !root.isAnySpecialMode
     property bool showResults: searchingText != "" || isAnySpecialMode || alwaysListAppsMode || (searchingText === "" && LauncherSearch.results.length > 0)
-    property string overviewPosition: Config.options.overview?.position ?? ""
+    property string overviewPosition: (Config.options.bar?.bottom ? "bottom" : (Config.options.overview?.position ?? ""))
 
     // Re-enable item transitions after panel open animation completes
     Timer {
@@ -126,7 +126,7 @@ Item {
     // Signals to DynamicIslandStyle that the open animation is stable (no active resize)
     // When true, the DI pill disables its own behaviors and follows SearchWidget's animations directly.
     // In notch mode we always return false so the DI pill remains responsible for all animations.
-    readonly property bool openStateStable: root.inNotchMode ? false : (!searchHeightBehavior.animation.running && !searchWidthBehavior.animation.running)
+    readonly property bool openStateStable: root.inNotchMode ? false : ((!searchHeightBehavior.animation || !searchHeightBehavior.animation.running) && (!searchWidthBehavior.animation || !searchWidthBehavior.animation.running))
 
     function focusFirstItem() {
         if (root.isBluetoothMode) {} else if (root.isClipboardMode) {} else if (root.isTranslatorMode) {

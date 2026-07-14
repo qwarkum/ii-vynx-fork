@@ -21,6 +21,49 @@ Rectangle {
         }
     }
 
+    // Internal animation control
+    property bool startAnim: false
+
+    onStartAnimChanged: {
+        if (startAnim) {
+            // Reset header elements
+            alarmIcon.scale = 0.8;
+            alarmIconRotation.angle = -10;
+            alarmsTitle.opacity = 0.0;
+            alarmsCount.opacity = 0.0;
+            deleteButton.scale = 0.8;
+            deleteButton.opacity = 0.0;
+            addButton.scale = 0.8;
+            addButton.opacity = 0.0;
+            
+            // Reset alarm cards
+            for (var i = 0; i < listView.count; i++) {
+                var item = listView.itemAtIndex(i);
+                if (item) {
+                    item.cardOpacity = 0.0;
+                    item.cardTranslateX = 80;
+                }
+            }
+            
+            // Start animations
+            Qt.callLater(function() {
+                alarmIconAnim.start();
+                alarmsTitleAnim.start();
+                alarmsCountAnim.start();
+                deleteBtnAnim.start();
+                addBtnAnim.start();
+                
+                for (var j = 0; j < listView.count; j++) {
+                    var cardItem = listView.itemAtIndex(j);
+                    if (cardItem) {
+                        cardItem.cardAnimDelay = 100 + (j * 80);
+                        cardItem.startCardAnim();
+                    }
+                }
+            });
+        }
+    }
+
     property string mode: "list" // "list", "add", "edit"
     property int editingIndex: -1
     property bool deleteMode: false
@@ -174,26 +217,60 @@ Rectangle {
                 spacing: 12
 
                 MaterialSymbol {
+                    id: alarmIcon
                     text: "alarm"
                     iconSize: 24
                     fill: 1
                     color: AlarmService.ringingAlarmIndex !== -1 ? Appearance.colors.colError : Appearance.colors.colPrimary
+                    scale: 1.0
+                    
+                    transform: Rotation {
+                        id: alarmIconRotation
+                        origin.x: alarmIcon.width / 2
+                        origin.y: alarmIcon.height / 2
+                        angle: 0
+                    }
+                    
+                    SequentialAnimation {
+                        id: alarmIconAnim
+                        PauseAnimation { duration: 80 }
+                        ParallelAnimation {
+                            NumberAnimation { target: alarmIcon; property: "scale"; from: 0.8; to: 1.0; duration: 350; easing.type: Easing.OutBack }
+                            NumberAnimation { target: alarmIconRotation; property: "angle"; from: -10; to: 0; duration: 350; easing.type: Easing.OutCubic }
+                        }
+                    }
                 }
 
                 ColumnLayout {
                     spacing: 1
                     StyledText {
+                        id: alarmsTitle
                         text: Translation.tr("Alarms")
                         font.weight: Font.Bold
                         font.pixelSize: Appearance.font.pixelSize.normal
                         color: Appearance.colors.colOnSurface
+                        opacity: 1.0
+                        
+                        SequentialAnimation {
+                            id: alarmsTitleAnim
+                            PauseAnimation { duration: 120 }
+                            NumberAnimation { target: alarmsTitle; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                        }
                     }
 
                     StyledText {
+                        id: alarmsCount
                         text: AlarmService.alarms ? AlarmService.alarms.length + " " + Translation.tr("Alarms") : "0 " + Translation.tr("Alarms")
                         font.weight: Font.Light
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.colors.colSubtext
+                        opacity: 1.0
+                        
+                        SequentialAnimation {
+                            id: alarmsCountAnim
+                            PauseAnimation { duration: 160 }
+                            NumberAnimation { target: alarmsCount; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                        }
                     }
                 }
 
@@ -209,6 +286,17 @@ Rectangle {
                     buttonRadius: 16
                     colBackground: root.deleteMode ? Appearance.colors.colError : Appearance.colors.colErrorContainer
                     colBackgroundHover: root.deleteMode ? Appearance.colors.colErrorHover : Appearance.colors.colErrorContainerHover
+                    scale: 1.0
+                    opacity: 1.0
+                    
+                    SequentialAnimation {
+                        id: deleteBtnAnim
+                        PauseAnimation { duration: 200 }
+                        ParallelAnimation {
+                            NumberAnimation { target: deleteButton; property: "scale"; from: 0.8; to: 1.0; duration: 320; easing.type: Easing.OutBack }
+                            NumberAnimation { target: deleteButton; property: "opacity"; from: 0.0; to: 1.0; duration: 280 }
+                        }
+                    }
 
                     MaterialSymbol {
                         anchors.centerIn: parent
@@ -230,6 +318,17 @@ Rectangle {
                     buttonRadius: 16
                     colBackground: Appearance.colors.colPrimaryContainer
                     colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                    scale: 1.0
+                    opacity: 1.0
+                    
+                    SequentialAnimation {
+                        id: addBtnAnim
+                        PauseAnimation { duration: 240 }
+                        ParallelAnimation {
+                            NumberAnimation { target: addButton; property: "scale"; from: 0.8; to: 1.0; duration: 320; easing.type: Easing.OutBack }
+                            NumberAnimation { target: addButton; property: "opacity"; from: 0.0; to: 1.0; duration: 280 }
+                        }
+                    }
 
                     MaterialSymbol {
                         anchors.centerIn: parent
@@ -272,7 +371,29 @@ Rectangle {
                     color: AlarmService.ringingAlarmIndex === index ? Appearance.colors.colErrorContainer : Appearance.colors.colSurfaceContainerLow
                     clip: true
 
-                    opacity: AlarmService.ringingAlarmIndex === index ? 1.0 : (modelData.enabled ? 1.0 : 0.6)
+                    opacity: alarmCard.cardOpacity
+                    transform: Translate {
+                        x: alarmCard.cardTranslateX
+                    }
+
+                    // Animation properties
+                    property real cardOpacity: 1.0
+                    property real cardTranslateX: 0
+                    property int cardAnimDelay: 0
+                    
+                    function startCardAnim() {
+                        cardAnim.start();
+                    }
+
+                    SequentialAnimation {
+                        id: cardAnim
+                        PauseAnimation { duration: alarmCard.cardAnimDelay }
+                        ParallelAnimation {
+                            NumberAnimation { target: alarmCard; property: "cardOpacity"; from: 0.0; to: 1.0; duration: 350 }
+                            NumberAnimation { target: alarmCard; property: "cardTranslateX"; from: 80; to: 0; duration: 450; easing.type: Easing.OutCubic }
+                        }
+                    }
+
                     Behavior on opacity {
                         id: opacityBehavior
                         enabled: AlarmService.ringingAlarmIndex !== index

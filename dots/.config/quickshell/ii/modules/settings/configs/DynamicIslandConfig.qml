@@ -112,6 +112,19 @@ ContentPage {
                 }
             }
 
+            ConfigSwitch {
+                buttonIcon: "compress"
+                text: Translation.tr("Extra Compact Mode")
+                visible: Config.options.bar.floatingNotch.enable
+                checked: Config.options.bar.floatingNotch.extraCompact
+                onCheckedChanged: {
+                    Config.options.bar.floatingNotch.extraCompact = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Wider and shorter island with smoother concave corners (−25% height, +60% width)")
+                }
+            }
+
             Item {
                 visible: Config.options.bar.floatingNotch.enable
                 Layout.preferredHeight: 8
@@ -225,6 +238,35 @@ ContentPage {
                 stepSize: 1
                 onValueChanged: {
                     Config.options.bar.floatingNotch.heightBluetooth = value;
+                }
+            }
+
+            Item {
+                visible: Config.options.bar.floatingNotch.enable
+                Layout.preferredHeight: 8
+            }
+
+            // --- Battery Group ---
+            ConfigSwitch {
+                buttonIcon: "battery_charging_full"
+                text: Translation.tr("Battery Charging Notch")
+                visible: Config.options.bar.floatingNotch.enable
+                checked: !Config.options.bar.floatingNotch.disableBattery
+                onCheckedChanged: {
+                    Config.options.bar.floatingNotch.disableBattery = !checked;
+                }
+                StyledToolTip { text: Translation.tr("Toggle the battery charging status notch (iOS-style)") }
+            }
+            ConfigSpinBox {
+                icon: "height"
+                text: Translation.tr("Battery contracted height")
+                visible: Config.options.bar.floatingNotch.enable && !Config.options.bar.floatingNotch.disableBattery
+                value: Config.options.bar.floatingNotch.heightBattery
+                from: 24
+                to: 60
+                stepSize: 1
+                onValueChanged: {
+                    Config.options.bar.floatingNotch.heightBattery = value;
                 }
             }
 

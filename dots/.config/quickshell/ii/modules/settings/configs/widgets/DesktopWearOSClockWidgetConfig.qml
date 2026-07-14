@@ -8,7 +8,7 @@ ContentPage {
     id: root
     forceWidth: false
 
-    signal goBack
+    signal goBack()
 
     RowLayout {
         spacing: 12
@@ -35,7 +35,7 @@ ContentPage {
         }
 
         StyledText {
-            text: Translation.tr("Date Widget Options")
+            text: Translation.tr("WearOS Clock (Watch) Options")
             font.pixelSize: Appearance.font.pixelSize.large
             font.family: Appearance.font.family.title
             color: Appearance.colors.colOnLayer0
@@ -43,47 +43,53 @@ ContentPage {
     }
 
     ContentSection {
-        title: Translation.tr("Date Settings")
-        icon: "calendar_today"
+        title: Translation.tr("Clock Settings")
+        icon: "schedule"
 
         Item {
             Layout.fillWidth: true
             implicitHeight: 250
-            visible: !Config.isWidgetActive("date_default")
+            visible: !Config.isWidgetActive("clock_wearos")
 
             PagePlaceholder {
                 anchors.fill: parent
-                icon: "calendar_today"
+                icon: "alarm_off"
                 shape: MaterialShape.Shape.Circle
-                title: Translation.tr("Date widget disabled")
-                description: Translation.tr("Enable the desktop date widget in Desktop Widgets settings to use this page.")
+                title: Translation.tr("Clock widget disabled")
+                description: Translation.tr("Enable the WearOS Clock (Watch) widget in Desktop Widgets settings to use this page.")
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 4
-            visible: Config.isWidgetActive("date_default")
+            visible: Config.isWidgetActive("clock_wearos")
 
-            ContentSubsectionLabel {
-                text: Translation.tr("Visual Options")
-            }
+            // Visual Options (Shadows)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
 
-            ConfigSwitch {
-                buttonIcon: "wb_sunny"
-                text: Translation.tr("Enable Shadows")
-                checked: Config.options.background.widgets.enableShadows ?? true
-                onCheckedChanged: {
-                    Config.options.background.widgets.enableShadows = checked;
+                ContentSubsectionLabel {
+                    text: Translation.tr("Visual Options")
                 }
-            }
 
-            ConfigSwitch {
-                buttonIcon: "blur_on"
-                text: Translation.tr("Enable Inner Shadows")
-                checked: Config.options.background.widgets.enableInnerShadow ?? true
-                onCheckedChanged: {
-                    Config.options.background.widgets.enableInnerShadow = checked;
+                ConfigSwitch {
+                    buttonIcon: "wb_sunny"
+                    text: Translation.tr("Enable Shadows")
+                    checked: Config.options.background.widgets.enableShadows ?? true
+                    onCheckedChanged: {
+                        Config.options.background.widgets.enableShadows = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "lens"
+                    text: Translation.tr("Enable Glass Reflection")
+                    checked: Config.options.background.widgets.wearos_clock.enableGlassReflection ?? true
+                    onCheckedChanged: {
+                        Config.options.background.widgets.wearos_clock.enableGlassReflection = checked;
+                    }
                 }
             }
         }

@@ -55,4 +55,46 @@ ContentPage {
             }
         }
     }
+
+    ContentSection {
+        enabled: Config.options.bar.styles.keyboard === "material"
+        icon: "interests"
+        title: Translation.tr("Material 3 Design")
+
+        ConfigSwitch {
+            buttonIcon: "flip"
+            text: Translation.tr("Move secondary component to the opposite")
+            checked: Config.options.bar.keyboardLayout.secondaryOpposite
+            onCheckedChanged: {
+                Config.options.bar.keyboardLayout.secondaryOpposite = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_checked"
+            text: Translation.tr("Show primary component")
+            checked: Config.options.bar.keyboardLayout.showPrimary
+            onCheckedChanged: {
+                Config.options.bar.keyboardLayout.showPrimary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "radio_button_unchecked"
+            text: Translation.tr("Show secondary component")
+            checked: Config.options.bar.keyboardLayout.showSecondary
+            onCheckedChanged: {
+                Config.options.bar.keyboardLayout.showSecondary = checked;
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "sync"
+            text: Translation.tr("Swap secondary component with the primary")
+            checked: Config.options.bar.keyboardLayout.swapPrimaryWithSecondary
+            onCheckedChanged: {
+                Config.options.bar.keyboardLayout.swapPrimaryWithSecondary = checked;
+            }
+        }
+    }
 }

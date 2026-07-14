@@ -209,6 +209,68 @@ ContentPage {
         }
 
         ConfigSwitch {
+            buttonIcon: "gradient"
+            text: Translation.tr("Gradient blur effect on wallpaper")
+            checked: Config.options.background.gradientBlur.enable
+            onCheckedChanged: {
+                Config.options.background.gradientBlur.enable = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Apply a gradient blur effect across the wallpaper for a smooth transition from sharp to blurred.")
+            }
+        }
+
+        ConfigSlider {
+            buttonIcon: "lens_blur"
+            text: Translation.tr("Gradient blur intensity")
+            visible: Config.options.background.gradientBlur.enable
+            usePercentTooltip: true
+            from: 0
+            to: 100
+            stepSize: 1
+            value: Config.options.background.gradientBlur.radius ?? 50
+            onValueChanged: {
+                Config.options.background.gradientBlur.radius = value;
+            }
+        }
+
+        ContentSubsection {
+            visible: Config.options.background.gradientBlur.enable
+            title: Translation.tr("Gradient blur direction")
+            icon: "swap_vert"
+            Layout.fillWidth: true
+
+            ConfigSelectionArray {
+                currentValue: Config.options.background.gradientBlur.direction ?? "top-to-bottom"
+                onSelected: newValue => {
+                    Config.options.background.gradientBlur.direction = newValue;
+                }
+                options: [
+                    {
+                        displayName: Translation.tr("Top → Bottom"),
+                        icon: "arrow_downward",
+                        value: "top-to-bottom"
+                    },
+                    {
+                        displayName: Translation.tr("Bottom → Top"),
+                        icon: "arrow_upward",
+                        value: "bottom-to-top"
+                    },
+                    {
+                        displayName: Translation.tr("Left → Right"),
+                        icon: "arrow_forward",
+                        value: "left-to-right"
+                    },
+                    {
+                        displayName: Translation.tr("Right → Left"),
+                        icon: "arrow_back",
+                        value: "right-to-left"
+                    }
+                ]
+            }
+        }
+
+        ConfigSwitch {
             buttonIcon: "zoom_in_map"
             text: Translation.tr("Zoom animation when overview/cheatsheet is open (Beta)")
             checked: Config.options.background.zoomOutEnabled
@@ -261,6 +323,19 @@ ContentPage {
             }
             StyledToolTip {
                 text: Translation.tr("Shows scaled ScreencopyView of windows zooming out with the wallpaper when the overview opens.\nWindows on the active workspace follow the wallpaper zoom animation.\nWorkspace switching slides the window previews alongside the workspace animation.")
+            }
+        }
+
+        ConfigSwitch {
+            visible: Config.options.background.zoomOutEnabled && Config.options.background.zoomOutStyle === 0 && Config.options.background.windowZoomOnOverview
+            buttonIcon: "videocam"
+            text: Translation.tr("Keep screencopy live (no freeze)")
+            checked: Config.options.background.windowZoomLiveCapture
+            onCheckedChanged: {
+                Config.options.background.windowZoomLiveCapture = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("When enabled, window previews stay live instead of freezing on overview open.\nDisable for better performance (freezes capture on open).")
             }
         }
     }

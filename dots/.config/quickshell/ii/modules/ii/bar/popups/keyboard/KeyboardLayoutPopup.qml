@@ -77,6 +77,37 @@ StyledPopup {
                         }
                     }
 
+                    readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+                    
+                    onStartAnimChanged: {
+                        if (startAnim) {
+                            layoutCard.opacity = 0.0;
+                            layoutCard.scale = 0.85;
+                            layoutCardTranslate.x = 25;
+                            
+                            Qt.callLater(function() {
+                                layoutCardAnim.start();
+                            });
+                        }
+                    }
+                    
+                    opacity: 0.0
+                    scale: 1.0
+                    transform: Translate {
+                        id: layoutCardTranslate
+                        x: (root.opened && root.popupOpenProgress > 0.6) ? 0 : 25
+                    }
+                    
+                    SequentialAnimation {
+                        id: layoutCardAnim
+                        PauseAnimation { duration: 40 + index * 100 }
+                        ParallelAnimation {
+                            NumberAnimation { target: layoutCard; property: "opacity"; to: 1.0; duration: 300 }
+                            NumberAnimation { target: layoutCard; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                            NumberAnimation { target: layoutCardTranslate; property: "x"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                        }
+                    }
+
                     Behavior on color {
                         ColorAnimation {
                             duration: 150

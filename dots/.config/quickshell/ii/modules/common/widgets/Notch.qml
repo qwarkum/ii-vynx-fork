@@ -44,8 +44,6 @@ Item {
             joinStyle: ShapePath.RoundJoin
             capStyle: ShapePath.FlatCap
 
-            // Using root.width/root.height instead of bodyWidth/bodyHeight
-            // to avoid double-animation when parent's width/height animate.
             readonly property real w:  root.width
             readonly property real h:  root.height
             readonly property real tr: root.topRadius

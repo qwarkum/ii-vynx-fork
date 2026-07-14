@@ -8,6 +8,34 @@ import qs.modules.common.widgets
 SectionCard {
     id: inDayForecastCard
     property int forecastCardHeight: 125
+    
+    // Internal animation control
+    property bool startAnim: false
+
+    onStartAnimChanged: {
+        if (startAnim) {
+            // Reset all cards
+            for (var i = 0; i < dayRepeater.count; i++) {
+                var item = dayRepeater.itemAt(i);
+                if (item) {
+                    item.cardOpacity = 0.0;
+                    item.cardTranslateX = 50;
+                    item.iconScale = 0.7;
+                }
+            }
+            
+            // Start staggered animations with initial delay
+            Qt.callLater(function() {
+                for (var j = 0; j < dayRepeater.count; j++) {
+                    var cardItem = dayRepeater.itemAt(j);
+                    if (cardItem) {
+                        cardItem.cardAnimDelay = 200 + (j * 120);
+                        cardItem.startCardAnim();
+                    }
+                }
+            });
+        }
+    }
 
     Flickable {
         id: flickable
@@ -34,6 +62,7 @@ SectionCard {
             height: parent.height
 
             Repeater {
+                id: dayRepeater
                 model: root.forecastData
 
                 Rectangle {
@@ -41,6 +70,31 @@ SectionCard {
                     width: 85
                     height: inDayForecastCard.forecastCardHeight
                     radius: Appearance.rounding.normal
+                    
+                    // Animation properties
+                    property real cardOpacity: 1.0
+                    property real cardTranslateX: 0
+                    property real iconScale: 1.0
+                    property int cardAnimDelay: 0
+                    
+                    function startCardAnim() {
+                        cardAnim.start();
+                    }
+
+                    SequentialAnimation {
+                        id: cardAnim
+                        PauseAnimation { duration: dayCard.cardAnimDelay }
+                        ParallelAnimation {
+                            NumberAnimation { target: dayCard; property: "cardOpacity"; from: 0.0; to: 1.0; duration: 400 }
+                            NumberAnimation { target: dayCard; property: "cardTranslateX"; from: 50; to: 0; duration: 500; easing.type: Easing.OutCubic }
+                            NumberAnimation { target: dayCard; property: "iconScale"; from: 0.7; to: 1.0; duration: 450; easing.type: Easing.OutBack }
+                        }
+                    }
+
+                    opacity: dayCard.cardOpacity
+                    transform: Translate {
+                        x: dayCard.cardTranslateX
+                    }
 
                     color: {
                         const colors = [Appearance.colors.colPrimaryContainer, Appearance.colors.colSecondaryContainer, Appearance.colors.colTertiaryContainer];
@@ -67,6 +121,7 @@ SectionCard {
                         }
 
                         MaterialShape {
+                            id: iconShape
                             Layout.alignment: Qt.AlignHCenter
                             shapeString: {
                                 const shapes = ["Cookie9Sided", "Flower", "Clover4Leaf", "Pentagon", "Hexagon", "Octagon", "Arch"];
@@ -74,6 +129,7 @@ SectionCard {
                             }
                             implicitSize: 48
                             color: Qt.rgba(dayCard.textColor.r, dayCard.textColor.g, dayCard.textColor.b, 0.15)
+                            scale: dayCard.iconScale
 
                             MaterialSymbol {
                                 anchors.centerIn: parent

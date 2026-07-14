@@ -15,6 +15,30 @@ Rectangle {
 
     property bool adaptiveWidth: false
     property bool compactMode: false
+    
+    // Internal animation control
+    property bool startAnim: false
+    
+    onStartAnimChanged: {
+        if (startAnim) {
+            // Reset all internal elements
+            shapeItem.scale = 0.8;
+            shapeItem.rotation = -15;
+            pill.opacity = 0.0;
+            pillTranslate.x = 30;
+            mainText.opacity = 0.0;
+            mainText.scale = 0.9;
+            subtitleText.opacity = 0.0;
+            
+            // Start animations after reset
+            Qt.callLater(function() {
+                shapeAnim.start();
+                pillAnim.start();
+                titleAnim.start();
+                subtitleAnim.start();
+            });
+        }
+    }
 
     radius: Appearance.rounding.normal
     color: Appearance.colors.colPrimaryContainer
@@ -69,6 +93,15 @@ Rectangle {
             implicitSize: heroCardRoot.iconSize
             color: heroCardRoot.shapeColor
             anchors.centerIn: parent
+            
+            SequentialAnimation {
+                id: shapeAnim
+                PauseAnimation { duration: 80 }
+                ParallelAnimation {
+                    NumberAnimation { target: shapeItem; property: "scale"; from: 0.8; to: 1.0; duration: 1120; easing.type: Easing.OutBack }
+                    NumberAnimation { target: shapeItem; property: "rotation"; from: -15; to: 0; duration: 1120; easing.type: Easing.OutCubic }
+                }
+            }
         }
 
         MaterialSymbol {
@@ -78,10 +111,12 @@ Rectangle {
             text: heroCardRoot.icon
             iconSize: heroCardRoot.iconFontSize
             color: heroCardRoot.symbolColor
+            fill: 1
         }
     }
 
     Rectangle {
+        id: pill
         visible: heroCardRoot.pillText !== "" && heroCardRoot.pillIcon !== ""
         implicitHeight: cityRow.implicitHeight + 12
         implicitWidth: cityRow.implicitWidth + 20
@@ -91,6 +126,19 @@ Rectangle {
             right: parent.right
             top: parent.top
             margins: heroCardRoot.margins
+        }
+        
+        transform: Translate {
+            id: pillTranslate
+        }
+        
+        SequentialAnimation {
+            id: pillAnim
+            PauseAnimation { duration: 120 }
+            ParallelAnimation {
+                NumberAnimation { target: pill; property: "opacity"; from: 0.0; to: 1.0; duration: 280 }
+                NumberAnimation { target: pillTranslate; property: "x"; from: 30; to: 0; duration: 350; easing.type: Easing.OutCubic }
+            }
         }
 
         RowLayout {
@@ -149,9 +197,19 @@ Rectangle {
         }
         horizontalAlignment: Text.AlignRight
         elide: Text.ElideRight
+        
+        SequentialAnimation {
+            id: titleAnim
+            PauseAnimation { duration: 160 }
+            ParallelAnimation {
+                NumberAnimation { target: mainText; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                NumberAnimation { target: mainText; property: "scale"; from: 0.9; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+            }
+        }
     }
 
     StyledText {
+        id: subtitleText
         text: heroCardRoot.subtitle
         anchors {
             right: parent.right
@@ -169,5 +227,11 @@ Rectangle {
         color: heroCardRoot.textColor
         horizontalAlignment: Text.AlignRight
         elide: Text.ElideRight
+        
+        SequentialAnimation {
+            id: subtitleAnim
+            PauseAnimation { duration: 200 }
+            NumberAnimation { target: subtitleText; property: "opacity"; from: 0.0; to: 1.0; duration: 320 }
+        }
     }
 }

@@ -127,6 +127,37 @@ StyledPopup {
                         return yPos;
                     }
 
+                    readonly property bool startAnim: root.opened && root.popupOpenProgress > 0.6
+                    
+                    onStartAnimChanged: {
+                        if (startAnim) {
+                            deviceCard.opacity = 0.0;
+                            deviceCard.scale = 0.85;
+                            deviceCardTranslate.y = 25;
+                            
+                            Qt.callLater(function() {
+                                deviceCardAnim.start();
+                            });
+                        }
+                    }
+                    
+                    opacity: 0.0
+                    scale: 1.0
+                    transform: Translate {
+                        id: deviceCardTranslate
+                        y: (root.opened && root.popupOpenProgress > 0.6) ? 0 : 25
+                    }
+                    
+                    SequentialAnimation {
+                        id: deviceCardAnim
+                        PauseAnimation { duration: 40 + index * 100 }
+                        ParallelAnimation {
+                            NumberAnimation { target: deviceCard; property: "opacity"; to: 1.0; duration: 300 }
+                            NumberAnimation { target: deviceCard; property: "scale"; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                            NumberAnimation { target: deviceCardTranslate; property: "y"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                        }
+                    }
+
                     Behavior on y {
                         NumberAnimation {
                             duration: 400

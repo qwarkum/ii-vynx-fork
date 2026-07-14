@@ -15,6 +15,36 @@ Rectangle {
     radius: Appearance.rounding.large
     color: Appearance.colors.colPrimaryContainer
 
+    // Internal animation control
+    property bool startAnim: false
+    
+    onStartAnimChanged: {
+        if (startAnim) {
+            // Reset all elements to initial state
+            clockCircle.opacity = 0.0;
+            clockCircleTranslate.x = -50;
+            clockHand.opacity = 0.0;
+            timeText.opacity = 0.0;
+            timeText.scale = 0.9;
+            ampmText.opacity = 0.0;
+            ampmText.scale = 0.9;
+            dayText.opacity = 0.0;
+            dayText.translateX = 20;
+            dateText.opacity = 0.0;
+            dateText.translateX = 20;
+            
+            // Start animations after reset
+            Qt.callLater(function() {
+                clockCircleAnim.start();
+                clockHandAnim.start();
+                timeAnim.start();
+                ampmAnim.start();
+                dayAnim.start();
+                dateAnim.start();
+            });
+        }
+    }
+
     // Clip content to card's rounded borders using OpacityMask
     layer.enabled: true
     layer.smooth: true
@@ -32,10 +62,25 @@ Rectangle {
         id: clockCircle
         width: parent.height * 1.53
         height: width
+        opacity: 0.0
         anchors {
             left: parent.left
             leftMargin: -width * 0.52
             verticalCenter: parent.verticalCenter
+        }
+        
+        transform: Translate {
+            id: clockCircleTranslate
+            x: -50
+        }
+        
+        SequentialAnimation {
+            id: clockCircleAnim
+            PauseAnimation { duration: 80 }
+            ParallelAnimation {
+                NumberAnimation { target: clockCircle; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                NumberAnimation { target: clockCircleTranslate; property: "x"; from: -50; to: 0; duration: 450; easing.type: Easing.OutCubic }
+            }
         }
 
         readonly property real blurPadding: 80
@@ -186,11 +231,18 @@ Rectangle {
             color: Appearance.colors.colTertiary
             radius: 2
             z: 10 // Force rendering on top of everything
+            opacity: 0.0
 
             // Positioned relative to clockCircle center using simple local coordinates:
             // Proportional and extends slightly outside the circle
             x: parent.width - width + (parent.width * 0.06)
             y: parent.height / 2 - height / 2
+            
+            SequentialAnimation {
+                id: clockHandAnim
+                PauseAnimation { duration: 200 }
+                NumberAnimation { target: clockHand; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+            }
         }
     }
 
@@ -271,6 +323,7 @@ Rectangle {
 
             // Time digits (HH:MM) - Custom Maximum Bold Weight (1000 wght axis)
             StyledText {
+                id: timeText
                 text: {
                     const timeStr = DateTime.time;
                     const match = timeStr.match(/^(\d{1,2}:\d{2})(?:\s*(AM|PM|am|pm))?$/);
@@ -282,10 +335,22 @@ Rectangle {
                         "wght": 800
                     }) // Maximum bold weight for variable font
                 color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.0
+                scale: 0.9
+                
+                SequentialAnimation {
+                    id: timeAnim
+                    PauseAnimation { duration: 160 }
+                    ParallelAnimation {
+                        NumberAnimation { target: timeText; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                        NumberAnimation { target: timeText; property: "scale"; from: 0.9; to: 1.0; duration: 380; easing.type: Easing.OutBack }
+                    }
+                }
             }
 
             // AM/PM suffix - Smaller & Thin (200 wght axis)
             StyledText {
+                id: ampmText
                 text: {
                     const timeStr = DateTime.time;
                     const match = timeStr.match(/^(\d{1,2}:\d{2})(?:\s*(AM|PM|am|pm))?$/);
@@ -300,6 +365,17 @@ Rectangle {
                 color: Appearance.colors.colOnPrimaryContainer
                 Layout.alignment: Qt.AlignBottom
                 Layout.bottomMargin: Math.min(14, root.width * 0.033) // Align baseline to bottom of time digits
+                opacity: 0.0
+                scale: 0.9
+                
+                SequentialAnimation {
+                    id: ampmAnim
+                    PauseAnimation { duration: 220 }
+                    ParallelAnimation {
+                        NumberAnimation { target: ampmText; property: "opacity"; from: 0.0; to: 1.0; duration: 280 }
+                        NumberAnimation { target: ampmText; property: "scale"; from: 0.9; to: 1.0; duration: 350; easing.type: Easing.OutBack }
+                    }
+                }
             }
         }
 
@@ -309,19 +385,45 @@ Rectangle {
             spacing: 6
 
             StyledText {
+                id: dayText
+                property real translateX: 20
                 text: Qt.locale().toString(DateTime.clock.date, "dddd")
                 font.pixelSize: Math.min(20, root.width * 0.048)
                 font.family: Appearance.font.family.title
                 font.weight: Font.Normal
                 color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.0
+                transform: Translate { x: dayText.translateX }
+                
+                SequentialAnimation {
+                    id: dayAnim
+                    PauseAnimation { duration: 280 }
+                    ParallelAnimation {
+                        NumberAnimation { target: dayText; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                        NumberAnimation { target: dayText; property: "translateX"; from: 20; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                    }
+                }
             }
 
             StyledText {
+                id: dateText
+                property real translateX: 20
                 text: Qt.locale().toString(DateTime.clock.date, "dd MMMM")
                 font.pixelSize: Math.min(20, root.width * 0.048)
                 font.family: Appearance.font.family.title
                 font.weight: Font.Normal
                 color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.0
+                transform: Translate { x: dateText.translateX }
+                
+                SequentialAnimation {
+                    id: dateAnim
+                    PauseAnimation { duration: 320 }
+                    ParallelAnimation {
+                        NumberAnimation { target: dateText; property: "opacity"; from: 0.0; to: 1.0; duration: 300 }
+                        NumberAnimation { target: dateText; property: "translateX"; from: 20; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                    }
+                }
             }
         }
     }

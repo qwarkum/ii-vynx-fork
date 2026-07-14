@@ -94,8 +94,8 @@ STATE_DIR="$TARGET_DIR"  # state files (.active-*) live inside ii/
 
 # ── Fork presets ─────────────────────────────────────────────────────────────
 declare -A PRESET_URLS=(
-    ["p3drovfx"]="https://github.com/P3DROVFX/ii-vynx"
-    ["mine"]="https://github.com/P3DROVFX/ii-vynx"
+    ["p3drovfx"]="https://github.com/P3DROVFX/ii-p3drovfx"
+    ["mine"]="https://github.com/P3DROVFX/ii-p3drovfx"
     ["end4"]="https://github.com/end-4/dots-hyprland"
     ["vynx"]="https://github.com/vaguesyntax/ii-vynx"
     ["upstream"]="https://github.com/vaguesyntax/ii-vynx"

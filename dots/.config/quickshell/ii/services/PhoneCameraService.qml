@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import qs.modules.common
+import ".."
 import qs
 import QtQuick
 import Quickshell
@@ -117,9 +118,9 @@ Singleton {
 
     // Periodic re-check — picks up installs done outside the shell.
     Timer {
-        interval: 10000
+        interval: 30000
         repeat: true
-        running: root._enabled
+        running: root._enabled && (GlobalStates.policiesPanelOpen || GlobalStates.dashboardPanelOpen || root.running)
         onTriggered: checkAvailProc.running = true
     }
 

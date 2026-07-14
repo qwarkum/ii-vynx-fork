@@ -139,16 +139,14 @@ Item {
             leftMargin: sidebarPadding
             rightMargin: sidebarPadding
             bottomMargin: sidebarPadding
-            topMargin: 24
+            topMargin: sidebarPadding
         }
         spacing: sidebarPadding
 
         Toolbar {
             visible: activeTabs.length > 1
             Layout.alignment: Qt.AlignHCenter
-            // Cap the toolbar width to the available column width so the
-            // tab buttons shrink/wrap rather than extending past the sidebar
-            // when there are 5+ tabs or wider translated labels.
+            Layout.preferredHeight: tabBar.implicitHeight + padding * 2
             Layout.maximumWidth: parent.width - sidebarPadding * 2
             Layout.preferredWidth: Math.min(implicitWidth, parent.width - sidebarPadding * 2)
             enableShadow: false
