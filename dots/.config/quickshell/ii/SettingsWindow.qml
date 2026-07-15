@@ -235,7 +235,7 @@ FloatingWindow {
     Rectangle {
         anchors.fill: parent
         color: Appearance.colors.colLayer0
-        radius: Appearance.rounding.windowRounding
+        radius: Appearance.windowRounding
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
     }
@@ -359,7 +359,7 @@ FloatingWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 color: "transparent"
-                radius: Appearance.rounding.windowRounding
+                radius: Appearance.windowRounding
                 clip: true
 
                 Loader {

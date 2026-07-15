@@ -16,6 +16,7 @@ Item {
     property var mediaWidgets: (WidgetsRegistry.allWidgets || []).filter(function(w) { return w.category === "Media"; })
     property var weatherWidgets: (WidgetsRegistry.allWidgets || []).filter(function(w) { return w.category === "Weather"; })
     property var dateWidgets: (WidgetsRegistry.allWidgets || []).filter(function(w) { return w.category === "Date"; })
+    property var photoWidgets: (WidgetsRegistry.allWidgets || []).filter(function(w) { return w.category === "Photo"; })
 
     property var _previewQueue: []
     property bool _previewStaggerActive: false
@@ -53,6 +54,14 @@ Item {
         ContentSection {
             title: Translation.tr("Desktop Widgets")
             icon: "widgets"
+
+            ShortcutBox {
+                Layout.fillWidth: true
+                value: Translation.tr("Lock screen widget settings")
+                targetPageIndex: 18
+                targetSectionTitle: Translation.tr("Lockscreen widget")
+                materialIcon: "lock"
+            }
 
             ColumnLayout {
                 Layout.fillWidth: true
@@ -156,6 +165,21 @@ Item {
                     spacing: 12
                     Repeater {
                         model: widgetsConfigRoot.dateWidgets
+                        delegate: widgetCardComponent
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Photo")
+                icon: "image"
+                Layout.fillWidth: true
+
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Repeater {
+                        model: widgetsConfigRoot.photoWidgets
                         delegate: widgetCardComponent
                     }
                 }
@@ -452,6 +476,7 @@ Item {
                 }
 
                 Row {
+                    id: lockBehaviorRow
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 3
                     visible: cardItem.isActive
@@ -461,7 +486,7 @@ Item {
                     Repeater {
                         model: [
                             { value: "hide", icon: "visibility_off", tooltip: "Hidden on lock" },
-                            { value: "keep", icon: "visibility", tooltip: "Keep position" },
+                            { value: "keep", icon: "visibility", tooltip: "Show fixed on lock" },
                             { value: "center", icon: "center_focus_strong", tooltip: "Center on lock" },
                             { value: "lockOnly", icon: "lock", tooltip: "Lock only" }
                         ]
@@ -470,8 +495,8 @@ Item {
                             width: 26
                             height: 26
                             radius: Appearance.rounding.small
-                            color: parent.parent.currentBehavior === modelData.value
-                                ? Appearance.colors.colPrimaryContainer
+                            color: lockBehaviorRow.currentBehavior === modelData.value
+                                ? Appearance.colors.colPrimary
                                 : Appearance.colors.colSurfaceContainerLow
 
                             Behavior on color {
@@ -482,8 +507,8 @@ Item {
                                 anchors.centerIn: parent
                                 text: modelData.icon
                                 iconSize: 13
-                                color: parent.parent.currentBehavior === modelData.value
-                                    ? Appearance.colors.colOnPrimaryContainer
+                                color: lockBehaviorRow.currentBehavior === modelData.value
+                                    ? Appearance.colors.colOnPrimary
                                     : Appearance.colors.colOnSurfaceVariant
                             }
 

@@ -63,7 +63,7 @@ Item {
         property real dashOffset: 0
 
         implicitWidth: root.vertical ? Appearance.sizes.verticalBarWidth - 8 : flow.implicitWidth + 10
-        implicitHeight: root.vertical ? flow.implicitHeight + 10 : Appearance.sizes.baseBarHeight - 9
+        implicitHeight: root.vertical ? flow.implicitHeight + 10 : Appearance.sizes.baseBarHeight - 8
 
         width: implicitWidth
         height: implicitHeight
