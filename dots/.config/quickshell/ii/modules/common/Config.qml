@@ -1062,6 +1062,7 @@ Singleton {
                     property bool showSecondary: true
                     property bool swapPrimaryWithSecondary: false
                     property bool showPercentageInsideBattery: false
+                    property string showPercentage: "off"
                 }
                 property string bluetoothDevicesLayout: "expressive" // Options: classic, expressive
                 property JsonObject sizes: JsonObject {
