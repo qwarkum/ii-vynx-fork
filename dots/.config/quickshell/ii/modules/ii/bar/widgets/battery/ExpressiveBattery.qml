@@ -49,7 +49,7 @@ MouseArea {
 
             Binding {
                 target: batteryIcon.item
-                property: "textColor"
+                property: "colText"
                 value: Appearance.colors.colPrimary
             }
 

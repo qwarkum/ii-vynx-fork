@@ -41,7 +41,7 @@ MouseArea {
     readonly property bool effectivelyCharging: root.isCharging || root.isPluggedIn
     readonly property bool chargeLimitReached: Battery.chargeLimitReached
     readonly property bool showCheck: root.chargeLimitReached || (root.isFull && root.effectivelyCharging)
-    property color textColor: Appearance.colors.colOnSurface
+    property color colText: Appearance.colors.colOnSurface
 
     readonly property bool isPowerSaving: PowerProfiles.profile === PowerProfile.PowerSaver
     readonly property bool isPerformance: PowerProfiles.profile === PowerProfile.Performance
@@ -59,7 +59,7 @@ MouseArea {
             return Appearance.m3colors.m3error;
         if (root.isLow && !root.isCharging)
             return Appearance.m3colors.m3error;
-        return root.textColor;
+        return root.colText;
     }
 
     implicitWidth: Appearance.sizes.baseVerticalBarWidth
@@ -209,7 +209,7 @@ MouseArea {
                             text: "bolt"
                             iconSize: 14
                             fill: 1
-                            color: root.textColor
+                            color: root.colText
                         }
                     }
                 }
@@ -231,7 +231,7 @@ MouseArea {
                             id: percentageTextLeft
                             anchors.centerIn: parent
                             text: Math.round(root.percentage * 100) + "%"
-                            color: root.textColor
+                            color: root.colText
                             font.pixelSize: Appearance.font.pixelSize.small
                             font.weight: Font.Bold
                             rotation: -90
@@ -285,7 +285,7 @@ MouseArea {
                                                 return "#FFC917";
                                             if (root.isPerformance)
                                                 return "#42A5F5";
-                                            return root.textColor;
+                                            return root.colText;
                                         }
                                     }
                                 }
@@ -299,7 +299,7 @@ MouseArea {
                                             return Appearance.m3colors.m3error;
                                         if (root.isLow && !root.effectivelyCharging)
                                             return Appearance.m3colors.m3error;
-                                        return root.textColor;
+                                        return root.colText;
                                     }
                                     z: 1
                                 }
@@ -326,7 +326,7 @@ MouseArea {
                                     text: root.showCheck ? "check" : "bolt"
                                     iconSize: 16
                                     fill: 1
-                                    color: root.textColor
+                                    color: root.colText
                                     z: 3
                                 }
                             }
@@ -343,7 +343,7 @@ MouseArea {
                             id: percentageTextRight
                             anchors.centerIn: parent
                             text: Math.round(root.percentage * 100) + "%"
-                            color: root.textColor
+                            color: root.colText
                             font.pixelSize: Appearance.font.pixelSize.small
                             font.weight: Font.Bold
                             rotation: -90
@@ -464,7 +464,7 @@ MouseArea {
                                 fill: 1
                                 style: Text.Outline
                                 styleColor: batteryProgress.trackColor
-                                color: root.textColor
+                                color: root.colText
                                 rotation: 90
                             }
                         }
