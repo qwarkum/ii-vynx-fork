@@ -142,17 +142,23 @@ Item {
                             anchors.centerIn: parent
                             text: parent.fullWifiIcon
                             iconSize: 22
-                            opacity: 0.3
+                            opacity: 0.0 // 0.3
                             color: Appearance.colors.colOnSurface
                         }
 
                         MaterialSymbol {
                             anchors.centerIn: parent
-                            text: parent.strength > 80 ? "android_wifi_4_bar" 
-                                  : parent.strength > 60 ? "android_wifi_3_bar" 
-                                  : parent.strength > 40 ? "wifi_2_bar" 
-                                  : parent.strength > 20 ? "wifi_1_bar" 
-                                  : "signal_wifi_0_bar"
+                            // text: parent.strength > 80 ? "android_wifi_4_bar" 
+                            //       : parent.strength > 60 ? "android_wifi_3_bar" 
+                            //       : parent.strength > 40 ? "wifi_2_bar" 
+                            //       : parent.strength > 20 ? "wifi_1_bar" 
+                            //       : ""
+                            text: parent.strength > 83 ? "signal_wifi_4_bar"
+                                : parent.strength > 67 ? "network_wifi"
+                                : parent.strength > 50 ? "network_wifi_3_bar"
+                                : parent.strength > 33 ? "network_wifi_2_bar"
+                                : parent.strength > 17 ? "network_wifi_1_bar"
+                                : "signal_wifi_0_bar"
                             fill: 1
                             iconSize: 22
                             color: Appearance.colors.colOnSurface
