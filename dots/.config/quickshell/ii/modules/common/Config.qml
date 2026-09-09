@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.modules.common.functions
+import "../ii/sidebarDashboard/quickToggles/androidStyle/QuickToggleCatalog.js" as QuickToggleCatalog
 
 Singleton {
     id: root
@@ -263,6 +264,13 @@ Singleton {
         root.options.appearance.sharpMode = (root.options.appearance.roundingValue === 0);
     }
 
+    function syncAppLaunchAnimation() {
+        if (!root.options || !root.options.appearance || !root.options.appearance.appLaunchAnimation)
+            return;
+        let anim = root.options.appearance.appLaunchAnimation;
+        HyprlandSettings.updateAppLaunchAnimation(anim.enable, anim.startPercent, anim.speed, anim.curve);
+    }
+
     function migrateWidgetLockBehavior() {
         if (Persistent.states.background.lockBehaviorMigrated)
             return;
@@ -296,7 +304,7 @@ Singleton {
     //
     // Bump `currentConfigVersion` and add a matching block to `migrateRaw()`
     // whenever an existing key changes type or meaning.
-    readonly property int currentConfigVersion: 5
+    readonly property int currentConfigVersion: 6
     // Defaults have to be captured before the file lands, because deserializing
     // is what destroys them. FileView loads asynchronously, so at component
     // completion the adapter still holds nothing but the QML defaults.
@@ -396,16 +404,29 @@ Singleton {
         }
 
         // v4 -> v5: Settings now has one performance switch instead of two
-        // independent rendering switches. Preserve the low-overhead experience
-        // for anyone who had either legacy switch disabled.
+        // independent rendering switches. Older presets predate the new
+        // switch, so default them to the safe, low-overhead path. Users can
+        // still opt back into scroll effects after the migration.
         if (from < 5 && raw.appearance !== undefined
                 && raw.appearance !== null
                 && typeof raw.appearance === "object"
                 && !Array.isArray(raw.appearance)
                 && raw.appearance.settingsPerformanceMode === undefined) {
-            raw.appearance.settingsPerformanceMode = raw.appearance.scrollAnimations === false
-                    || raw.appearance.scrollFadeMask === false;
+            raw.appearance.settingsPerformanceMode = true;
             console.log(`[Config] Migrated Settings performance mode to ${raw.appearance.settingsPerformanceMode}`);
+        }
+
+        // v5 -> v6: quick-toggle pages become canonical records with stable
+        // identity and explicit dimensions. The normalizer is shared with the
+        // sidebar so migration and runtime cannot disagree about defaults,
+        // duplicate handling, or allowed sizes.
+        if (from < 6 && raw.sidebar?.quickToggles?.android !== undefined) {
+            const android = raw.sidebar.quickToggles.android;
+            android.pages = QuickToggleCatalog.normalizePages(android.pages, android.columns, {
+                warn: function(message) { console.warn(message); }
+            });
+            android.layoutVersion = 2;
+            console.log("[Config] Migrated sidebar.quickToggles.android to canonical layout records");
         }
 
         raw.configVersion = root.currentConfigVersion;
@@ -799,6 +820,7 @@ Singleton {
             if (root.repairConfigFile())
                 return;
             migrateRoundingConfig();
+            syncAppLaunchAnimation();
         }
         onLoadFailed: error => {
             if (error != FileViewError.FileNotFound) {
@@ -1091,7 +1113,13 @@ Singleton {
                 property bool colorfulScrollbar: false
                 property bool scrollAnimations: false
                 property bool scrollFadeMask: false
-                property bool settingsPerformanceMode: false
+                property bool settingsPerformanceMode: true
+                property JsonObject appLaunchAnimation: JsonObject {
+                    property bool enable: true
+                    property int startPercent: 20 // 5 - 50%
+                    property real speed: 3.2
+                    property string curve: "iiAppOpen"
+                }
                 property JsonObject openrgb: JsonObject {
                     property bool enable: false
                     property bool applyOnStartup: true
@@ -2530,6 +2558,46 @@ Singleton {
                 property JsonObject deadPixelWorkaround: JsonObject { // Hyprland leaves out 1 pixel on the right for interactions
                     property bool enable: false
                 }
+                property JsonObject touchGestures: JsonObject {
+                    property bool enable: true
+
+                    // Visual
+                    property bool visualFeedback: true
+
+                    // Device/output
+                    property string deviceId: "auto"
+                    property string targetMonitor: "auto"
+                    property string transform: "auto"
+                    // A stylus is also a pointer, so pen gestures drag/resize windows at the
+                    // same time. Off unless the device is picked explicitly above.
+                    property bool includeStylus: false
+
+                    // Recognition geometry
+                    property int edgeWidth: 24
+                    property int cornerSize: 72
+
+                    // Recognition thresholds
+                    property int minDistance: 44
+                    property int commitDistance: 110
+                    property int velocityThreshold: 650
+                    property int directionTolerance: 35
+                    property int cooldownMs: 250
+
+                    // Safety / context
+                    property bool disableInFullscreen: false
+                    property bool disableInMediaMode: true
+
+                    property JsonObject bindings: JsonObject {
+                        property string leftEdge: "sidebarLeft"
+                        property string rightEdge: "sidebarRight"
+                        property string topEdge: "cheatsheet"
+                        property string bottomEdge: "overview"
+                        property string topLeftCorner: "none"
+                        property string topRightCorner: "none"
+                        property string bottomLeftCorner: "none"
+                        property string bottomRightCorner: "osk"
+                    }
+                }
             }
 
             property JsonObject language: JsonObject {
@@ -2673,6 +2741,13 @@ Singleton {
                 property int timeout: 3000
                 property bool showValues: true
                 property bool hideWhenFullscreen: true
+
+                property JsonObject material: JsonObject {
+                    property bool rotateShape: false
+                    property bool minimal: false
+                    property bool shapedValues: true
+                    property bool circledShapes: true
+                }
             }
 
             property JsonObject osk: JsonObject {
@@ -2995,52 +3070,53 @@ Singleton {
                     property bool useThreeWaySliders: true
                     property JsonObject android: JsonObject {
                         property int columns: 4
+                        property int layoutVersion: 2
                         property list<var> pages: [
                                 [
                                     {
-                                        "size": 4,
+                                        "id": "brightnessSlider",
                                         "sizeH": 1,
                                         "sizeW": 4,
                                         "type": "brightnessSlider"
                                     },
                                     {
-                                        "size": 4,
+                                        "id": "volumeSlider",
                                         "sizeH": 1,
                                         "sizeW": 4,
                                         "type": "volumeSlider"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "network",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "network"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "bluetooth",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "bluetooth"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "mic",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "mic"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "audio",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "audio"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "nightLight",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "nightLight"
                                     },
                                     {
-                                        "size": 2,
+                                        "id": "darkMode",
                                         "sizeH": 1,
                                         "sizeW": 2,
                                         "type": "darkMode"

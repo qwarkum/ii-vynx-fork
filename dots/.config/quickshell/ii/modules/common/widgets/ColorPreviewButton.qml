@@ -57,6 +57,7 @@ RippleButton {
     readonly property bool toggled: isWidgetScheme
         ? widgetSchemeToggled
         : Config.options.appearance.palette.type === colorScheme
+    property bool expressiveSelection: false
     readonly property bool sharpMode: Config.options.appearance.sharpMode
 
     colBackground: toggled ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
@@ -68,6 +69,9 @@ RippleButton {
         : Appearance.colors.colLayer2Active
 
     buttonRadius: Appearance.rounding.small
+
+    scale: (root.down ? 0.96 : (root.hovered ? 1.01 : 1.0))
+        * (root.expressiveSelection && root.toggled ? 1.03 : 1.0)
 
     Layout.fillWidth: true
     implicitHeight: 64
@@ -96,10 +100,9 @@ RippleButton {
             ]);
         } else {
             Config.options.appearance.palette.type = colorScheme;
-            Quickshell.execDetached([
-                "bash", "-c",
-                `env -u LD_LIBRARY_PATH -u PYTHONHOME -u PYTHONPATH PATH=$HOME/.local/bin:$HOME/.cargo/bin:$PATH ${Directories.wallpaperSwitchScriptPath} --type ${colorScheme} --noswitch > /tmp/switchwall_button.log 2>&1`
-            ]);
+            Config.options.appearance.palette.accentColor = "";
+            Config.saveOptionsNow();
+            Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} --noswitch`]);
         }
     }
 

@@ -135,7 +135,7 @@ Singleton {
             "name": "Screenshots & Recording",
             "icon": "screenshot_region",
             "component": "modules/settings/configs/ScreenCaptureConfig.qml",
-            "subPages": [],
+            "subPages": ["widgets/ScreenRecordingConfig.qml"],
             "aliases": ["Region Selector", "Screenshot", "Screen recording", "Google Lens", "wf-recorder", "OBS"]
         },
         {
@@ -151,7 +151,11 @@ Singleton {
             "name": "Launcher",
             "icon": "search",
             "component": "modules/settings/configs/LauncherConfig.qml",
-            "subPages": [],
+            "subPages": [
+                "widgets/LauncherSuggestionsConfig.qml",
+                "widgets/LauncherPrefixesConfig.qml",
+                "widgets/LauncherAliasesConfig.qml"
+            ],
             "aliases": ["App Search", "Search Prefixes", "App Aliases"]
         },
         {
@@ -193,6 +197,14 @@ Singleton {
             "component": "modules/settings/configs/DisplaysConfig.qml",
             "subPages": [],
             "aliases": ["Monitors", "hyprmon", "Resolution", "Refresh rate", "Scale", "OLED Saver", "Blackout"]
+        },
+        {
+            "id": "touchGestures",
+            "name": "Touch & Gestures",
+            "icon": "touch_app",
+            "component": "modules/settings/configs/TouchGesturesConfig.qml",
+            "subPages": [],
+            "aliases": ["Touchscreen", "Touch", "Swipe", "Gestures", "Edge gestures", "Tablet"]
         },
         {
             "id": "mediaMusic",
@@ -340,7 +352,7 @@ Singleton {
         {
             "id": "system",
             "name": "System",
-            "pageIds": ["displays", "soundAlerts", "power", "usageStats", "devicesPhone", "privacy", "about"]
+            "pageIds": ["displays", "touchGestures", "soundAlerts", "power", "usageStats", "devicesPhone", "privacy", "about"]
         }
     ]
 

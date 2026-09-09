@@ -377,6 +377,10 @@ Singleton {
             root.openSettingsPage(pageId);
         }
 
+        function openSubPage(pageId: string, subPage: string): void {
+            root.openSettingsPage(pageId, subPage || "");
+        }
+
     }
 
     IpcHandler {
@@ -411,6 +415,33 @@ Singleton {
         }
     }
 
+    IpcHandler {
+        target: "osd"
+
+        function trigger(): void {
+            root.osdCurrentIndicator = "volume";
+            root.osdVolumeOpen = true;
+            root.osdInteraction();
+        }
+
+        function toggle(): void {
+            root.osdVolumeOpen = !root.osdVolumeOpen;
+            if (root.osdVolumeOpen) {
+                root.osdInteraction();
+            }
+        }
+
+        function hide(): void {
+            root.osdVolumeOpen = false;
+        }
+
+        function open(): void {
+            root.osdCurrentIndicator = "volume";
+            root.osdVolumeOpen = true;
+            root.osdInteraction();
+        }
+    }
+
     GlobalShortcut {
         name: "settingsToggle"
         description: "Toggles the settings window"
@@ -440,6 +471,20 @@ Singleton {
             return false;
 
         // All corner styles supported
+        return true;
+    }
+
+    // The floating Dynamic Island is the sole owner of the search surface
+    // while it is enabled. Its PanelWindow chooses the configured target
+    // monitor, so ownership must not depend on the monitor that opened it.
+    readonly property bool floatingNotchOwnsSearch: {
+        if (!Config.ready || !root.overviewOpen)
+            return false;
+
+        const notch = Config.options.bar.floatingNotch;
+        if (!notch || !notch.enable || notch.centerInBar)
+            return false;
+
         return true;
     }
 
@@ -847,3 +892,4 @@ Singleton {
         }
     }
 }
+

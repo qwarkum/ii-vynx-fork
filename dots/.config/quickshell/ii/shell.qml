@@ -32,7 +32,6 @@ ShellRoot {
         }
         MaterialThemeLoader.reapplyTheme();
         Hyprsunset.load();
-        FirstRunExperience.load();
         ConflictKiller.load();
         Cliphist.refresh();
         Wallpapers.load();
@@ -45,6 +44,8 @@ ShellRoot {
         GoogleDriveService.configured; // Touch singleton: keeps scheduled backups independent of Settings
         AppStats.stateDir; // Instantiate: starts the usage sampler, which must collect whether or not the overlay is open
         TilingAssistant.enabled; // Touch singleton: watches for window drags, does nothing while disabled
+        TouchGestureService.enabled; // Touch singleton: starts passive touch input helper daemon
+        IconThemes.availableThemes; // Touch singleton: arms the DynamicTheme watcher for live icon refresh
         if (Config.options && Config.options.policies && Config.options.policies.phone !== 0) {
             KdeConnectService.available;
             PhoneContactsService.available;
